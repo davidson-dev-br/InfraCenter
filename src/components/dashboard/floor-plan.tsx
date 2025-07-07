@@ -9,15 +9,17 @@ import { DatacenterSwitcher, datacenters, type DatacenterOption, useDatacenter }
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 80;
+const TILE_SIZE_M = 0.6; // Represents a 60cm x 60cm tile
 
 // In a real app, this would come from an API, keyed by datacenter/room ID
 const initialItemsByDatacenter: Record<string, PlacedItem[]> = {
     'dc1': [
         { id: 'rack-3', name: 'Rack-3', type: 'Server Rack', icon: Server, notifications: 1, x: 1, y: 0, status: 'Ativo', width: 0.6, length: 0.6, sizeU: 42, row: 'A', observations: 'Rack principal.', awaitingApproval: true },
-        { id: 'rack-2', name: 'Rack-02', type: 'Server Rack', icon: Server, notifications: 0, x: 7, y: 2, status: 'Ativo', width: 0.6, length: 0.8, sizeU: 42, row: 'B', observations: '' },
+        { id: 'rack-2', name: 'Rack-02', type: 'Server Rack', icon: Server, notifications: 0, x: 7, y: 2, status: 'Ativo', width: 0.6, length: 1.2, sizeU: 42, row: 'B', observations: '' },
         { id: 'rack-0', name: 'Rack-00', type: 'Server Rack', icon: Server, notifications: 1, x: 8, y: 2, status: 'Manutenção', width: 0.8, length: 0.8, sizeU: 48, row: 'B', observations: 'Verificar fonte de energia.' },
     ],
     'dc2': [
@@ -28,36 +30,53 @@ const initialItemsByDatacenter: Record<string, PlacedItem[]> = {
 
 export function FloorPlan() {
     const [zoom, setZoom] = useState(1);
-    const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
-    const [draggingItem, setDraggingItem] = useState<{ key: string; item: PlacedItem } | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const floorPlanRef = useRef<HTMLDivElement>(null);
     const { selectedDatacenter, setSelectedDatacenter } = useDatacenter();
+    const { toast } = useToast();
     
-    const [itemsByDatacenter, setItemsByDatacenter] = useState<Record<string, Map<string, PlacedItem>>>(() => {
-        const initialMap: Record<string, Map<string, PlacedItem>> = {};
-        for (const dc of datacenters) {
-            const itemsList = initialItemsByDatacenter[dc.value] || [];
-            initialMap[dc.value] = new Map(itemsList.map(item => [`${item.x}-${item.y}`, item]));
-        }
-        return initialMap;
-    });
+    const [itemsByDatacenter, setItemsByDatacenter] = useState<Record<string, PlacedItem[]>>(initialItemsByDatacenter);
 
-    const items = itemsByDatacenter[selectedDatacenter.value] || new Map();
-    const setItemsForCurrentDatacenter = (newItems: Map<string, PlacedItem>) => {
+    const items = itemsByDatacenter[selectedDatacenter.value] || [];
+    const setItemsForCurrentDatacenter = (newItems: PlacedItem[]) => {
         setItemsByDatacenter(prev => ({
             ...prev,
             [selectedDatacenter.value]: newItems,
         }));
     };
+    
+    const getItemDimensions = useCallback((item: PlacedItem) => {
+        return {
+            width: Math.max(1, Math.round((item.width || TILE_SIZE_M) / TILE_SIZE_M)),
+            length: Math.max(1, Math.round((item.length || TILE_SIZE_M) / TILE_SIZE_M)),
+        };
+    }, []);
+
+    const checkCollision = useCallback((testItem: PlacedItem, allItems: PlacedItem[]) => {
+        const testDim = getItemDimensions(testItem);
+        for (const existingItem of allItems) {
+            if (existingItem.id === testItem.id) continue;
+            
+            const existingDim = getItemDimensions(existingItem);
+            
+            if (
+                testItem.x < existingItem.x + existingDim.width &&
+                testItem.x + testDim.width > existingItem.x &&
+                testItem.y < existingItem.y + existingDim.length &&
+                testItem.y + testDim.length > existingItem.y
+            ) {
+                return true; // Collision detected
+            }
+        }
+        return false;
+    }, [getItemDimensions]);
 
     const handleWheel = useCallback((e: WheelEvent) => {
-        if (e.ctrlKey) { // Use Ctrl + scroll for zoom to avoid hijacking normal scroll
+        if (e.ctrlKey) {
             e.preventDefault();
-            setZoom(prevZoom => {
-                const newZoom = prevZoom - e.deltaY * 0.005;
-                return Math.max(0.2, Math.min(2, newZoom)); // Clamp zoom level
-            });
+            setZoom(prevZoom => Math.max(0.2, Math.min(2, prevZoom - e.deltaY * 0.005)));
         }
     }, []);
     
@@ -67,70 +86,70 @@ export function FloorPlan() {
             floorPlanElement.addEventListener('wheel', handleWheel, { passive: false });
         }
         return () => {
-            if (floorPlanElement) {
-                floorPlanElement.removeEventListener('wheel', handleWheel);
-            }
+            if (floorPlanElement) floorPlanElement.removeEventListener('wheel', handleWheel);
         };
     }, [handleWheel]);
 
     const handleCellDrop = (x: number, y: number) => {
-        if (!draggingItem) return;
+        if (!draggingItemId) return;
 
-        const newKey = `${x}-${y}`;
-        if (items.has(newKey)) {
-            setDraggingItem(null);
+        const itemIndex = items.findIndex(i => i.id === draggingItemId);
+        if (itemIndex === -1) return;
+        
+        const itemToMove = { ...items[itemIndex], x, y, row: String.fromCharCode(65 + x) };
+        const { width, length } = getItemDimensions(itemToMove);
+
+        if (x + width > GRID_SIZE || y + length > GRID_SIZE || checkCollision(itemToMove, items)) {
+            setDraggingItemId(null);
             return;
         }
 
-        const newItems = new Map(items);
-        newItems.delete(draggingItem.key);
-        newItems.set(newKey, { ...draggingItem.item, x, y, row: String.fromCharCode(65 + x) });
+        const newItems = [...items];
+        newItems[itemIndex] = itemToMove;
         setItemsForCurrentDatacenter(newItems);
-        setSelectedItemKey(newKey);
-        setDraggingItem(null);
+        setSelectedItemId(itemToMove.id);
+        setDraggingItemId(null);
     };
 
-    const handleItemClick = (e: React.MouseEvent, key: string) => {
+    const handleItemClick = (e: React.MouseEvent, itemId: string) => {
         e.stopPropagation();
-        setSelectedItemKey(key);
+        setSelectedItemId(itemId);
     };
 
     const handleItemDoubleClick = (item: PlacedItem) => {
         setEditingItem(item);
     };
 
-    const handleDragStart = (e: React.DragEvent, key: string, item: PlacedItem) => {
+    const handleDragStart = (e: React.DragEvent, item: PlacedItem) => {
         e.dataTransfer.effectAllowed = 'move';
-        setDraggingItem({ key, item });
-        setSelectedItemKey(key);
+        setDraggingItemId(item.id);
+        setSelectedItemId(item.id);
     };
     
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (e.key === 'Delete' && selectedItemKey) {
-            const newItems = new Map(items);
-            newItems.delete(selectedItemKey);
-            setItemsForCurrentDatacenter(newItems);
-            setSelectedItemKey(null);
+        if (e.key === 'Delete' && selectedItemId) {
+            setItemsForCurrentDatacenter(items.filter(item => item.id !== selectedItemId));
+            setSelectedItemId(null);
         } else if (e.key === 'Escape') {
-            setSelectedItemKey(null);
+            setSelectedItemId(null);
             setEditingItem(null);
         }
-    }, [selectedItemKey, items, setItemsForCurrentDatacenter]);
+    }, [selectedItemId, items, setItemsForCurrentDatacenter]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
     const handleAddItem = () => {
+        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: TILE_SIZE_M, length: TILE_SIZE_M };
+        const { width, length } = getItemDimensions(newItemProto);
+        
         let newX = -1, newY = -1;
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
-                if (!items.has(`${x}-${y}`)) {
-                    newX = x;
-                    newY = y;
+        for (let y = 0; y <= GRID_SIZE - length; y++) {
+            for (let x = 0; x <= GRID_SIZE - width; x++) {
+                if (!checkCollision({ ...newItemProto, x, y }, items)) {
+                    newX = x; newY = y;
                     break;
                 }
             }
@@ -138,38 +157,42 @@ export function FloorPlan() {
         }
 
         if (newX === -1) {
-            // In a real app, use a toast to notify the user.
-            alert("Não há espaço livre para adicionar um novo item.");
+            toast({ variant: "destructive", title: "Erro", description: "Não há espaço livre para adicionar um novo item." });
             return;
         }
 
-        const newItems = new Map(items);
         const newItemId = `rack-${Date.now()}`;
-        const newRackNumber = (Array.from(newItems.values()).filter(i => i.type === 'Server Rack').length) + 1;
+        const newRackNumber = (items.filter(i => i.type === 'Server Rack').length) + 1;
         const newItem: PlacedItem = {
-            id: newItemId,
-            name: `Rack-${String(newRackNumber).padStart(2, '0')}`,
-            type: 'Server Rack',
-            icon: Server,
-            notifications: 0,
-            x: newX,
-            y: newY,
-            status: 'Ativo',
-            width: 0.6,
-            length: 0.8,
-            sizeU: 42,
-            row: String.fromCharCode(65 + newX),
-            observations: '',
-            awaitingApproval: true
+            id: newItemId, name: `Rack-${String(newRackNumber).padStart(2, '0')}`,
+            type: 'Server Rack', icon: Server, notifications: 0,
+            x: newX, y: newY, status: 'Ativo', width: TILE_SIZE_M, length: TILE_SIZE_M,
+            sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', awaitingApproval: true
         };
-        newItems.set(`${newX}-${newY}`, newItem);
-        setItemsForCurrentDatacenter(newItems);
-        setSelectedItemKey(`${newX}-${newY}`);
+        
+        setItemsForCurrentDatacenter([...items, newItem]);
+        setSelectedItemId(newItem.id);
+    };
+
+    const handleItemSave = (updatedItem: PlacedItem) => {
+        const { width, length } = getItemDimensions(updatedItem);
+
+        if (updatedItem.x + width > GRID_SIZE || updatedItem.y + length > GRID_SIZE) {
+            toast({ variant: 'destructive', title: 'Erro de Validação', description: 'O item excede os limites da planta.' });
+            return;
+        }
+        if (checkCollision(updatedItem, items)) {
+            toast({ variant: 'destructive', title: 'Erro de Colisão', description: 'A nova dimensão ou posição do item causa uma colisão com outro item.' });
+            return;
+        }
+
+        setItemsForCurrentDatacenter(items.map(item => item.id === updatedItem.id ? updatedItem : item));
+        setEditingItem(null);
+        toast({ title: "Item Salvo", description: `O item "${updatedItem.name}" foi atualizado com sucesso.` });
     };
     
-    // Reset selection when changing datacenter
     useEffect(() => {
-        setSelectedItemKey(null);
+        setSelectedItemId(null);
         setEditingItem(null);
     }, [selectedDatacenter]);
 
@@ -186,72 +209,58 @@ export function FloorPlan() {
                     <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
                     <Button variant="outline" size="icon"><Maximize /></Button>
                     <DatacenterSwitcher selected={selectedDatacenter} onSelectedChange={setSelectedDatacenter} />
-                    <ManageRoomsDialog>
-                        <Button variant="outline" size="icon"><Settings /></Button>
-                    </ManageRoomsDialog>
+                    <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
                     <Button onClick={handleAddItem}><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline"><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
                 </div>
             </div>
 
-            <div ref={floorPlanRef} className="flex-grow p-4 overflow-auto border rounded-lg bg-card" onClick={() => setSelectedItemKey(null)}>
-                <div className="relative transition-transform duration-75" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${(GRID_SIZE * CELL_SIZE) + 40}px` }}>
+            <div ref={floorPlanRef} className="flex-grow p-4 overflow-auto border rounded-lg bg-card" onClick={() => setSelectedItemId(null)}>
+                <div className="relative transition-transform duration-75" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${(GRID_SIZE * CELL_SIZE) + 40}px`, height: `${(GRID_SIZE * CELL_SIZE) + 30}px` }}>
                     <div className="grid" style={{ gridTemplateColumns: `40px repeat(${GRID_SIZE}, ${CELL_SIZE}px)`, gridTemplateRows: `30px repeat(${GRID_SIZE}, ${CELL_SIZE}px)` }}>
-                        {/* Top-left empty cell */}
-                        <div className="sticky top-0 z-10 bg-card"></div>
+                        {/* Headers & Grid Cells */}
+                        <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-20 bg-card"></div>
+                        {Array.from({ length: GRID_SIZE }).map((_, i) => <div key={`col-${i}`} style={{ gridColumn: i + 2, gridRow: 1 }} className="sticky top-0 z-10 flex items-center justify-center font-semibold bg-card text-muted-foreground">{String.fromCharCode(65 + i)}</div>)}
+                        {Array.from({ length: GRID_SIZE }).map((_, i) => <div key={`row-${i}`} style={{ gridColumn: 1, gridRow: i + 2 }} className="sticky left-0 z-10 flex items-center justify-center font-semibold bg-card text-muted-foreground">{i + 1}</div>)}
+                        {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
+                            const x = index % GRID_SIZE;
+                            const y = Math.floor(index / GRID_SIZE);
+                            return <div key={`cell-${x}-${y}`} style={{ gridColumn: x + 2, gridRow: y + 2 }} onDrop={() => handleCellDrop(x, y)} onDragOver={(e) => e.preventDefault()} className="border-t border-l" />;
+                        })}
 
-                        {/* Column Headers */}
-                        {Array.from({ length: GRID_SIZE }).map((_, i) => (
-                            <div key={i} className="sticky top-0 z-10 flex items-center justify-center font-semibold bg-card text-muted-foreground">
-                                {String.fromCharCode(65 + i)}
-                            </div>
-                        ))}
-
-                        {/* Rows */}
-                        {Array.from({ length: GRID_SIZE }).map((_, y) => (
-                            <React.Fragment key={y}>
-                                {/* Row Header */}
-                                <div className="sticky left-0 z-10 flex items-center justify-center font-semibold bg-card text-muted-foreground">
-                                    {y + 1}
+                        {/* Placed Items */}
+                        {items.map(item => {
+                            const { width, length } = getItemDimensions(item);
+                            return (
+                                <div
+                                    key={item.id}
+                                    draggable
+                                    onClick={(e) => handleItemClick(e, item.id)}
+                                    onDoubleClick={() => handleItemDoubleClick(item)}
+                                    onDragStart={(e) => handleDragStart(e, item)}
+                                    style={{
+                                        gridColumnStart: item.x + 2,
+                                        gridRowStart: item.y + 2,
+                                        gridColumnEnd: `span ${width}`,
+                                        gridRowEnd: `span ${length}`,
+                                        zIndex: selectedItemId === item.id ? 10 : 5,
+                                    }}
+                                    className="p-1 cursor-grab active:cursor-grabbing"
+                                >
+                                    <div
+                                        className={cn(
+                                            "bg-slate-800 text-white rounded-lg p-2 w-full h-full flex flex-col items-center justify-center shadow-lg relative transition-all",
+                                            selectedItemId === item.id && "ring-2 ring-offset-2 ring-primary ring-offset-card",
+                                            draggingItemId === item.id && "opacity-50"
+                                        )}
+                                    >
+                                        <item.icon className="w-6 h-6 mb-1"/>
+                                        <p className="text-xs font-bold truncate">{item.name}</p>
+                                        {item.notifications > 0 && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800">{item.notifications}</div>}
+                                    </div>
                                 </div>
-                                {/* Grid Cells */}
-                                {Array.from({ length: GRID_SIZE }).map((_, x) => {
-                                    const key = `${x}-${y}`;
-                                    const item = items.get(key);
-                                    
-                                    return (
-                                        <div
-                                            key={key}
-                                            onClick={(e) => item && handleItemClick(e, key)}
-                                            onDoubleClick={() => item && handleItemDoubleClick(item)}
-                                            onDrop={() => handleCellDrop(x, y)}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            className={cn("border-t border-l flex items-center justify-center p-1 transition-colors", draggingItem && !item ? "bg-accent/20" : "")}
-                                        >
-                                            {item && (
-                                                <div
-                                                    draggable
-                                                    onDragStart={(e) => handleDragStart(e, key, item)}
-                                                    className={cn(
-                                                        "bg-slate-800 text-white rounded-lg p-2 w-full h-full flex flex-col items-center justify-center shadow-lg relative cursor-grab active:cursor-grabbing transition-all",
-                                                        selectedItemKey === key && "ring-2 ring-offset-2 ring-primary ring-offset-card"
-                                                    )}
-                                                >
-                                                    <item.icon className="w-6 h-6 mb-1"/>
-                                                    <p className="text-xs font-bold truncate">{item.name}</p>
-
-                                                    {item.notifications > 0 && (
-                                                        <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800">
-                                                            {item.notifications}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </React.Fragment>
-                        ))}
+                            );
+                        })}
                     </div>
                      <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-grid" style={{ backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`, backgroundPosition: '40px 30px' }}></div>
                 </div>
@@ -262,11 +271,8 @@ export function FloorPlan() {
             <ItemDetailsDialog 
                 item={editingItem} 
                 isOpen={!!editingItem} 
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setEditingItem(null);
-                    }
-                }}
+                onOpenChange={(open) => !open && setEditingItem(null)}
+                onSave={handleItemSave}
             />
         </div>
     );
