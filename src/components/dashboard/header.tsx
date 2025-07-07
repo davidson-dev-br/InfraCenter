@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Building2, Filter, LayoutGrid, Server, Spline, FileText } from "lucide-react";
-import { DatacenterSwitcher } from "./datacenter-switcher";
+import { DatacenterSwitcher, useDatacenter } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -14,6 +16,8 @@ const navItems = [
 ]
 
 export function Header() {
+  const { selectedDatacenter, setSelectedDatacenter } = useDatacenter();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container flex items-center h-16 px-4 mx-auto sm:px-6 lg:px-8">
@@ -25,7 +29,7 @@ export function Header() {
             <Badge variant="secondary">v3.2.6</Badge>
         </div>
         
-        <DatacenterSwitcher />
+        <DatacenterSwitcher selected={selectedDatacenter} onSelectedChange={setSelectedDatacenter} />
 
         <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="icon" className="relative">

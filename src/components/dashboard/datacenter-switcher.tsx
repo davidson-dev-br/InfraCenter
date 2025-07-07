@@ -25,6 +25,33 @@ export const datacenters = [
 
 export type DatacenterOption = typeof datacenters[number];
 
+// --- Context for sharing datacenter state ---
+interface DatacenterContextType {
+    selectedDatacenter: DatacenterOption;
+    setSelectedDatacenter: (datacenter: DatacenterOption) => void;
+}
+
+const DatacenterContext = React.createContext<DatacenterContextType | undefined>(undefined);
+
+export function DatacenterProvider({ children }: { children: React.ReactNode }) {
+    const [selectedDatacenter, setSelectedDatacenter] = React.useState<DatacenterOption>(datacenters[0]);
+
+    return (
+        <DatacenterContext.Provider value={{ selectedDatacenter, setSelectedDatacenter }}>
+            {children}
+        </DatacenterContext.Provider>
+    );
+}
+
+export function useDatacenter() {
+    const context = React.useContext(DatacenterContext);
+    if (context === undefined) {
+        throw new Error('useDatacenter must be used within a DatacenterProvider');
+    }
+    return context;
+}
+// --- End Context ---
+
 type DatacenterSwitcherProps = {
   selected: DatacenterOption;
   onSelectedChange: (selected: DatacenterOption) => void;

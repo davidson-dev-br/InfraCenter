@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
-import { DatacenterSwitcher, datacenters, type DatacenterOption } from './datacenter-switcher';
+import { DatacenterSwitcher, datacenters, type DatacenterOption, useDatacenter } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
@@ -32,7 +32,7 @@ export function FloorPlan() {
     const [draggingItem, setDraggingItem] = useState<{ key: string; item: PlacedItem } | null>(null);
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const floorPlanRef = useRef<HTMLDivElement>(null);
-    const [selectedDatacenter, setSelectedDatacenter] = useState<DatacenterOption>(datacenters[0]);
+    const { selectedDatacenter, setSelectedDatacenter } = useDatacenter();
     
     const [itemsByDatacenter, setItemsByDatacenter] = useState<Record<string, Map<string, PlacedItem>>>(() => {
         const initialMap: Record<string, Map<string, PlacedItem>> = {};
