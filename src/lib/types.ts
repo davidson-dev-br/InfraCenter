@@ -23,6 +23,10 @@ export interface PlacedItem {
 export interface Room {
   id: string;
   name: string;
+  width: number; // in meters
+  length: number; // in meters
+  tileWidth: number; // in cm
+  tileLength: number; // in cm
 }
 
 export interface Building {

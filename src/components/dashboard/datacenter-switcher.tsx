@@ -21,11 +21,11 @@ import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
     { id: 'b1', name: 'Datacenter Principal', rooms: [
-        { id: 'r1', name: 'Data Center' },
-        { id: 'r2', name: 'Sala de Controle' },
+        { id: 'r1', name: 'Data Center', width: 25, length: 15, tileWidth: 60, tileLength: 60 },
+        { id: 'r2', name: 'Sala de Controle', width: 10, length: 15, tileWidth: 60, tileLength: 60 },
     ]},
     { id: 'b2', name: 'Prédio Anexo', rooms: [
-        { id: 'r3', name: 'Sala de Baterias' },
+        { id: 'r3', name: 'Sala de Baterias', width: 12, length: 8, tileWidth: 60, tileLength: 60 },
     ]}
 ];
 
@@ -54,7 +54,8 @@ interface InfraContextType {
     updateItemsForRoom: (roomId: string, items: PlacedItem[]) => void;
     approveItem: (itemId: string) => void;
     
-    addRoom: (buildingId: string, roomName: string) => void;
+    addRoom: (buildingId: string, roomData: Omit<Room, 'id'>) => void;
+    updateRoom: (buildingId: string, updatedRoom: Room) => void;
     deleteRoom: (buildingId: string, roomId: string) => void;
     reorderRooms: (buildingId: string, roomId: string, direction: 'up' | 'down') => void;
 }
@@ -90,17 +91,34 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const addRoom = (buildingId: string, roomName: string) => {
-        const newRoom: Room = { id: `r-${Date.now()}`, name: roomName };
+    const addRoom = (buildingId: string, roomData: Omit<Room, 'id'>) => {
+        const newRoom: Room = { id: `r-${Date.now()}`, ...roomData };
         setBuildings(prev => prev.map(b => 
             b.id === buildingId ? { ...b, rooms: [...b.rooms, newRoom] } : b
         ));
         setItemsByRoom(prev => ({ ...prev, [newRoom.id]: [] }));
+        toast({ title: "Sala Adicionada", description: `A sala "${newRoom.name}" foi criada.` });
+    };
+    
+    const updateRoom = (buildingId: string, updatedRoom: Room) => {
+        setBuildings(prev => prev.map(b => {
+            if (b.id !== buildingId) return b;
+            const newRooms = b.rooms.map(r => r.id === updatedRoom.id ? updatedRoom : r);
+            return { ...b, rooms: newRooms };
+        }));
+        toast({
+            title: "Sala atualizada",
+            description: `A sala "${updatedRoom.name}" foi salva com sucesso.`,
+        });
     };
 
     const deleteRoom = (buildingId: string, roomId: string) => {
+        let roomName = '';
         setBuildings(prev => prev.map(b => {
             if (b.id !== buildingId) return b;
+            const roomToDelete = b.rooms.find(r => r.id === roomId);
+            if (roomToDelete) roomName = roomToDelete.name;
+
             const newRooms = b.rooms.filter(r => r.id !== roomId);
             if (selectedRoomId === roomId) {
                 setSelectedRoomId(newRooms[0]?.id || null);
@@ -113,6 +131,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             delete newItems[roomId];
             return newItems;
         });
+        toast({ variant: "destructive", title: "Sala Excluída", description: `A sala "${roomName}" foi excluída.` });
     };
 
     const reorderRooms = (buildingId: string, roomId: string, direction: 'up' | 'down') => {
@@ -139,7 +158,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     return (
-        <InfraContext.Provider value={{ buildings, itemsByRoom, selectedBuildingId, selectedRoomId, setSelectedBuildingId, setSelectedRoomId, updateItemsForRoom, approveItem, addRoom, deleteRoom, reorderRooms }}>
+        <InfraContext.Provider value={{ buildings, itemsByRoom, selectedBuildingId, selectedRoomId, setSelectedBuildingId, setSelectedRoomId, updateItemsForRoom, approveItem, addRoom, updateRoom, deleteRoom, reorderRooms }}>
             {children}
         </InfraContext.Provider>
     );
