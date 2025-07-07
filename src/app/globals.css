@@ -69,4 +69,24 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  .print-visible {
+      display: none;
+  }
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-hidden {
+    display: none;
+  }
+  .print-visible {
+    display: block;
+  }
+   @page {
+      size: A2 landscape;
+      margin: 0;
+    }
 }
