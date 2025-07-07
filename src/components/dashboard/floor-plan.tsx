@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
-import { useDatacenter } from './datacenter-switcher';
+import { DatacenterSwitcher, useDatacenter } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
