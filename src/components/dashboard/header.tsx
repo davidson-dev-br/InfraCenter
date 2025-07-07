@@ -17,7 +17,7 @@ const navItems = [
 ]
 
 export function Header() {
-  const { selectedDatacenter, setSelectedDatacenter, itemsByDatacenter, approveItem } = useDatacenter();
+  const { itemsByDatacenter, approveItem } = useDatacenter();
   const allItems = Object.values(itemsByDatacenter).flat();
   const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
   
@@ -32,7 +32,7 @@ export function Header() {
             <Badge variant="secondary">v3.2.6</Badge>
         </div>
         
-        <DatacenterSwitcher selected={selectedDatacenter} onSelectedChange={setSelectedDatacenter} />
+        <DatacenterSwitcher />
 
         <div className="flex items-center gap-2 ml-auto">
             <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>

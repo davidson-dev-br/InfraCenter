@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
-import { DatacenterSwitcher, useDatacenter } from './datacenter-switcher';
+import { useDatacenter } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
@@ -22,17 +22,11 @@ export function FloorPlan() {
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const floorPlanRef = useRef<HTMLDivElement>(null);
     const { 
-        selectedDatacenter, 
-        setSelectedDatacenter,
+        selectedDatacenter,
         itemsByDatacenter,
         updateItemsForDatacenter
     } = useDatacenter();
     const { toast } = useToast();
-    
-    const items = itemsByDatacenter[selectedDatacenter.value] || [];
-    const setItemsForCurrentDatacenter = (newItems: PlacedItem[]) => {
-        updateItemsForDatacenter(selectedDatacenter.value, newItems);
-    };
     
     const getItemDimensions = useCallback((item: PlacedItem) => {
         return {
@@ -40,6 +34,13 @@ export function FloorPlan() {
             length: Math.max(1, Math.round((item.length || TILE_SIZE_M) / TILE_SIZE_M)),
         };
     }, []);
+    
+    const items = selectedDatacenter ? itemsByDatacenter[selectedDatacenter.value] || [] : [];
+    const setItemsForCurrentDatacenter = (newItems: PlacedItem[]) => {
+        if (selectedDatacenter) {
+            updateItemsForDatacenter(selectedDatacenter.value, newItems);
+        }
+    };
 
     const checkCollision = useCallback((testItem: PlacedItem, allItems: PlacedItem[]) => {
         const testDim = getItemDimensions(testItem);
@@ -187,11 +188,30 @@ export function FloorPlan() {
         setEditingItem(null);
     }, [selectedDatacenter]);
 
+    if (!selectedDatacenter) {
+        return (
+            <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
+                        <p className="text-muted-foreground">Adicione ou selecione uma sala para começar.</p>
+                    </div>
+                     <div className="flex flex-wrap items-center gap-2">
+                        <ManageRoomsDialog><Button variant="outline"><Settings className="mr-2" /> Gerenciar Salas</Button></ManageRoomsDialog>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center flex-grow p-4 border-2 border-dashed rounded-lg bg-card/50">
+                    <p className="text-muted-foreground">Nenhuma sala selecionada. Crie uma em "Gerenciar Salas".</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col h-full gap-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
+                    <h1 className="text-2xl font-bold font-headline">Planta Baixa: {selectedDatacenter.label}</h1>
                     <p className="text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -199,7 +219,6 @@ export function FloorPlan() {
                     <Slider value={[zoom]} onValueChange={([val]) => setZoom(val)} max={2} min={0.2} step={0.1} className="w-32" />
                     <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
                     <Button variant="outline" size="icon"><Maximize /></Button>
-                    <DatacenterSwitcher selected={selectedDatacenter} onSelectedChange={setSelectedDatacenter} />
                     <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
                     <Button onClick={handleAddItem}><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline"><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
