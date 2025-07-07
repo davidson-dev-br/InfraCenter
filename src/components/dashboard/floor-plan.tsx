@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
 import { DatacenterSwitcher } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
+import { ManageRoomsDialog } from './manage-rooms-dialog';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 80;
@@ -88,7 +89,9 @@ export function FloorPlan() {
                     <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
                     <Button variant="outline" size="icon"><Maximize /></Button>
                     <DatacenterSwitcher />
-                    <Button variant="outline" size="icon"><Settings /></Button>
+                    <ManageRoomsDialog>
+                        <Button variant="outline" size="icon"><Settings /></Button>
+                    </ManageRoomsDialog>
                     <Button><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline"><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
                 </div>
@@ -160,4 +163,3 @@ export function FloorPlan() {
         </div>
     );
 }
-
