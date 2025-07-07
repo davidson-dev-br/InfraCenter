@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { PlacedItem, Building as BuildingType, Room } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
     { id: 'b1', name: 'Datacenter Principal', rooms: [
@@ -65,6 +66,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [itemsByRoom, setItemsByRoom] = React.useState<Record<string, PlacedItem[]>>(initialItemsByRoom);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
+    const { toast } = useToast();
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
@@ -129,6 +131,11 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             }
             return { ...b, rooms: newRooms };
         }));
+        
+        toast({
+            title: "Ordem das salas atualizada",
+            description: "A nova ordem foi salva.",
+        });
     };
     
     return (
