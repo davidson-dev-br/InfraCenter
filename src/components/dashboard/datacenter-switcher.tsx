@@ -17,15 +17,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const datacenters = [
+export const datacenters = [
   { value: "dc1", label: "US-East-1" },
   { value: "dc2", label: "EU-West-2" },
   { value: "dc3", label: "AP-South-1" },
 ];
 
-export function DatacenterSwitcher() {
+export type DatacenterOption = typeof datacenters[number];
+
+type DatacenterSwitcherProps = {
+  selected: DatacenterOption;
+  onSelectedChange: (selected: DatacenterOption) => void;
+}
+
+export function DatacenterSwitcher({ selected, onSelectedChange }: DatacenterSwitcherProps) {
   const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState(datacenters[0]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -34,7 +40,7 @@ export function DatacenterSwitcher() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="justify-between"
+          className="justify-between w-[200px]"
         >
           <Building className="w-4 h-4 mr-2" />
           {selected.label}
@@ -51,7 +57,7 @@ export function DatacenterSwitcher() {
                 <CommandItem
                   key={dc.value}
                   onSelect={() => {
-                    setSelected(dc);
+                    onSelectedChange(dc);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
