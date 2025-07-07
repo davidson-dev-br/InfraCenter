@@ -10,6 +10,7 @@ import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { RoomSwitcher } from './room-switcher';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 80;
@@ -214,17 +215,25 @@ export function FloorPlan() {
 
     return (
         <div className="flex flex-col h-full gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-headline">Planta Baixa: {selectedBuilding.name} - {selectedRoom.name}</h1>
+                    <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
                     <p className="text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.max(0.2, z - 0.1))}><ZoomOut /></Button>
                     <Slider value={[zoom]} onValueChange={([val]) => setZoom(val)} max={2} min={0.2} step={0.1} className="w-32" />
                     <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
                     <Button variant="outline" size="icon"><Maximize /></Button>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 py-4 border-t">
+                <div className="flex items-center gap-2">
+                    <RoomSwitcher />
                     <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
+                </div>
+                <div className="flex items-center gap-2">
                     <Button onClick={handleAddItem}><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline"><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
                 </div>

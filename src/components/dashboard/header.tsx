@@ -15,23 +15,17 @@ export function Header() {
   const { 
     itemsByRoom,
     approveItem,
-    buildings,
-    selectedBuildingId,
-    selectedRoomId,
-    setSelectedRoomId 
   } = useInfra();
   
   const allItems = Object.values(itemsByRoom).flat();
   const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
   
-  const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
-  const roomNavItems = selectedBuilding?.rooms || [];
-
-  const otherNavItems = [
+  const navItems = [
+    { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid },
     { name: "Equipamentos", href: "/dashboard/admin", icon: Server },
     { name: "Conexões", href: "#", icon: Spline },
     { name: "Relatórios", href: "#", icon: FileText },
-  ]
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
@@ -61,21 +55,7 @@ export function Header() {
       <Separator />
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
         <nav className="flex items-center gap-1 -mb-px">
-            {roomNavItems.map((item) => (
-                <button
-                    key={item.id}
-                    onClick={() => setSelectedRoomId(item.id)}
-                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md transition-colors ${
-                        pathname === '/dashboard' && item.id === selectedRoomId
-                        ? 'border-b-2 border-primary text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    <LayoutGrid className="w-4 h-4" />
-                    {item.name}
-                </button>
-            ))}
-             {otherNavItems.map((item) => (
+            {navItems.map((item) => (
                 <Link
                     key={item.name}
                     href={item.href}
