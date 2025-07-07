@@ -34,7 +34,7 @@ export function DatacenterSwitcher() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="justify-between"
         >
           <Building className="w-4 h-4 mr-2" />
           {selected.label}

@@ -2,9 +2,12 @@ import type { LucideIcon } from "lucide-react";
 
 export interface PlacedItem {
   id: string;
+  name: string;
   type: string;
   icon: LucideIcon;
-  gridPos: { x: number; y: number };
+  x: number;
+  y: number;
+  notifications?: number;
 }
 
 export interface Datacenter {
