@@ -53,11 +53,17 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDe
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     if (item) {
-        // In a real app, you would add validation here.
         onSave({ ...item, ...formData });
     }
     onOpenChange(false);
   };
+
+  const handleApprove = () => {
+    if (item) {
+      onSave({ ...item, ...formData, awaitingApproval: false });
+      onOpenChange(false);
+    }
+  }
 
   if (!item) return null;
 
@@ -130,9 +136,11 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDe
             <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between sm:w-full">
                 <Button variant="destructive" type="button" className="sm:mr-auto"><Trash2 className="mr-2 h-4 w-4"/> Mover para Lixeira</Button>
                 <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                    <Button variant="default" className="text-white bg-green-600 hover:bg-green-700" type="button">
-                        <CheckCircle2 className="mr-2 h-4 w-4"/> Aprovar
-                    </Button>
+                    {formData.awaitingApproval && (
+                      <Button variant="default" className="text-white bg-green-600 hover:bg-green-700" type="button" onClick={handleApprove}>
+                          <CheckCircle2 className="mr-2 h-4 w-4"/> Aprovar
+                      </Button>
+                    )}
                     <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancelar</Button>
                     <Button type="submit">Salvar Alterações</Button>
                 </div>

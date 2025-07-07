@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Filter, LayoutGrid, Server, Spline, FileText } from "lucide-react";
+import { Building2, Bell, LayoutGrid, Server, Spline, FileText } from "lucide-react";
 import { DatacenterSwitcher, useDatacenter } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
+import { ApprovalCenterDialog } from "./approval-center-dialog";
 
 const navItems = [
     { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid, current: true },
@@ -16,7 +17,9 @@ const navItems = [
 ]
 
 export function Header() {
-  const { selectedDatacenter, setSelectedDatacenter } = useDatacenter();
+  const { selectedDatacenter, setSelectedDatacenter, itemsByDatacenter, approveItem } = useDatacenter();
+  const allItems = Object.values(itemsByDatacenter).flat();
+  const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
   
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
@@ -32,10 +35,14 @@ export function Header() {
         <DatacenterSwitcher selected={selectedDatacenter} onSelectedChange={setSelectedDatacenter} />
 
         <div className="flex items-center gap-2 ml-auto">
-            <Button variant="ghost" size="icon" className="relative">
-                <Filter className="w-5 h-5"/>
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">4</span>
-            </Button>
+            <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+              <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="w-5 h-5"/>
+                  {pendingApprovalCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">{pendingApprovalCount}</span>
+                  )}
+              </Button>
+            </ApprovalCenterDialog>
             <UserNav />
         </div>
       </div>

@@ -2,10 +2,10 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
-import { DatacenterSwitcher, datacenters, type DatacenterOption, useDatacenter } from './datacenter-switcher';
+import { useDatacenter } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
@@ -15,36 +15,23 @@ const GRID_SIZE = 20;
 const CELL_SIZE = 80;
 const TILE_SIZE_M = 0.6; // Represents a 60cm x 60cm tile
 
-// In a real app, this would come from an API, keyed by datacenter/room ID
-const initialItemsByDatacenter: Record<string, PlacedItem[]> = {
-    'dc1': [
-        { id: 'rack-3', name: 'Rack-3', type: 'Server Rack', icon: Server, notifications: 1, x: 1, y: 0, status: 'Ativo', width: 0.6, length: 0.6, sizeU: 42, row: 'A', observations: 'Rack principal.', awaitingApproval: true },
-        { id: 'rack-2', name: 'Rack-02', type: 'Server Rack', icon: Server, notifications: 0, x: 7, y: 2, status: 'Ativo', width: 0.6, length: 1.2, sizeU: 42, row: 'B', observations: '' },
-        { id: 'rack-0', name: 'Rack-00', type: 'Server Rack', icon: Server, notifications: 1, x: 8, y: 2, status: 'Manutenção', width: 0.8, length: 0.8, sizeU: 48, row: 'B', observations: 'Verificar fonte de energia.' },
-    ],
-    'dc2': [
-        { id: 'rack-eu-1', name: 'EU Rack 1', type: 'Server Rack', icon: Server, notifications: 0, x: 3, y: 4, status: 'Ativo', width: 0.6, length: 0.6, sizeU: 42, row: 'C', observations: '' },
-    ],
-    'dc3': [],
-}
-
 export function FloorPlan() {
     const [zoom, setZoom] = useState(1);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const floorPlanRef = useRef<HTMLDivElement>(null);
-    const { selectedDatacenter, setSelectedDatacenter } = useDatacenter();
+    const { 
+        selectedDatacenter, 
+        setSelectedDatacenter,
+        itemsByDatacenter,
+        updateItemsForDatacenter
+    } = useDatacenter();
     const { toast } = useToast();
     
-    const [itemsByDatacenter, setItemsByDatacenter] = useState<Record<string, PlacedItem[]>>(initialItemsByDatacenter);
-
     const items = itemsByDatacenter[selectedDatacenter.value] || [];
     const setItemsForCurrentDatacenter = (newItems: PlacedItem[]) => {
-        setItemsByDatacenter(prev => ({
-            ...prev,
-            [selectedDatacenter.value]: newItems,
-        }));
+        updateItemsForDatacenter(selectedDatacenter.value, newItems);
     };
     
     const getItemDimensions = useCallback((item: PlacedItem) => {
@@ -165,9 +152,12 @@ export function FloorPlan() {
         const newRackNumber = (items.filter(i => i.type === 'Server Rack').length) + 1;
         const newItem: PlacedItem = {
             id: newItemId, name: `Rack-${String(newRackNumber).padStart(2, '0')}`,
-            type: 'Server Rack', icon: Server, notifications: 0,
+            type: 'Server Rack', icon: Server,
             x: newX, y: newY, status: 'Ativo', width: TILE_SIZE_M, length: TILE_SIZE_M,
-            sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', awaitingApproval: true
+            sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', 
+            awaitingApproval: true,
+            createdBy: "Admin User", // Mock user
+            createdAt: new Date().toLocaleDateString('pt-BR')
         };
         
         setItemsForCurrentDatacenter([...items, newItem]);
@@ -186,7 +176,8 @@ export function FloorPlan() {
             return;
         }
 
-        setItemsForCurrentDatacenter(items.map(item => item.id === updatedItem.id ? updatedItem : item));
+        const newItems = items.map(item => item.id === updatedItem.id ? updatedItem : item);
+        setItemsForCurrentDatacenter(newItems);
         setEditingItem(null);
         toast({ title: "Item Salvo", description: `O item "${updatedItem.name}" foi atualizado com sucesso.` });
     };
@@ -256,7 +247,7 @@ export function FloorPlan() {
                                     >
                                         <item.icon className="w-6 h-6 mb-1"/>
                                         <p className="text-xs font-bold truncate">{item.name}</p>
-                                        {item.notifications > 0 && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800">{item.notifications}</div>}
+                                        {item.awaitingApproval && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800"><Clock className="w-3 h-3"/></div>}
                                     </div>
                                 </div>
                             );

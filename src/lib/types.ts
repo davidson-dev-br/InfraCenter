@@ -7,7 +7,6 @@ export interface PlacedItem {
   icon: LucideIcon;
   x: number;
   y: number;
-  notifications?: number;
   status?: 'Ativo' | 'Inativo' | 'Manutenção';
   width?: number;
   length?: number;
@@ -15,6 +14,9 @@ export interface PlacedItem {
   row?: string;
   observations?: string;
   awaitingApproval?: boolean;
+  awaitingDeletion?: boolean;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface Datacenter {
