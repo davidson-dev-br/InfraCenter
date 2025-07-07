@@ -8,15 +8,16 @@ import { Slider } from "@/components/ui/slider"
 import { DatacenterSwitcher } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
+import { ItemDetailsDialog } from './item-details-dialog';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 80;
 
 // In a real app, this would come from an API
 const initialItems: PlacedItem[] = [
-    { id: 'rack-3', name: 'Rack-3', type: 'Server Rack', icon: Server, notifications: 1, x: 1, y: 0 },
-    { id: 'rack-2', name: 'Rack-02', type: 'Server Rack', icon: Server, notifications: 0, x: 7, y: 2 },
-    { id: 'rack-0', name: 'Rack-00', type: 'Server Rack', icon: Server, notifications: 1, x: 8, y: 2 },
+    { id: 'rack-3', name: 'Rack-3', type: 'Server Rack', icon: Server, notifications: 1, x: 1, y: 0, status: 'Ativo', width: 0.6, length: 0.6, sizeU: 42, row: 'A', observations: 'Rack principal.', awaitingApproval: true },
+    { id: 'rack-2', name: 'Rack-02', type: 'Server Rack', icon: Server, notifications: 0, x: 7, y: 2, status: 'Ativo', width: 0.6, length: 0.8, sizeU: 42, row: 'B', observations: '' },
+    { id: 'rack-0', name: 'Rack-00', type: 'Server Rack', icon: Server, notifications: 1, x: 8, y: 2, status: 'Manutenção', width: 0.8, length: 0.8, sizeU: 48, row: 'B', observations: 'Verificar fonte de energia.' },
 ]
 
 export function FloorPlan() {
@@ -26,6 +27,7 @@ export function FloorPlan() {
     );
     const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
     const [draggingItem, setDraggingItem] = useState<{ key: string; item: PlacedItem } | null>(null);
+    const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
 
     const handleCellDrop = (x: number, y: number) => {
         if (!draggingItem) return;
@@ -50,6 +52,10 @@ export function FloorPlan() {
         setSelectedItemKey(key);
     };
 
+    const handleItemDoubleClick = (item: PlacedItem) => {
+        setEditingItem(item);
+    };
+
     const handleDragStart = (e: React.DragEvent, key: string, item: PlacedItem) => {
         e.dataTransfer.effectAllowed = 'move';
         // You can set drag data if needed, but for this simple case, state is enough
@@ -66,6 +72,7 @@ export function FloorPlan() {
             setSelectedItemKey(null);
         } else if (e.key === 'Escape') {
             setSelectedItemKey(null);
+            setEditingItem(null);
         }
     }, [selectedItemKey, items]);
 
@@ -126,6 +133,7 @@ export function FloorPlan() {
                                         <div
                                             key={key}
                                             onClick={(e) => item && handleItemClick(e, key)}
+                                            onDoubleClick={() => item && handleItemDoubleClick(item)}
                                             onDrop={() => handleCellDrop(x, y)}
                                             onDragOver={(e) => e.preventDefault()}
                                             className={cn("border-t border-l flex items-center justify-center p-1", draggingItem && !item ? "bg-accent/20" : "")}
@@ -160,6 +168,16 @@ export function FloorPlan() {
             </div>
             
             <p className="text-sm text-center text-muted-foreground">* Dê um clique duplo em um item para editar. Clique e arraste para mover. Pressione 'Delete' para remover o item selecionado.</p>
+
+            <ItemDetailsDialog 
+                item={editingItem} 
+                isOpen={!!editingItem} 
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setEditingItem(null);
+                    }
+                }}
+            />
         </div>
     );
 }

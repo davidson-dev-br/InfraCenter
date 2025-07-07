@@ -8,6 +8,13 @@ export interface PlacedItem {
   x: number;
   y: number;
   notifications?: number;
+  status?: 'Ativo' | 'Inativo' | 'Manutenção';
+  width?: number;
+  length?: number;
+  sizeU?: number;
+  row?: string;
+  observations?: string;
+  awaitingApproval?: boolean;
 }
 
 export interface Datacenter {
