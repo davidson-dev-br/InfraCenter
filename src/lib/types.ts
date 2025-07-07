@@ -19,6 +19,19 @@ export interface PlacedItem {
   createdAt?: string;
 }
 
+// For the main dashboard infrastructure
+export interface Room {
+  id: string;
+  name: string;
+}
+
+export interface Building {
+  id: string;
+  name: string;
+  rooms: Room[];
+}
+
+// For the admin page (separate mock data)
 export interface Datacenter {
   id: string;
   name: string;

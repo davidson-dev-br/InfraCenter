@@ -1,26 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Building2, Bell, LayoutGrid, Server, Spline, FileText } from "lucide-react";
-import { DatacenterSwitcher, useDatacenter } from "./datacenter-switcher";
+import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { ApprovalCenterDialog } from "./approval-center-dialog";
 
-const navItems = [
-    { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid, current: true },
-    { name: "Equipamentos", href: "/dashboard/admin", icon: Server, current: false },
-    { name: "Conexões", href: "#", icon: Spline, current: false },
-    { name: "Relatórios", href: "#", icon: FileText, current: false },
-]
-
 export function Header() {
-  const { itemsByDatacenter, approveItem } = useDatacenter();
-  const allItems = Object.values(itemsByDatacenter).flat();
+  const pathname = usePathname();
+  const { 
+    itemsByRoom,
+    approveItem,
+    buildings,
+    selectedBuildingId,
+    selectedRoomId,
+    setSelectedRoomId 
+  } = useInfra();
+  
+  const allItems = Object.values(itemsByRoom).flat();
   const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
   
+  const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+  const roomNavItems = selectedBuilding?.rooms || [];
+
+  const otherNavItems = [
+    { name: "Equipamentos", href: "/dashboard/admin", icon: Server },
+    { name: "Conexões", href: "#", icon: Spline },
+    { name: "Relatórios", href: "#", icon: FileText },
+  ]
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container flex items-center h-16 px-4 mx-auto sm:px-6 lg:px-8">
@@ -49,12 +61,26 @@ export function Header() {
       <Separator />
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
         <nav className="flex items-center gap-1 -mb-px">
-            {navItems.map((item) => (
+            {roomNavItems.map((item) => (
+                <button
+                    key={item.id}
+                    onClick={() => setSelectedRoomId(item.id)}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md transition-colors ${
+                        pathname === '/dashboard' && item.id === selectedRoomId
+                        ? 'border-b-2 border-primary text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                    <LayoutGrid className="w-4 h-4" />
+                    {item.name}
+                </button>
+            ))}
+             {otherNavItems.map((item) => (
                 <Link
                     key={item.name}
                     href={item.href}
                     className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md transition-colors ${
-                        item.current
+                        pathname === item.href
                         ? 'border-b-2 border-primary text-primary'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}

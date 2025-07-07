@@ -14,16 +14,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useDatacenter } from './datacenter-switcher';
+import { useInfra } from './datacenter-switcher';
 
 export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
-    const { datacenters, addDatacenter, deleteDatacenter, reorderDatacenters } = useDatacenter();
+    const { buildings, selectedBuildingId, addRoom, deleteRoom, reorderRooms } = useInfra();
     const [newRoomName, setNewRoomName] = useState('');
+
+    const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+    const rooms = selectedBuilding?.rooms || [];
 
     const handleAddRoom = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newRoomName.trim()) {
-            addDatacenter(newRoomName.trim());
+        if (newRoomName.trim() && selectedBuildingId) {
+            addRoom(selectedBuildingId, newRoomName.trim());
             setNewRoomName('');
         }
     };
@@ -35,7 +38,7 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle className="text-2xl font-bold">Gerenciar Salas</DialogTitle>
                     <DialogDescription>
-                        Adicione, edite, exclua ou reordene as salas do seu datacenter.
+                        Adicione, exclua ou reordene as salas do prédio selecionado.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 pt-0">
@@ -52,6 +55,7 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
                                         value={newRoomName}
                                         onChange={(e) => setNewRoomName(e.target.value)}
                                         placeholder="Ex: Sala de Baterias"
+                                        disabled={!selectedBuilding}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -76,13 +80,15 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
                                 </div>
                             </div>
                             <div className="flex-grow"></div>
-                            <Button type="submit">Salvar Sala</Button>
+                            <Button type="submit" disabled={!selectedBuilding || !newRoomName.trim()}>Salvar Sala</Button>
                         </form>
                     </div>
 
                     {/* Existing Rooms Section */}
                     <div className="space-y-4 pt-2">
-                        <h3 className="text-lg font-semibold">Salas Existentes</h3>
+                        <h3 className="text-lg font-semibold">
+                            Salas Existentes em: {selectedBuilding ? `"${selectedBuilding.name}"` : '(Nenhum prédio selecionado)'}
+                        </h3>
                         <div className="p-3 border rounded-lg bg-secondary/20">
                             <div className="grid grid-cols-[60px_1fr_auto] items-center gap-4 px-2 pb-2 text-sm font-medium text-muted-foreground">
                                 <div>Ordem</div>
@@ -91,23 +97,27 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
                             </div>
                             <ScrollArea className="h-48">
                                 <div className="space-y-2 pr-3">
-                                    {datacenters.map((room, index) => (
-                                        <div key={room.value} className="grid grid-cols-[60px_1fr_auto] items-center gap-4 px-2 py-1 rounded-md bg-background">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => reorderDatacenters(room.value, 'up')} disabled={index === 0}>
-                                                    <ArrowUp className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => reorderDatacenters(room.value, 'down')} disabled={index === datacenters.length - 1}>
-                                                    <ArrowDown className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                            <div className="font-medium truncate">{room.label}</div>
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" className="h-8 px-4" disabled>Editar</Button>
-                                                <Button variant="destructive" size="sm" className="h-8 px-4" onClick={() => deleteDatacenter(room.value)}>Excluir</Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    {!selectedBuilding ? (
+                                        <div className="flex items-center justify-center h-full text-muted-foreground">Selecione um prédio</div>
+                                    ) : (
+                                      rooms.map((room, index) => (
+                                          <div key={room.id} className="grid grid-cols-[60px_1fr_auto] items-center gap-4 px-2 py-1 rounded-md bg-background">
+                                              <div className="flex items-center justify-center gap-1">
+                                                  <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => reorderRooms(selectedBuilding.id, room.id, 'up')} disabled={index === 0}>
+                                                      <ArrowUp className="w-4 h-4" />
+                                                  </Button>
+                                                  <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => reorderRooms(selectedBuilding.id, room.id, 'down')} disabled={index === rooms.length - 1}>
+                                                      <ArrowDown className="w-4 h-4" />
+                                                  </Button>
+                                              </div>
+                                              <div className="font-medium truncate">{room.name}</div>
+                                              <div className="flex justify-end gap-2">
+                                                  <Button variant="outline" size="sm" className="h-8 px-4" disabled>Editar</Button>
+                                                  <Button variant="destructive" size="sm" className="h-8 px-4" onClick={() => deleteRoom(selectedBuilding.id, room.id)}>Excluir</Button>
+                                              </div>
+                                          </div>
+                                      ))
+                                    )}
                                 </div>
                             </ScrollArea>
                         </div>

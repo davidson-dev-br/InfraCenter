@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider"
-import { useDatacenter } from './datacenter-switcher';
+import { useInfra } from './datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
 import { ManageRoomsDialog } from './manage-rooms-dialog';
 import { ItemDetailsDialog } from './item-details-dialog';
@@ -22,12 +22,17 @@ export function FloorPlan() {
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const floorPlanRef = useRef<HTMLDivElement>(null);
     const { 
-        selectedDatacenter,
-        itemsByDatacenter,
-        updateItemsForDatacenter
-    } = useDatacenter();
+        buildings,
+        selectedBuildingId,
+        selectedRoomId,
+        itemsByRoom,
+        updateItemsForRoom
+    } = useInfra();
     const { toast } = useToast();
     
+    const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+    const selectedRoom = selectedBuilding?.rooms.find(r => r.id === selectedRoomId);
+
     const getItemDimensions = useCallback((item: PlacedItem) => {
         return {
             width: Math.max(1, Math.round((item.width || TILE_SIZE_M) / TILE_SIZE_M)),
@@ -35,10 +40,10 @@ export function FloorPlan() {
         };
     }, []);
     
-    const items = selectedDatacenter ? itemsByDatacenter[selectedDatacenter.value] || [] : [];
-    const setItemsForCurrentDatacenter = (newItems: PlacedItem[]) => {
-        if (selectedDatacenter) {
-            updateItemsForDatacenter(selectedDatacenter.value, newItems);
+    const items = selectedRoomId ? itemsByRoom[selectedRoomId] || [] : [];
+    const setItemsForCurrentRoom = (newItems: PlacedItem[]) => {
+        if (selectedRoomId) {
+            updateItemsForRoom(selectedRoomId, newItems);
         }
     };
 
@@ -94,7 +99,7 @@ export function FloorPlan() {
 
         const newItems = [...items];
         newItems[itemIndex] = itemToMove;
-        setItemsForCurrentDatacenter(newItems);
+        setItemsForCurrentRoom(newItems);
         setSelectedItemId(itemToMove.id);
         setDraggingItemId(null);
     };
@@ -116,13 +121,13 @@ export function FloorPlan() {
     
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Delete' && selectedItemId) {
-            setItemsForCurrentDatacenter(items.filter(item => item.id !== selectedItemId));
+            setItemsForCurrentRoom(items.filter(item => item.id !== selectedItemId));
             setSelectedItemId(null);
         } else if (e.key === 'Escape') {
             setSelectedItemId(null);
             setEditingItem(null);
         }
-    }, [selectedItemId, items, setItemsForCurrentDatacenter]);
+    }, [selectedItemId, items, setItemsForCurrentRoom]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
@@ -161,7 +166,7 @@ export function FloorPlan() {
             createdAt: new Date().toLocaleDateString('pt-BR')
         };
         
-        setItemsForCurrentDatacenter([...items, newItem]);
+        setItemsForCurrentRoom([...items, newItem]);
         setSelectedItemId(newItem.id);
     };
 
@@ -178,7 +183,7 @@ export function FloorPlan() {
         }
 
         const newItems = items.map(item => item.id === updatedItem.id ? updatedItem : item);
-        setItemsForCurrentDatacenter(newItems);
+        setItemsForCurrentRoom(newItems);
         setEditingItem(null);
         toast({ title: "Item Salvo", description: `O item "${updatedItem.name}" foi atualizado com sucesso.` });
     };
@@ -186,22 +191,22 @@ export function FloorPlan() {
     useEffect(() => {
         setSelectedItemId(null);
         setEditingItem(null);
-    }, [selectedDatacenter]);
+    }, [selectedBuildingId, selectedRoomId]);
 
-    if (!selectedDatacenter) {
+    if (!selectedBuilding || !selectedRoom) {
         return (
             <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
-                        <p className="text-muted-foreground">Adicione ou selecione uma sala para começar.</p>
+                        <p className="text-muted-foreground">Selecione um prédio e uma sala para começar.</p>
                     </div>
                      <div className="flex flex-wrap items-center gap-2">
                         <ManageRoomsDialog><Button variant="outline"><Settings className="mr-2" /> Gerenciar Salas</Button></ManageRoomsDialog>
                     </div>
                 </div>
                 <div className="flex items-center justify-center flex-grow p-4 border-2 border-dashed rounded-lg bg-card/50">
-                    <p className="text-muted-foreground">Nenhuma sala selecionada. Crie uma em "Gerenciar Salas".</p>
+                    <p className="text-muted-foreground">Nenhum prédio ou sala selecionada.</p>
                 </div>
             </div>
         )
@@ -211,7 +216,7 @@ export function FloorPlan() {
         <div className="flex flex-col h-full gap-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-headline">Planta Baixa: {selectedDatacenter.label}</h1>
+                    <h1 className="text-2xl font-bold font-headline">Planta Baixa: {selectedBuilding.name} - {selectedRoom.name}</h1>
                     <p className="text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
