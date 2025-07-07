@@ -4,13 +4,14 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useInfra } from '../components/dashboard/datacenter-switcher';
+import { useInfra } from '@/components/dashboard/datacenter-switcher';
 import type { PlacedItem } from '@/lib/types';
-import { ManageRoomsDialog } from '../components/dashboard/manage-rooms-dialog';
-import { ItemDetailsDialog } from '../components/dashboard/item-details-dialog';
+import { ManageRoomsDialog } from '@/components/dashboard/manage-rooms-dialog';
+import { ItemDetailsDialog } from '@/components/dashboard/item-details-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { RoomSwitcher } from '../components/dashboard/room-switcher';
-import { PrintableLayout } from '../components/dashboard/printable-layout';
+import { RoomSwitcher } from '@/components/dashboard/room-switcher';
+import { PrintableLayout } from '@/components/dashboard/printable-layout';
+import { Slider } from '@/components/ui/slider';
 
 const CELL_SIZE = 80; // Visual size of a grid cell in pixels
 
@@ -273,7 +274,7 @@ export function FloorPlan() {
                 onMouseLeave={handleMouseUp}
             >
                 <div className="relative" style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left', width: `${(GRID_COLS * CELL_SIZE) + 40}px`, height: `${(GRID_ROWS * CELL_SIZE) + 30}px` }}>
-                    <div className="grid" style={{ gridTemplateColumns: `40px repeat(${GRID_COLS}, ${CELL_SIZE}px)`, gridTemplateRows: `30px repeat(${GRID_ROWS}, ${CELL_SIZE}px)` }}>
+                    <div className="grid border-r border-b" style={{ gridTemplateColumns: `40px repeat(${GRID_COLS}, ${CELL_SIZE}px)`, gridTemplateRows: `30px repeat(${GRID_ROWS}, ${CELL_SIZE}px)` }}>
                         {/* Headers & Grid Cells */}
                         <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-20 bg-card"></div>
                         {Array.from({ length: GRID_COLS }).map((_, i) => <div key={`col-${i}`} style={{ gridColumn: i + 2, gridRow: 1 }} className="sticky top-0 z-10 flex items-center justify-center font-semibold bg-card text-muted-foreground">{String.fromCharCode(65 + i)}</div>)}
