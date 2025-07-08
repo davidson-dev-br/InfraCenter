@@ -116,7 +116,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? 'Editar Usuário' : 'Adicionar Usuário'}</DialogTitle>
                         <DialogDescription>
-                            {isEditMode ? "Faça alterações no perfil do usuário." : "Preencha os dados para criar um novo usuário."}
+                            {isEditMode ? "Faça alterações no perfil do usuário." : "Preencha os dados para criar um novo usuário. A criação de usuários é de responsabilidade dos gerentes de projeto."}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
