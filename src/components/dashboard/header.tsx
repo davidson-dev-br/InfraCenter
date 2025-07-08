@@ -21,7 +21,6 @@ import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Separator } from "../ui/separator";
 import { ApprovalCenterDialog } from "./approval-center-dialog";
 import {
   DropdownMenu,
@@ -31,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function Header() {
   const pathname = usePathname();
@@ -52,7 +52,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
       <div className="container flex items-center h-16 px-4 mx-auto sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 mr-4">
+        <div className="flex items-center gap-2 mr-6">
             <Building2 className="w-6 h-6 text-primary" />
             <span className="text-lg font-bold sm:inline-block font-headline">
                 InfraCenter Manager
@@ -64,6 +64,24 @@ export function Header() {
             <span className="hidden text-sm font-medium sm:inline text-muted-foreground">Prédio:</span>
             <DatacenterSwitcher />
         </div>
+
+        <nav className="items-center hidden gap-2 mx-auto lg:flex">
+            {navItems.map((item) => (
+                <Link
+                    key={item.name}
+                    href={item.href}
+                    data-state={pathname === item.href ? 'active' : 'inactive'}
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md transition-colors",
+                        "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    )}
+                >
+                    <item.icon className="w-4 h-4" />
+                    {item.name}
+                </Link>
+            ))}
+        </nav>
 
         <div className="flex items-center gap-2 ml-auto">
            <DropdownMenu>
@@ -134,25 +152,6 @@ export function Header() {
           </DropdownMenu>
           <UserNav />
         </div>
-      </div>
-      <Separator />
-      <div className="container px-4 mx-auto sm:px-6 lg:px-8">
-        <nav className="flex items-center gap-1 -mb-px">
-            {navItems.map((item) => (
-                <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md transition-colors ${
-                        pathname === item.href
-                        ? 'border-b-2 border-primary text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    <item.icon className="w-4 h-4" />
-                    {item.name}
-                </Link>
-            ))}
-        </nav>
       </div>
     </header>
   );
