@@ -1,7 +1,7 @@
 "use client";
 
 import type { Building, PlacedItem, Room } from "@/lib/types";
-import { Server } from "lucide-react";
+import { Building2, Server } from "lucide-react";
 
 interface PrintableLayoutProps {
     building: Building;
@@ -95,8 +95,9 @@ export function PrintableLayout({ building, room, items, gridCellSize }: Printab
                 <div className="grid grid-cols-[3fr_5fr_4fr] text-[10px] border-t-2 border-black leading-tight">
                     <div className="grid grid-rows-[auto_1fr] border-r-2 border-black">
                         <div className="grid grid-cols-[1fr_auto] p-1 border-b border-black">
-                            <div className="flex items-center justify-center w-full h-12 border-r border-black">
-                                <span className="text-xs text-gray-500">[LOGO AQUI]</span>
+                            <div className="flex flex-col items-center justify-center w-full h-12 gap-1 border-r border-black">
+                                <Building2 className="w-5 h-5 text-black" />
+                                <p className="text-[8px] font-bold">TIM BLMSAC</p>
                             </div>
                             <div className="p-1 w-[80px]">
                                 <p><span>Rev.</span></p>
