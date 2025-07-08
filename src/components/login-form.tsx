@@ -33,7 +33,7 @@ export function LoginForm() {
     setError(null);
 
     if (!isFirebaseConfigured || !auth) {
-      setError("A configuração do Firebase não está disponível. Verifique o arquivo .env e reinicie o servidor.");
+      setError("A configuração do Firebase não está disponível. Verifique o arquivo .env.local e reinicie o servidor.");
       setIsLoading(false);
       return;
     }
@@ -71,7 +71,7 @@ export function LoginForm() {
           <Alert variant="destructive">
             <AlertTitle>Ação Necessária</AlertTitle>
             <AlertDescription>
-              Por favor, abra o arquivo <strong>.env</strong> na raiz do projeto, cole as credenciais do seu projeto Firebase e <strong>reinicie o servidor de desenvolvimento</strong>.
+              Por favor, abra o arquivo <strong>.env.local</strong> na raiz do projeto, cole as credenciais do seu projeto Firebase e <strong>reinicie o servidor de desenvolvimento</strong>.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -92,11 +92,6 @@ export function LoginForm() {
       </CardHeader>
       <form onSubmit={handleLogin}>
         <CardContent className="grid gap-4">
-          <div className="p-2 text-xs border rounded-md bg-muted/50 text-muted-foreground">
-            <p className="font-bold">Status da Configuração:</p>
-            <p>ID do Projeto: <span className="font-mono font-bold text-foreground">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "Não Carregado"}</span></p>
-            <p className="mt-1 italic">Se "Não Carregado", reinicie o servidor (Ctrl+C, depois npm run dev).</p>
-          </div>
            {error && (
             <Alert variant="destructive">
               <AlertTitle>Erro de Autenticação</AlertTitle>
