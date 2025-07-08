@@ -44,7 +44,7 @@ export function Header() {
   
   const navItems = [
     { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid },
-    { name: "Equipamentos", href: "/dashboard/admin", icon: Server },
+    { name: "Equipamentos", href: "/dashboard/equipamentos", icon: Server },
     { name: "Conexões", href: "#", icon: Spline },
     { name: "Relatórios", href: "#", icon: FileText },
   ];

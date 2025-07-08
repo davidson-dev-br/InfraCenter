@@ -28,6 +28,17 @@ export interface PlacedItem {
   color?: string;
 }
 
+export interface Equipment {
+  id: string;
+  hostname: string;
+  type: string;
+  parentItemId: string; // ID of the PlacedItem (e.g., a rack)
+  positionU: string; // Can be a single number or a range like "20-29"
+  imageUrl?: string;
+  brand?: string;
+  model?: string;
+}
+
 export interface DeletionLogEntry {
   id: string;
   itemId: string;

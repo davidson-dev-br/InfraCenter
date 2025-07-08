@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -45,6 +45,14 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
     'r2': [],
     'r3': [],
 };
+
+const initialEquipment: Equipment[] = [
+    { id: 'eq-1', hostname: 'SWPSBLM01', type: 'Switch', parentItemId: 'rack-2', positionU: '39', imageUrl: 'https://placehold.co/128x64.png', brand: 'Cisco', model: 'Catalyst 9300' },
+    { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300' },
+    { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325' },
+    { id: 'eq-4', hostname: 'Swblmsac0102', type: 'Switch', parentItemId: 'rack-0', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Dell', model: 'PowerSwitch S4148F-ON' },
+];
+
 
 const initialFloorPlanItemTypes: FloorPlanItemType[] = [
     { id: '1', name: 'Rack', icon: 'Server', defaultWidth: 0.6, defaultLength: 1.2, color: '#334155' },
@@ -83,6 +91,7 @@ const initialDeletionLog: DeletionLogEntry[] = [
 interface InfraContextType {
     buildings: BuildingType[];
     itemsByRoom: Record<string, PlacedItem[]>;
+    equipment: Equipment[];
     floorPlanItemTypes: FloorPlanItemType[];
     selectedBuildingId: string | null;
     selectedRoomId: string | null;
@@ -123,6 +132,10 @@ interface InfraContextType {
     addDatacenterStatus: (statusData: Omit<StatusOption, 'id'>) => void;
     updateDatacenterStatus: (status: StatusOption) => void;
     deleteDatacenterStatus: (id: string) => void;
+
+    addEquipment: (equipmentData: Omit<Equipment, 'id'>) => void;
+    updateEquipment: (updatedEquipment: Equipment) => void;
+    deleteEquipment: (equipmentId: string) => void;
 }
 
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
@@ -130,6 +143,7 @@ const InfraContext = React.createContext<InfraContextType | undefined>(undefined
 export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [buildings, setBuildings] = React.useState<BuildingType[]>(initialBuildings);
     const [itemsByRoom, setItemsByRoom] = React.useState<Record<string, PlacedItem[]>>(initialItemsByRoom);
+    const [equipment, setEquipment] = React.useState<Equipment[]>(initialEquipment);
     const [floorPlanItemTypes, setFloorPlanItemTypes] = React.useState<FloorPlanItemType[]>(initialFloorPlanItemTypes);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
@@ -328,11 +342,30 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         setDatacenterStatuses(prev => prev.filter(item => item.id !== id));
     };
 
+    // Equipment handlers
+    const addEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
+        const newEquipment: Equipment = { id: `eq-${Date.now()}`, ...equipmentData };
+        setEquipment(prev => [newEquipment, ...prev]);
+        toast({ title: "Equipamento Adicionado", description: `O equipamento "${newEquipment.hostname}" foi adicionado com sucesso.` });
+    };
+
+    const updateEquipment = (updatedEquipment: Equipment) => {
+        setEquipment(prev => prev.map(eq => eq.id === updatedEquipment.id ? updatedEquipment : eq));
+        toast({ title: "Equipamento Atualizado", description: `O equipamento "${updatedEquipment.hostname}" foi salvo.` });
+    };
+
+    const deleteEquipment = (equipmentId: string) => {
+        const eqToDelete = equipment.find(eq => eq.id === equipmentId);
+        setEquipment(prev => prev.filter(eq => eq.id !== equipmentId));
+        toast({ variant: "destructive", title: "Equipamento Excluído", description: `O equipamento "${eqToDelete?.hostname}" foi excluído.` });
+    };
+
 
     return (
         <InfraContext.Provider value={{ 
             buildings, 
             itemsByRoom, 
+            equipment,
             floorPlanItemTypes,
             selectedBuildingId, 
             selectedRoomId, 
@@ -365,7 +398,10 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteDeletionReason,
             addDatacenterStatus,
             updateDatacenterStatus,
-            deleteDatacenterStatus
+            deleteDatacenterStatus,
+            addEquipment,
+            updateEquipment,
+            deleteEquipment
          }}>
             {children}
         </InfraContext.Provider>
