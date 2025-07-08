@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { 
   Building2, 
   LayoutGrid, 
@@ -15,7 +16,8 @@ import {
   ClipboardX,
   Building,
   Settings,
-  Code
+  Code,
+  Loader2
 } from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
@@ -39,6 +41,13 @@ export function Header() {
     approveItem
   } = useInfra();
   
+  const [isNavigatingTo, setIsNavigatingTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    // When navigation completes, pathname changes, and we can stop the spinner.
+    setIsNavigatingTo(null);
+  }, [pathname]);
+
   const allItems = Object.values(itemsByRoom).flat();
   const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
   
@@ -48,6 +57,19 @@ export function Header() {
     { name: "Conexões", href: "/dashboard/connections", icon: Spline },
     { name: "Relatórios", href: "#", icon: FileText },
   ];
+
+  const handleNavClick = (href: string) => {
+    if (pathname !== href) {
+        setIsNavigatingTo(href);
+    }
+  };
+
+  const renderIcon = (href: string, Icon: React.ElementType) => {
+      if (isNavigatingTo === href) {
+          return <Loader2 className="w-5 h-5 animate-spin" />;
+      }
+      return <Icon className="w-5 h-5" />;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
@@ -106,8 +128,8 @@ export function Header() {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild className="cursor-pointer">
-                     <Link href="/dashboard/deletion-log">
-                        <ClipboardX />
+                     <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
+                        {renderIcon('/dashboard/deletion-log', ClipboardX)}
                         <span>Log de Exclusões</span>
                     </Link>
                   </DropdownMenuItem>
@@ -115,22 +137,22 @@ export function Header() {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/admin">
-                      <Building />
+                    <Link href="/dashboard/admin" onClick={() => handleNavClick('/dashboard/admin')}>
+                      {renderIcon('/dashboard/admin', Building)}
                       <span>Gerenciar Datacenters</span>
                     </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/settings">
-                      <Settings />
+                    <Link href="/dashboard/settings" onClick={() => handleNavClick('/dashboard/settings')}>
+                      {renderIcon('/dashboard/settings', Settings)}
                       <span>Configurações do Sistema</span>
                     </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/developer">
-                      <Code />
+                    <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
+                      {renderIcon('/dashboard/developer', Code)}
                       <span>Opções do Desenvolvedor</span>
                     </Link>
                   </DropdownMenuItem>
@@ -146,6 +168,7 @@ export function Header() {
                 <Link
                     key={item.name}
                     href={item.href}
+                    onClick={() => handleNavClick(item.href)}
                     data-state={pathname === item.href ? 'active' : 'inactive'}
                     className={cn(
                         "flex items-center gap-2 text-base font-medium transition-colors h-full",
@@ -153,7 +176,7 @@ export function Header() {
                         "data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary"
                     )}
                 >
-                    <item.icon className="w-5 h-5" />
+                    {renderIcon(item.href, item.icon)}
                     <span>{item.name}</span>
                 </Link>
             ))}
