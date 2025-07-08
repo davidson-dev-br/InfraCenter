@@ -1,4 +1,4 @@
-import { Server, AirVent, Network, Cable, Box, Fan, Router, HardDrive, Battery, LucideIcon, Wind, Snowflake, Thermometer, Heater, Power, CircuitBoard, Building } from 'lucide-react';
+import { Server, AirVent, Network, Cable, Box, Fan, Router, HardDrive, Battery, LucideIcon, Wind, Snowflake, Thermometer, Heater, Power, CircuitBoard, Building, Zap } from 'lucide-react';
 
 export const ICON_LIST = {
     Server,
@@ -16,7 +16,8 @@ export const ICON_LIST = {
     Heater,
     Power,
     CircuitBoard,
-    Building
+    Building,
+    Zap
 };
 
 export const ICON_NAMES = Object.keys(ICON_LIST) as (keyof typeof ICON_LIST)[];

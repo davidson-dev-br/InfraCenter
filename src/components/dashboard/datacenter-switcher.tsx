@@ -43,7 +43,7 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
 const initialFloorPlanItemTypes: FloorPlanItemType[] = [
     { id: '1', name: 'Rack', icon: 'Server' },
     { id: '2', name: 'Ar Condicionado', icon: 'AirVent' },
-    { id: '3', name: 'QDF', icon: 'Network' },
+    { id: '3', name: 'QDF', icon: 'Zap' },
     { id: '4', name: 'Patch Panel', icon: 'Cable' },
 ];
 
