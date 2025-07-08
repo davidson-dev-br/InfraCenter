@@ -21,10 +21,11 @@ type DatacentersTableProps = {
 };
 
 export function DatacentersTable({ data }: DatacentersTableProps) {
-  const { deleteBuilding, datacenterStatuses } = useInfra();
+  const { deleteBuilding, systemSettings } = useInfra();
+  const { datacenterStatuses } = systemSettings;
 
   const getStatusColor = (statusName: string) => {
-    return datacenterStatuses.find(s => s.name === statusName)?.color || '#64748b'; // default slate-500
+    return datacenterStatuses?.find(s => s.name === statusName)?.color || '#64748b'; // default slate-500
   }
 
   return (

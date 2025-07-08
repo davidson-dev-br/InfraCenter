@@ -30,7 +30,8 @@ type DatacenterDialogProps = {
 }
 
 export function DatacenterDialog({ children, building }: DatacenterDialogProps) {
-    const { addBuilding, updateBuilding, datacenterStatuses } = useInfra();
+    const { addBuilding, updateBuilding, systemSettings } = useInfra();
+    const { datacenterStatuses } = systemSettings;
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!building;
 
@@ -47,7 +48,7 @@ export function DatacenterDialog({ children, building }: DatacenterDialogProps) 
             } else {
                 setName('');
                 setLocation('');
-                setStatus(datacenterStatuses[0]?.name || 'Online');
+                setStatus(datacenterStatuses?.[0]?.name || 'Online');
             }
         }
     }, [isOpen, building, isEditMode, datacenterStatuses]);
@@ -97,7 +98,7 @@ export function DatacenterDialog({ children, building }: DatacenterDialogProps) 
                                     <SelectValue placeholder="Selecione um status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {datacenterStatuses.map(statusOption => (
+                                    {datacenterStatuses?.map(statusOption => (
                                         <SelectItem key={statusOption.id} value={statusOption.name}>{statusOption.name}</SelectItem>
                                     ))}
                                 </SelectContent>
