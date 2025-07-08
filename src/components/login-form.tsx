@@ -126,6 +126,9 @@ export function LoginForm() {
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading ? <Loader2 className="animate-spin" /> : "Entrar"}
           </Button>
+           <p className="mt-4 text-xs text-center text-muted-foreground">
+            Novos usuários são criados pelos gerentes de projeto.
+          </p>
         </CardFooter>
       </form>
     </Card>
