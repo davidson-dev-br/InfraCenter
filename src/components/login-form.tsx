@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { Building2, Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,14 +27,13 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    if (!auth) {
-      setError("A configuração do Firebase não foi carregada. Verifique o arquivo .env e reinicie o servidor.");
+    if (!isFirebaseConfigured || !auth) {
+      setError("A configuração do Firebase não está disponível. Verifique o arquivo .env e reinicie o servidor.");
       setIsLoading(false);
       return;
     }
@@ -43,7 +42,7 @@ export function LoginForm() {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login bem-sucedido!" });
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: any)      {
       const errorCode = err.code;
       let friendlyMessage = "Ocorreu um erro ao fazer login. Tente novamente.";
       if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
@@ -53,8 +52,32 @@ export function LoginForm() {
       }
       setError(friendlyMessage);
       setIsLoading(false);
-    } 
+    }
   };
+
+  if (!isFirebaseConfigured) {
+    return (
+      <Card className="w-full max-w-sm shadow-2xl">
+        <CardHeader>
+          <div className="flex justify-center mb-4">
+            <Building2 className="w-10 h-10 text-destructive" />
+          </div>
+          <CardTitle>Configuração Incompleta</CardTitle>
+          <CardDescription>
+            As credenciais do Firebase não foram configuradas corretamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTitle>Ação Necessária</AlertTitle>
+            <AlertDescription>
+              Por favor, abra o arquivo <strong>.env</strong> na raiz do projeto, cole as credenciais do seu projeto Firebase e <strong>reinicie o servidor de desenvolvimento</strong>.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-sm shadow-2xl">
@@ -69,6 +92,11 @@ export function LoginForm() {
       </CardHeader>
       <form onSubmit={handleLogin}>
         <CardContent className="grid gap-4">
+          <div className="p-2 text-xs border rounded-md bg-muted/50 text-muted-foreground">
+            <p className="font-bold">Status da Configuração:</p>
+            <p>ID do Projeto: <span className="font-mono font-bold text-foreground">{process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "Não Carregado"}</span></p>
+            <p className="mt-1 italic">Se "Não Carregado", reinicie o servidor (Ctrl+C, depois npm run dev).</p>
+          </div>
            {error && (
             <Alert variant="destructive">
               <AlertTitle>Erro de Autenticação</AlertTitle>
