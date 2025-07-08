@@ -5,21 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
+import { DatacenterStatusDialog } from "@/components/dashboard/developer/datacenter-status-dialog";
 
 
 export default function DeveloperSettingsPage() {
     const {
         equipmentTypes, addEquipmentType, deleteEquipmentType,
         deletionReasons, addDeletionReason, deleteDeletionReason,
-        datacenterStatuses, addDatacenterStatus, deleteDatacenterStatus,
+        datacenterStatuses, deleteDatacenterStatus,
     } = useInfra();
 
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [newDeletionReason, setNewDeletionReason] = useState("");
-    const [newDatacenterStatus, setNewDatacenterStatus] = useState("");
-
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
@@ -32,13 +31,6 @@ export default function DeveloperSettingsPage() {
         if (newDeletionReason.trim()) {
             addDeletionReason(newDeletionReason.trim());
             setNewDeletionReason("");
-        }
-    };
-
-    const handleAddDatacenterStatus = () => {
-        if (newDatacenterStatus.trim()) {
-            addDatacenterStatus(newDatacenterStatus.trim());
-            setNewDatacenterStatus("");
         }
     };
 
@@ -116,30 +108,34 @@ export default function DeveloperSettingsPage() {
                 </Card>
 
                 <Card className="shadow-lg">
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl font-headline">Status do Datacenter</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex gap-2 mb-4">
-                            <Input
-                                placeholder="Adicionar novo..."
-                                value={newDatacenterStatus}
-                                onChange={(e) => setNewDatacenterStatus(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddDatacenterStatus()}
-                            />
-                            <Button onClick={handleAddDatacenterStatus}>
+                         <DatacenterStatusDialog>
+                             <Button size="sm">
                                 <Plus className="w-4 h-4 mr-2" />
                                 Adicionar
                             </Button>
-                        </div>
+                        </DatacenterStatusDialog>
+                    </CardHeader>
+                    <CardContent>
                         <ScrollArea className="h-72">
                             <div className="pr-4 space-y-2">
                                 {datacenterStatuses.map(item => (
                                     <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
-                                        <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteDatacenterStatus(item.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-3">
+                                            <span style={{ backgroundColor: item.color }} className="block w-4 h-4 border rounded-full" />
+                                            <span className="font-medium">{item.name}</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <DatacenterStatusDialog status={item}>
+                                                <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-muted/80">
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                            </DatacenterStatusDialog>
+                                            <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteDatacenterStatus(item.id)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -68,10 +68,10 @@ const initialDeletionReasons: SelectOption[] = [
     { id: '3', name: 'Substituído por novo item' },
     { id: '4', name: 'Erro de inventário' },
 ];
-const initialDatacenterStatuses: SelectOption[] = [
-    { id: '1', name: 'Online' },
-    { id: '2', name: 'Offline' },
-    { id: '3', name: 'Maintenance' },
+const initialDatacenterStatuses: StatusOption[] = [
+    { id: '1', name: 'Online', color: '#22c55e' },
+    { id: '2', name: 'Offline', color: '#ef4444' },
+    { id: '3', name: 'Maintenance', color: '#f59e0b' },
 ];
 
 
@@ -86,7 +86,7 @@ interface InfraContextType {
     companyLogo: string | null;
     equipmentTypes: SelectOption[];
     deletionReasons: SelectOption[];
-    datacenterStatuses: SelectOption[];
+    datacenterStatuses: StatusOption[];
     
     setSelectedBuildingId: (buildingId: string) => void;
     setSelectedRoomId: (roomId: string) => void;
@@ -113,7 +113,9 @@ interface InfraContextType {
     deleteEquipmentType: (id: string) => void;
     addDeletionReason: (name: string) => void;
     deleteDeletionReason: (id: string) => void;
-    addDatacenterStatus: (name: string) => void;
+
+    addDatacenterStatus: (statusData: Omit<StatusOption, 'id'>) => void;
+    updateDatacenterStatus: (status: StatusOption) => void;
     deleteDatacenterStatus: (id: string) => void;
 }
 
@@ -125,14 +127,14 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [floorPlanItemTypes, setFloorPlanItemTypes] = React.useState<FloorPlanItemType[]>(initialFloorPlanItemTypes);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
-    const [companyName, setCompanyName] = React.useState<string>("TIM BLMSAC");
+    const [companyName, setCompanyName] = React.useState<string>("InfraCenter Manager");
     const [companyLogo, setCompanyLogo] = React.useState<string | null>(null);
     const { toast } = useToast();
 
     // Developer settings states
     const [equipmentTypes, setEquipmentTypes] = React.useState<SelectOption[]>(initialEquipmentTypes);
     const [deletionReasons, setDeletionReasons] = React.useState<SelectOption[]>(initialDeletionReasons);
-    const [datacenterStatuses, setDatacenterStatuses] = React.useState<SelectOption[]>(initialDatacenterStatuses);
+    const [datacenterStatuses, setDatacenterStatuses] = React.useState<StatusOption[]>(initialDatacenterStatuses);
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
@@ -280,9 +282,13 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         setDeletionReasons(prev => prev.filter(item => item.id !== id));
     };
 
-    const addDatacenterStatus = (name: string) => {
-        const newStatus: SelectOption = { id: Date.now().toString(), name };
+    const addDatacenterStatus = (statusData: Omit<StatusOption, 'id'>) => {
+        const newStatus: StatusOption = { id: Date.now().toString(), ...statusData };
         setDatacenterStatuses(prev => [...prev, newStatus]);
+    };
+    const updateDatacenterStatus = (updatedStatus: StatusOption) => {
+        setDatacenterStatuses(prev => prev.map(s => s.id === updatedStatus.id ? updatedStatus : s));
+        toast({ title: "Status Atualizado", description: `O status "${updatedStatus.name}" foi salvo.`});
     };
     const deleteDatacenterStatus = (id: string) => {
         setDatacenterStatuses(prev => prev.filter(item => item.id !== id));
@@ -322,6 +328,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             addDeletionReason,
             deleteDeletionReason,
             addDatacenterStatus,
+            updateDatacenterStatus,
             deleteDatacenterStatus
          }}>
             {children}

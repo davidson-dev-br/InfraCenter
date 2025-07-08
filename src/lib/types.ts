@@ -46,3 +46,9 @@ export interface Building {
   status: string;
   rooms: Room[];
 }
+
+export interface StatusOption {
+  id: string;
+  name: string;
+  color: string;
+}

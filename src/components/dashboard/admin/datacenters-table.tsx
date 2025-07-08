@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useInfra } from "../datacenter-switcher";
 
 type DatacentersTableProps = {
@@ -22,7 +21,11 @@ type DatacentersTableProps = {
 };
 
 export function DatacentersTable({ data }: DatacentersTableProps) {
-  const { deleteBuilding } = useInfra();
+  const { deleteBuilding, datacenterStatuses } = useInfra();
+
+  const getStatusColor = (statusName: string) => {
+    return datacenterStatuses.find(s => s.name === statusName)?.color || '#64748b'; // default slate-500
+  }
 
   return (
     <div className="border rounded-lg">
@@ -41,8 +44,9 @@ export function DatacentersTable({ data }: DatacentersTableProps) {
                         <TableCell className="font-medium">{dc.name}</TableCell>
                         <TableCell>{dc.location}</TableCell>
                         <TableCell>
-                            <Badge variant={dc.status === 'Online' ? 'default' : dc.status === 'Offline' ? 'destructive' : 'secondary'}
-                                className={cn(dc.status === 'Online' && 'bg-green-500 hover:bg-green-600', dc.status === 'Maintenance' && 'bg-amber-500 hover:bg-amber-600')}
+                            <Badge 
+                                style={{ backgroundColor: getStatusColor(dc.status), color: '#ffffff' }}
+                                className="border-transparent"
                             >
                                 {dc.status}
                             </Badge>
