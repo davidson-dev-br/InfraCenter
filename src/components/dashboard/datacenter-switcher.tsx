@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -47,9 +48,9 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
 };
 
 const initialEquipment: Equipment[] = [
-    { id: 'eq-1', hostname: 'SWPSBLM01', type: 'Switch', parentItemId: 'rack-2', positionU: '39', imageUrl: 'https://placehold.co/128x64.png', brand: 'Cisco', model: 'Catalyst 9300', price: 5000, serialNumber: 'SN12345', entryDate: '2023-01-15', tag: 'TAG001', description: 'Switch de acesso', sizeU: '1', trellisId: 'TID1', ownerEmail: 'owner@example.com', isTagEligible: true, isFrontFacing: true, status: 'Em produção', dataSheetUrl: '#' },
-    { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300', status: 'Em produção' },
-    { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325', status: 'Estoque' },
+    { id: 'eq-1', hostname: 'SWPSBLM01', type: 'Switch', parentItemId: 'rack-2', positionU: '39', imageUrl: 'https://placehold.co/128x64.png', brand: 'Cisco', model: 'Catalyst 9300', price: 5000, serialNumber: 'SN12345', entryDate: '2023-01-15', tag: 'TAG001', description: 'Switch de acesso', sizeU: '1', trellisId: 'TID1', ownerEmail: 'owner@example.com', isTagEligible: true, isFrontFacing: true, status: 'Ativo', dataSheetUrl: '#' },
+    { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300', status: 'Ativo' },
+    { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325', status: 'Aposentado' },
     { id: 'eq-4', hostname: 'Swblmsac0102', type: 'Switch', parentItemId: 'rack-0', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Dell', model: 'PowerSwitch S4148F-ON', status: 'Desativado' },
 ];
 
@@ -82,9 +83,11 @@ const initialDatacenterStatuses: StatusOption[] = [
     { id: '3', name: 'Maintenance', color: '#f59e0b' },
 ];
 const initialEquipmentStatuses: SelectOption[] = [
-    { id: '1', name: 'Em produção' },
-    { id: '2', name: 'Estoque' },
-    { id: '3', name: 'Desativado' },
+    { id: '1', name: 'Ativo' },
+    { id: '2', name: 'Aposentado' },
+    { id: '3', name: 'Em descomissionamento' },
+    { id: '4', name: 'Descomissionado' },
+    { id: '5', name: 'Desativado' },
 ];
 
 const initialDeletionLog: DeletionLogEntry[] = [
