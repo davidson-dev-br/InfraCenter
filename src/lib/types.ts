@@ -32,11 +32,23 @@ export interface Equipment {
   id: string;
   hostname: string;
   type: string;
-  parentItemId: string; // ID of the PlacedItem (e.g., a rack)
-  positionU: string; // Can be a single number or a range like "20-29"
+  parentItemId: string; // Cabinet ID
+  positionU: string;
   imageUrl?: string;
-  brand?: string;
+  brand?: string; // Fabricante
   model?: string;
+  price?: number;
+  serialNumber?: string;
+  entryDate?: string;
+  tag?: string;
+  description?: string;
+  sizeU?: string;
+  trellisId?: string;
+  ownerEmail?: string;
+  isTagEligible?: boolean;
+  isFrontFacing?: boolean;
+  status?: string;
+  dataSheetUrl?: string;
 }
 
 export interface DeletionLogEntry {

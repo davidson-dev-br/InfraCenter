@@ -47,10 +47,10 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
 };
 
 const initialEquipment: Equipment[] = [
-    { id: 'eq-1', hostname: 'SWPSBLM01', type: 'Switch', parentItemId: 'rack-2', positionU: '39', imageUrl: 'https://placehold.co/128x64.png', brand: 'Cisco', model: 'Catalyst 9300' },
-    { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300' },
-    { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325' },
-    { id: 'eq-4', hostname: 'Swblmsac0102', type: 'Switch', parentItemId: 'rack-0', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Dell', model: 'PowerSwitch S4148F-ON' },
+    { id: 'eq-1', hostname: 'SWPSBLM01', type: 'Switch', parentItemId: 'rack-2', positionU: '39', imageUrl: 'https://placehold.co/128x64.png', brand: 'Cisco', model: 'Catalyst 9300', price: 5000, serialNumber: 'SN12345', entryDate: '2023-01-15', tag: 'TAG001', description: 'Switch de acesso', sizeU: '1', trellisId: 'TID1', ownerEmail: 'owner@example.com', isTagEligible: true, isFrontFacing: true, status: 'Em produção', dataSheetUrl: '#' },
+    { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300', status: 'Em produção' },
+    { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325', status: 'Estoque' },
+    { id: 'eq-4', hostname: 'Swblmsac0102', type: 'Switch', parentItemId: 'rack-0', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Dell', model: 'PowerSwitch S4148F-ON', status: 'Desativado' },
 ];
 
 
@@ -81,6 +81,11 @@ const initialDatacenterStatuses: StatusOption[] = [
     { id: '2', name: 'Offline', color: '#ef4444' },
     { id: '3', name: 'Maintenance', color: '#f59e0b' },
 ];
+const initialEquipmentStatuses: SelectOption[] = [
+    { id: '1', name: 'Em produção' },
+    { id: '2', name: 'Estoque' },
+    { id: '3', name: 'Desativado' },
+];
 
 const initialDeletionLog: DeletionLogEntry[] = [
     { id: 'del-1', itemId: 'deleted-item-1', itemName: 'Old Server 01', itemType: 'Server Rack', deletedBy: 'Admin User', deletedAt: '01/07/2025', reason: 'Item desativado (decommissioned)' }
@@ -100,6 +105,7 @@ interface InfraContextType {
     equipmentTypes: SelectOption[];
     deletionReasons: SelectOption[];
     datacenterStatuses: StatusOption[];
+    equipmentStatuses: SelectOption[];
     deletionLog: DeletionLogEntry[];
     
     setSelectedBuildingId: (buildingId: string) => void;
@@ -133,6 +139,9 @@ interface InfraContextType {
     updateDatacenterStatus: (status: StatusOption) => void;
     deleteDatacenterStatus: (id: string) => void;
 
+    addEquipmentStatus: (name: string) => void;
+    deleteEquipmentStatus: (id: string) => void;
+
     addEquipment: (equipmentData: Omit<Equipment, 'id'>) => void;
     updateEquipment: (updatedEquipment: Equipment) => void;
     deleteEquipment: (equipmentId: string) => void;
@@ -155,6 +164,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [equipmentTypes, setEquipmentTypes] = React.useState<SelectOption[]>(initialEquipmentTypes);
     const [deletionReasons, setDeletionReasons] = React.useState<SelectOption[]>(initialDeletionReasons);
     const [datacenterStatuses, setDatacenterStatuses] = React.useState<StatusOption[]>(initialDatacenterStatuses);
+    const [equipmentStatuses, setEquipmentStatuses] = React.useState<SelectOption[]>(initialEquipmentStatuses);
     const [deletionLog, setDeletionLog] = React.useState<DeletionLogEntry[]>(initialDeletionLog);
 
     const setSelectedBuildingId = (buildingId: string) => {
@@ -342,6 +352,14 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         setDatacenterStatuses(prev => prev.filter(item => item.id !== id));
     };
 
+    const addEquipmentStatus = (name: string) => {
+        const newStatus: SelectOption = { id: Date.now().toString(), name };
+        setEquipmentStatuses(prev => [...prev, newStatus]);
+    };
+    const deleteEquipmentStatus = (id: string) => {
+        setEquipmentStatuses(prev => prev.filter(item => item.id !== id));
+    };
+
     // Equipment handlers
     const addEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
         const newEquipment: Equipment = { id: `eq-${Date.now()}`, ...equipmentData };
@@ -374,6 +392,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             equipmentTypes,
             deletionReasons,
             datacenterStatuses,
+            equipmentStatuses,
             deletionLog,
             setSelectedBuildingId, 
             setSelectedRoomId,
@@ -399,6 +418,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             addDatacenterStatus,
             updateDatacenterStatus,
             deleteDatacenterStatus,
+            addEquipmentStatus,
+            deleteEquipmentStatus,
             addEquipment,
             updateEquipment,
             deleteEquipment

@@ -15,10 +15,12 @@ export default function DeveloperSettingsPage() {
         equipmentTypes, addEquipmentType, deleteEquipmentType,
         deletionReasons, addDeletionReason, deleteDeletionReason,
         datacenterStatuses, deleteDatacenterStatus,
+        equipmentStatuses, addEquipmentStatus, deleteEquipmentStatus,
     } = useInfra();
 
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [newDeletionReason, setNewDeletionReason] = useState("");
+    const [newEquipmentStatus, setNewEquipmentStatus] = useState("");
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
@@ -34,6 +36,13 @@ export default function DeveloperSettingsPage() {
         }
     };
 
+    const handleAddEquipmentStatus = () => {
+        if (newEquipmentStatus.trim()) {
+            addEquipmentStatus(newEquipmentStatus.trim());
+            setNewEquipmentStatus("");
+        }
+    };
+
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
             <Card className="mb-8 shadow-lg">
@@ -42,7 +51,7 @@ export default function DeveloperSettingsPage() {
                     <CardDescription>Gerencie opções e seletores utilizados em todo o sistema. As alterações aqui podem afetar a operação da aplicação.</CardDescription>
                 </CardHeader>
             </Card>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
@@ -136,6 +145,38 @@ export default function DeveloperSettingsPage() {
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+                
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-headline">Status de Equipamento</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex gap-2 mb-4">
+                            <Input
+                                placeholder="Adicionar novo..."
+                                value={newEquipmentStatus}
+                                onChange={(e) => setNewEquipmentStatus(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddEquipmentStatus()}
+                            />
+                            <Button onClick={handleAddEquipmentStatus}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Adicionar
+                            </Button>
+                        </div>
+                        <ScrollArea className="h-72">
+                            <div className="pr-4 space-y-2">
+                                {equipmentStatuses.map(item => (
+                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
+                                        <span className="font-medium">{item.name}</span>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteEquipmentStatus(item.id)}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
