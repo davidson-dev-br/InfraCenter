@@ -20,13 +20,19 @@ import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType } fr
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
-    { id: 'b1', name: 'Datacenter Principal', rooms: [
-        { id: 'r1', name: 'Data Center', width: 25, length: 15, tileWidth: 60, tileLength: 60 },
-        { id: 'r2', name: 'Sala de Controle', width: 10, length: 15, tileWidth: 60, tileLength: 60 },
-    ]},
-    { id: 'b2', name: 'Prédio Anexo', rooms: [
-        { id: 'r3', name: 'Sala de Baterias', width: 12, length: 8, tileWidth: 60, tileLength: 60 },
-    ]}
+    { 
+        id: 'b1', name: 'US-East-1', location: "N. Virginia, USA", status: "Online", rooms: [
+            { id: 'r1', name: 'Data Center', width: 25, length: 15, tileWidth: 60, tileLength: 60 },
+            { id: 'r2', name: 'Sala de Controle', width: 10, length: 15, tileWidth: 60, tileLength: 60 },
+        ]
+    },
+    { 
+        id: 'b2', name: 'EU-West-2', location: "London, UK", status: "Online", rooms: [
+            { id: 'r3', name: 'Sala de Baterias', width: 12, length: 8, tileWidth: 60, tileLength: 60 },
+        ]
+    },
+    { id: 'b3', name: 'AP-South-1', location: "Mumbai, India", status: "Maintenance", rooms: [] },
+    { id: 'b4', name: 'US-West-2', location: "Oregon, USA", status: "Offline", rooms: [] },
 ];
 
 const initialItemsByRoom: Record<string, PlacedItem[]> = {
@@ -61,6 +67,10 @@ interface InfraContextType {
     setSelectedRoomId: (roomId: string) => void;
     setCompanyName: (name: string) => void;
     setCompanyLogo: (logo: string | null) => void;
+
+    addBuilding: (buildingData: Omit<BuildingType, 'id' | 'rooms'>) => void;
+    updateBuilding: (updatedBuilding: BuildingType) => void;
+    deleteBuilding: (buildingId: string) => void;
     
     updateItemsForRoom: (roomId: string, items: PlacedItem[]) => void;
     approveItem: (itemId: string) => void;
@@ -91,6 +101,31 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         _setSelectedBuildingId(buildingId);
         const building = buildings.find(b => b.id === buildingId);
         setSelectedRoomId(building?.rooms[0]?.id || null); 
+    };
+
+    const addBuilding = (buildingData: Omit<BuildingType, 'id' | 'rooms'>) => {
+        const newBuilding: BuildingType = { 
+            id: `b-${Date.now()}`, 
+            ...buildingData, 
+            rooms: [] 
+        };
+        setBuildings(prev => [...prev, newBuilding]);
+        toast({ title: "Datacenter Criado", description: `O datacenter "${newBuilding.name}" foi criado com sucesso.` });
+    };
+
+    const updateBuilding = (updatedBuilding: BuildingType) => {
+        setBuildings(prev => prev.map(b => b.id === updatedBuilding.id ? updatedBuilding : b));
+        toast({ title: "Datacenter Atualizado", description: `O datacenter "${updatedBuilding.name}" foi salvo com sucesso.` });
+    };
+
+    const deleteBuilding = (buildingId: string) => {
+        const buildingToDelete = buildings.find(b => b.id === buildingId);
+        setBuildings(prev => prev.filter(b => b.id !== buildingId));
+        if (selectedBuildingId === buildingId) {
+            _setSelectedBuildingId(initialBuildings[0]?.id || null);
+            setSelectedRoomId(initialBuildings[0]?.rooms[0]?.id || null);
+        }
+        toast({ variant: "destructive", title: "Datacenter Excluído", description: `O datacenter "${buildingToDelete?.name}" foi excluído.` });
     };
     
     const updateItemsForRoom = (roomId: string, items: PlacedItem[]) => {
@@ -204,6 +239,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setSelectedRoomId,
             setCompanyName,
             setCompanyLogo,
+            addBuilding,
+            updateBuilding,
+            deleteBuilding,
             updateItemsForRoom, 
             approveItem, 
             addRoom, 

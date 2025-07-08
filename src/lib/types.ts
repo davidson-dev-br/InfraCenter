@@ -42,13 +42,7 @@ export interface Room {
 export interface Building {
   id: string;
   name: string;
-  rooms: Room[];
-}
-
-// For the admin page (separate mock data)
-export interface Datacenter {
-  id: string;
-  name: string;
   location: string;
   status: "Online" | "Offline" | "Maintenance";
+  rooms: Room[];
 }

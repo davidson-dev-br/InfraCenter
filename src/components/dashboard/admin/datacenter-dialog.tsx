@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Datacenter } from "@/lib/types";
+import { Building as BuildingType } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -21,70 +22,93 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useInfra } from "../datacenter-switcher";
 
 type DatacenterDialogProps = {
     children: React.ReactNode;
-    datacenter?: Datacenter;
+    building?: BuildingType;
 }
 
-export function DatacenterDialog({ children, datacenter }: DatacenterDialogProps) {
-    const isEditMode = !!datacenter;
-    const { toast } = useToast();
+export function DatacenterDialog({ children, building }: DatacenterDialogProps) {
+    const { addBuilding, updateBuilding } = useInfra();
+    const [isOpen, setIsOpen] = useState(false);
+    const isEditMode = !!building;
+
+    const [name, setName] = useState('');
+    const [location, setLocation] = useState('');
+    const [status, setStatus] = useState<BuildingType['status']>('Online');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (isEditMode && building) {
+                setName(building.name);
+                setLocation(building.location);
+                setStatus(building.status);
+            } else {
+                setName('');
+                setLocation('');
+                setStatus('Online');
+            }
+        }
+    }, [isOpen, building, isEditMode]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, you'd handle form submission to your API
-        toast({
-            title: `Datacenter ${isEditMode ? 'updated' : 'created'}`,
-            description: `The datacenter "${datacenter?.name || 'New Datacenter'}" has been saved.`,
-        });
+        const buildingData = { name, location, status };
+        
+        if (isEditMode && building) {
+            updateBuilding({ ...building, ...buildingData });
+        } else {
+            addBuilding(buildingData);
+        }
+        setIsOpen(false);
     }
 
     return (
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
-                        <DialogTitle>{isEditMode ? 'Edit Datacenter' : 'Create Datacenter'}</DialogTitle>
+                        <DialogTitle>{isEditMode ? 'Editar Datacenter' : 'Criar Datacenter'}</DialogTitle>
                         <DialogDescription>
-                            {isEditMode ? "Make changes to your datacenter here." : "Add a new datacenter to your infrastructure."} Click save when you're done.
+                            {isEditMode ? "Faça alterações no seu datacenter aqui." : "Adicione um novo datacenter à sua infraestrutura."} Clique em salvar quando terminar.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid items-center grid-cols-4 gap-4">
                             <Label htmlFor="name" className="text-right">
-                                Name
+                                Nome
                             </Label>
-                            <Input id="name" defaultValue={datacenter?.name} className="col-span-3" required />
+                            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
                         </div>
                         <div className="grid items-center grid-cols-4 gap-4">
                             <Label htmlFor="location" className="text-right">
-                                Location
+                                Localização
                             </Label>
-                            <Input id="location" defaultValue={datacenter?.location} className="col-span-3" required />
+                            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" required />
                         </div>
                         <div className="grid items-center grid-cols-4 gap-4">
                             <Label htmlFor="status" className="text-right">
                                 Status
                             </Label>
-                            <Select defaultValue={datacenter?.status} required>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select a status" />
+                            <Select value={status} onValueChange={(v) => setStatus(v as BuildingType['status'])} required>
+                                <SelectTrigger id="status" className="col-span-3">
+                                    <SelectValue placeholder="Selecione um status" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Online">Online</SelectItem>
                                     <SelectItem value="Offline">Offline</SelectItem>
-                                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                                    <SelectItem value="Maintenance">Manutenção</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button type="submit">Save changes</Button>
+                            <Button type="button" variant="outline">Cancelar</Button>
                         </DialogClose>
+                        <Button type="submit">Salvar Alterações</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
