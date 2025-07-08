@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useInfra } from '@/components/dashboard/datacenter-switcher';
-import type { PlacedItem } from '@/lib/types';
+import type { PlacedItem, FloorPlanItemType } from '@/lib/types';
 import { ManageRoomsDialog } from '@/components/dashboard/manage-rooms-dialog';
 import { ItemDetailsDialog } from '@/components/dashboard/item-details-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { RoomSwitcher } from '@/components/dashboard/room-switcher';
 import { PrintableLayout } from '@/components/dashboard/printable-layout';
 import { Slider } from '@/components/ui/slider';
+import { AddItemDialog } from '@/components/dashboard/add-item-dialog';
+import { getIconByName } from '@/lib/icon-map';
 
 const CELL_SIZE = 80; // Visual size of a grid cell in pixels
 
@@ -23,6 +25,7 @@ export function FloorPlan() {
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
+    const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
     const floorPlanRef = useRef<HTMLDivElement>(null);
 
     const { 
@@ -181,7 +184,7 @@ export function FloorPlan() {
     
     const resetView = () => setViewTransform({ x: 20, y: 20, scale: 1 });
 
-    const handleAddItem = () => {
+    const handleSelectItemAndAdd = (itemType: FloorPlanItemType) => {
         const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: tileWidthM, length: tileLengthM };
         const { width, length } = getItemDimensions(newItemProto);
         
@@ -201,11 +204,15 @@ export function FloorPlan() {
             return;
         }
 
-        const newItemId = `rack-${Date.now()}`;
-        const newRackNumber = (items.filter(i => i.type === 'Server Rack').length) + 1;
+        const newItemId = `${itemType.name.toLowerCase().replace(' ', '-')}-${Date.now()}`;
+        const newCount = (items.filter(i => i.type === itemType.name).length) + 1;
+        const Icon = getIconByName(itemType.name);
+
         const newItem: PlacedItem = {
-            id: newItemId, name: `Rack-${String(newRackNumber).padStart(2, '0')}`,
-            type: 'Server Rack', icon: Server,
+            id: newItemId,
+            name: `${itemType.name}-${String(newCount).padStart(2, '0')}`,
+            type: itemType.name,
+            icon: Icon,
             x: newX, y: newY, status: 'Ativo', width: tileWidthM, length: tileLengthM,
             sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', 
             awaitingApproval: true,
@@ -216,6 +223,7 @@ export function FloorPlan() {
         setItemsForCurrentRoom([...items, newItem]);
         setSelectedItemId(newItem.id);
     };
+
 
     const handleItemSave = (updatedItem: PlacedItem) => {
         if (checkCollision(updatedItem, items.filter(i => i.id !== updatedItem.id))) {
@@ -258,7 +266,7 @@ export function FloorPlan() {
                     <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={handleAddItem}><Plus className="mr-2" /> Adicionar Item</Button>
+                    <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline" onClick={handlePrint}><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
                 </div>
             </div>
@@ -375,6 +383,11 @@ export function FloorPlan() {
                 isOpen={!!editingItem} 
                 onOpenChange={(open) => !open && setEditingItem(null)}
                 onSave={handleItemSave}
+            />
+            <AddItemDialog 
+                isOpen={isAddItemDialogOpen}
+                onOpenChange={setIsAddItemDialogOpen}
+                onSelectItem={handleSelectItemAndAdd}
             />
         </>
     );

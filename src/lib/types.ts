@@ -1,5 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 
+export interface FloorPlanItemType {
+  id: string;
+  name: string;
+}
+
 export interface PlacedItem {
   id: string;
   name: string;

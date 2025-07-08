@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -40,11 +40,18 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
     'r3': [],
 };
 
+const initialFloorPlanItemTypes: FloorPlanItemType[] = [
+    { id: '1', name: 'Rack' },
+    { id: '2', name: 'Ar Condicionado' },
+    { id: '3', name: 'QDF' },
+    { id: '4', name: 'Patch Panel' },
+];
 
 // --- Context for sharing infrastructure state ---
 interface InfraContextType {
     buildings: BuildingType[];
     itemsByRoom: Record<string, PlacedItem[]>;
+    floorPlanItemTypes: FloorPlanItemType[];
     selectedBuildingId: string | null;
     selectedRoomId: string | null;
     
@@ -58,6 +65,9 @@ interface InfraContextType {
     updateRoom: (buildingId: string, updatedRoom: Room) => void;
     deleteRoom: (buildingId: string, roomId: string) => void;
     reorderRooms: (buildingId: string, roomId: string, direction: 'up' | 'down') => void;
+
+    addFloorPlanItemType: (name: string) => void;
+    deleteFloorPlanItemType: (id: string) => void;
 }
 
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
@@ -65,6 +75,7 @@ const InfraContext = React.createContext<InfraContextType | undefined>(undefined
 export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [buildings, setBuildings] = React.useState<BuildingType[]>(initialBuildings);
     const [itemsByRoom, setItemsByRoom] = React.useState<Record<string, PlacedItem[]>>(initialItemsByRoom);
+    const [floorPlanItemTypes, setFloorPlanItemTypes] = React.useState<FloorPlanItemType[]>(initialFloorPlanItemTypes);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
     const { toast } = useToast();
@@ -156,9 +167,36 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             description: "A nova ordem foi salva.",
         });
     };
+
+    const addFloorPlanItemType = (name: string) => {
+        const newItemType: FloorPlanItemType = { id: Date.now().toString(), name };
+        setFloorPlanItemTypes(prev => [...prev, newItemType]);
+        toast({ title: "Tipo de Item Adicionado", description: `"${name}" foi adicionado à lista.`});
+    };
+
+    const deleteFloorPlanItemType = (id: string) => {
+        setFloorPlanItemTypes(prev => prev.filter(item => item.id !== id));
+        toast({ variant: "destructive", title: "Tipo de Item Removido" });
+    };
     
     return (
-        <InfraContext.Provider value={{ buildings, itemsByRoom, selectedBuildingId, selectedRoomId, setSelectedBuildingId, setSelectedRoomId, updateItemsForRoom, approveItem, addRoom, updateRoom, deleteRoom, reorderRooms }}>
+        <InfraContext.Provider value={{ 
+            buildings, 
+            itemsByRoom, 
+            floorPlanItemTypes,
+            selectedBuildingId, 
+            selectedRoomId, 
+            setSelectedBuildingId, 
+            setSelectedRoomId, 
+            updateItemsForRoom, 
+            approveItem, 
+            addRoom, 
+            updateRoom, 
+            deleteRoom, 
+            reorderRooms,
+            addFloorPlanItemType,
+            deleteFloorPlanItemType
+         }}>
             {children}
         </InfraContext.Provider>
     );

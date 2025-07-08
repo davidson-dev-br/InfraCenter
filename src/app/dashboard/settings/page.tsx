@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2 } from "lucide-react";
+import { useInfra } from "@/components/dashboard/datacenter-switcher";
 
 // Mock data based on the image
 const initialEquipmentTypes = [
@@ -24,20 +25,13 @@ const initialDeletionReasons = [
     { id: '4', name: 'Erro de inventário' },
 ];
 
-const initialFloorPlanItems = [
-    { id: '1', name: 'Rack' },
-    { id: '2', name: 'Ar Condicionado' },
-    { id: '3', name: 'QDF' },
-    { id: '4', name: 'Patch Panel' },
-];
-
-
 export default function SystemSettingsPage() {
+    const { floorPlanItemTypes, addFloorPlanItemType, deleteFloorPlanItemType } = useInfra();
+
     const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [deletionReasons, setDeletionReasons] = useState(initialDeletionReasons);
     const [newDeletionReason, setNewDeletionReason] = useState("");
-    const [floorPlanItems, setFloorPlanItems] = useState(initialFloorPlanItems);
     const [newFloorPlanItem, setNewFloorPlanItem] = useState("");
 
     const handleAddEquipmentType = () => {
@@ -64,13 +58,13 @@ export default function SystemSettingsPage() {
 
     const handleAddFloorPlanItem = () => {
         if (newFloorPlanItem.trim()) {
-            setFloorPlanItems(prev => [...prev, { id: Date.now().toString(), name: newFloorPlanItem.trim() }]);
+            addFloorPlanItemType(newFloorPlanItem.trim());
             setNewFloorPlanItem("");
         }
     };
 
     const handleDeleteFloorPlanItem = (id: string) => {
-        setFloorPlanItems(prev => prev.filter(item => item.id !== id));
+        deleteFloorPlanItemType(id);
     };
     
     return (
@@ -159,7 +153,7 @@ export default function SystemSettingsPage() {
                         </div>
                         <ScrollArea className="h-72">
                             <div className="pr-4 space-y-2">
-                                {floorPlanItems.map(item => (
+                                {floorPlanItemTypes.map(item => (
                                     <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
                                         <span className="font-medium">{item.name}</span>
                                         <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteFloorPlanItem(item.id)}>
