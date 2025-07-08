@@ -53,6 +53,7 @@ export interface Equipment {
 
 export interface Connection {
   id: string;
+  cableLabel?: string;
   sourceEquipmentId: string;
   sourcePort: string;
   destinationEquipmentId: string;

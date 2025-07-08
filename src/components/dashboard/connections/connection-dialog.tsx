@@ -30,16 +30,24 @@ import { Switch } from '@/components/ui/switch';
 const CONNECTION_STATUSES: Connection['status'][] = ['Conectado', 'Desconectado', 'Planejado'];
 
 type ConnectionDialogProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   connection?: Connection;
+  initialData?: Partial<Connection>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function ConnectionDialog({ children, connection }: ConnectionDialogProps) {
+export function ConnectionDialog({ children, connection, initialData, open: openProp, onOpenChange: onOpenChangeProp }: ConnectionDialogProps) {
   const { equipment, addConnection, updateConnection, cableTypes } = useInfra();
-  const [isOpen, setIsOpen] = useState(false);
+  
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = openProp ?? internalOpen;
+  const setIsOpen = onOpenChangeProp ?? setInternalOpen;
+  
   const isEditMode = !!connection;
 
   const getDefaultFormData = (): Omit<Connection, 'id'> => ({
+    cableLabel: '',
     sourceEquipmentId: equipment[0]?.id || '',
     sourcePort: '',
     destinationEquipmentId: equipment[1]?.id || '',
@@ -57,10 +65,17 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
       if (isEditMode && connection) {
         setFormData(connection);
       } else {
-        setFormData(getDefaultFormData());
+        const defaultData = getDefaultFormData();
+        setFormData({
+            ...defaultData,
+            sourceEquipmentId: initialData?.sourceEquipmentId || defaultData.sourceEquipmentId,
+            destinationEquipmentId: initialData?.destinationEquipmentId || defaultData.destinationEquipmentId,
+            ...initialData,
+        });
       }
     }
-  }, [isOpen, connection, isEditMode, equipment, cableTypes]);
+  }, [isOpen, connection, isEditMode, equipment, cableTypes, initialData]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -80,14 +95,14 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
     if (isEditMode && connection) {
       updateConnection({ ...connection, ...formData });
     } else {
-      addConnection(formData);
+      addConnection(formData as Omit<Connection, 'id'>);
     }
     setIsOpen(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -134,6 +149,10 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
               </div>
 
               <div className="md:col-span-2 font-semibold text-lg pt-4 pb-2 border-b">Detalhes da Conexão</div>
+               <div className="space-y-2">
+                <Label htmlFor="cableLabel">Nome da Etiqueta</Label>
+                <Input id="cableLabel" value={formData.cableLabel || ''} onChange={handleChange} placeholder="Ex: P-01-A-01" />
+              </div>
                <div className="space-y-2">
                 <Label htmlFor="cableType">Tipo de Cabo</Label>
                 <Select value={formData.cableType} onValueChange={handleSelectChange('cableType')} required>
