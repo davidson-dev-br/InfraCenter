@@ -17,9 +17,10 @@ type AddItemDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSelectItem: (itemType: FloorPlanItemType) => void;
+  container?: HTMLElement | null;
 };
 
-export function AddItemDialog({ isOpen, onOpenChange, onSelectItem }: AddItemDialogProps) {
+export function AddItemDialog({ isOpen, onOpenChange, onSelectItem, container }: AddItemDialogProps) {
   const { floorPlanItemTypes } = useInfra();
 
   const handleSelect = (itemType: FloorPlanItemType) => {
@@ -29,7 +30,7 @@ export function AddItemDialog({ isOpen, onOpenChange, onSelectItem }: AddItemDia
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent container={container} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Item</DialogTitle>
           <DialogDescription>

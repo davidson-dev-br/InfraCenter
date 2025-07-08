@@ -29,9 +29,10 @@ type ItemDetailsDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: (updatedItem: PlacedItem) => void;
+  container?: HTMLElement | null;
 };
 
-export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDetailsDialogProps) {
+export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, container }: ItemDetailsDialogProps) {
   const [formData, setFormData] = useState<Partial<PlacedItem>>({});
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDe
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent container={container} className="sm:max-w-2xl">
         <form onSubmit={handleSaveChanges}>
             <DialogHeader>
                 <DialogTitle>Detalhes do Item: {formData.name}</DialogTitle>

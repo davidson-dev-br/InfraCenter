@@ -28,6 +28,7 @@ export function FloorPlan() {
     const [editingItem, setEditingItem] = useState<PlacedItem | null>(null);
     const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
     const floorPlanRef = useRef<HTMLDivElement>(null);
+    const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null);
 
     const { 
         buildings,
@@ -253,6 +254,14 @@ export function FloorPlan() {
         resetView();
     }, [selectedBuildingId, selectedRoomId]);
 
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setFullscreenContainer(document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
     const handlePrint = () => window.print();
 
     const handleFullscreen = () => {
@@ -404,11 +413,13 @@ export function FloorPlan() {
                 isOpen={!!editingItem} 
                 onOpenChange={(open) => !open && setEditingItem(null)}
                 onSave={handleItemSave}
+                container={fullscreenContainer}
             />
             <AddItemDialog 
                 isOpen={isAddItemDialogOpen}
                 onOpenChange={setIsAddItemDialogOpen}
                 onSelectItem={handleSelectItemAndAdd}
+                container={fullscreenContainer}
             />
         </>
     );
