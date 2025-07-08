@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
 import type { User } from '@/lib/types';
 import { usePathname, useRouter } from 'next/navigation';
@@ -38,15 +38,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const unsubUser = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            setUserData({ id: doc.id, ...doc.data() } as User);
+
+        const unsubUser = onSnapshot(userDocRef, async (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            setUserData({ id: docSnapshot.id, ...docSnapshot.data() } as User);
+            setLoading(false);
           } else {
-            // User exists in Auth but not in Firestore, maybe during creation
-            setUserData(null);
+            // User is authenticated but doesn't have a document in Firestore.
+            // This can happen on first login after manual account creation in Firebase Auth.
+            // We'll create the user document now.
+            console.log(`User document for ${firebaseUser.uid} not found. Creating...`);
+            
+            const isSeedUser = firebaseUser.email === 'davidson.cabista@gmail.com';
+            
+            const newUserProfile: Omit<User, 'id'> = {
+              name: firebaseUser.displayName || firebaseUser.email || 'Novo Usuário',
+              email: firebaseUser.email!,
+              // Assign 'developer' role to the seed user, otherwise default to 'technician'
+              role: isSeedUser ? 'developer' : 'technician',
+              avatarUrl: firebaseUser.photoURL || `https://placehold.co/40x40.png`,
+              // datacenterId is left undefined. A manager can assign it later via the UI.
+            };
+
+            try {
+              await setDoc(userDocRef, newUserProfile);
+              // The onSnapshot listener will fire again with the new data,
+              // and the `if (docSnapshot.exists())` block will handle setting the user data.
+              console.log(`User document for ${firebaseUser.uid} created successfully.`);
+            } catch (error) {
+              console.error("Error creating user document in Firestore:", error);
+              setUserData(null); // Explicitly set to null on error
+              setLoading(false); // Ensure loading completes even on error
+            }
           }
-          setLoading(false);
         });
+
         return () => unsubUser();
       } else {
         setUser(null);
