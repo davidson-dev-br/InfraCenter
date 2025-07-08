@@ -14,7 +14,7 @@ export interface PlacedItem {
   roomId: string; // ID of the room it's in
   name: string;
   type: string;
-  icon: LucideIcon | string; // Allow string for serialization
+  icon: string; // Icon name from icon-map.ts
   x: number;
   y: number;
   status: 'Ativo' | 'Inativo' | 'Manutenção';

@@ -194,7 +194,7 @@ export function FloorPlan() {
         const itemWidthInCells = itemWidthM / tileWidthM;
         const itemLengthInCells = itemLengthM / tileLengthM;
 
-        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM, x:0, y:0, status: 'Ativo' as const };
+        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: 'Server', width: itemWidthM, length: itemLengthM, x:0, y:0, status: 'Ativo' as const };
         
         let newX = -1, newY = -1;
         for (let y = 0; y <= GRID_ROWS - itemLengthInCells; y++) {
@@ -214,13 +214,12 @@ export function FloorPlan() {
 
         const newItemId = `${itemType.name.toLowerCase().replace(' ', '-')}-${Date.now()}`;
         const newCount = (items.filter(i => i.type === itemType.name).length) + 1;
-        const Icon = getIconByName(itemType.icon);
 
         const newItem: PlacedItem = {
             id: newItemId,
             name: `${itemType.name}-${String(newCount).padStart(2, '0')}`,
             type: itemType.name,
-            icon: Icon,
+            icon: itemType.icon,
             x: newX, y: newY, status: 'Ativo', 
             width: itemWidthM,
             length: itemLengthM,
@@ -334,7 +333,7 @@ export function FloorPlan() {
                             const gridSpanX = Math.ceil(item.width / tileWidthM);
                             const gridSpanY = Math.ceil(item.length / tileLengthM);
                             
-                            const ItemIcon = item.icon || Server;
+                            const ItemIcon = getIconByName(item.icon) || Server;
                             return (
                                 <div
                                     key={item.id}

@@ -2,6 +2,7 @@
 
 import type { Building, PlacedItem, Room } from "@/lib/types";
 import { Building2, Server } from "lucide-react";
+import { getIconByName } from "@/lib/icon-map";
 
 interface PrintableLayoutProps {
     building: Building;
@@ -63,7 +64,7 @@ export function PrintableLayout({ building, room, items, gridCellSize, companyNa
                                 const scaleX = itemWidthInCells / gridSpanX;
                                 const scaleY = itemLengthInCells / gridSpanY;
                                 
-                                const ItemIcon = item.icon || Server;
+                                const ItemIcon = getIconByName(item.icon) || Server;
                                 return (
                                     <div
                                         key={`print-${item.id}`}
