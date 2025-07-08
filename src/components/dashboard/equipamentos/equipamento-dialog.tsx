@@ -28,8 +28,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 
 type EquipamentoDialogProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   equipamento?: Equipment;
+  initialData?: Partial<Equipment>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSaveSuccess?: () => void;
 };
 
 const getDefaultFormData = (): Omit<Equipment, 'id'> => ({
@@ -47,14 +51,14 @@ const getDefaultFormData = (): Omit<Equipment, 'id'> => ({
   positionU: '',
   ownerEmail: '',
   isTagEligible: false,
-  isFrontFacing: false,
+  isFrontFacing: true,
   status: '',
   parentItemId: '',
   dataSheetUrl: '',
   imageUrl: '',
 });
 
-export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogProps) {
+export function EquipamentoDialog({ children, equipamento, initialData, open: openProp, onOpenChange: onOpenChangeProp, onSaveSuccess }: EquipamentoDialogProps) {
   const {
     buildings,
     itemsByRoom,
@@ -63,7 +67,11 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
     addEquipment,
     updateEquipment
   } = useInfra();
-  const [isOpen, setIsOpen] = useState(false);
+
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = openProp ?? internalOpen;
+  const setIsOpen = onOpenChangeProp ?? setInternalOpen;
+
   const isEditMode = !!equipamento;
 
   const parentItems = useMemo(() => 
@@ -83,13 +91,14 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
       } else {
         setFormData({
             ...getDefaultFormData(),
-            type: equipmentTypes.length > 0 ? equipmentTypes[0].name : '',
-            status: equipmentStatuses.length > 0 ? equipmentStatuses[0].name : '',
-            parentItemId: parentItems.length > 0 ? parentItems[0].id : '',
+            ...initialData,
+            type: initialData?.type || (equipmentTypes.length > 0 ? equipmentTypes[0].name : ''),
+            status: initialData?.status || (equipmentStatuses.length > 0 ? equipmentStatuses[0].name : ''),
+            parentItemId: initialData?.parentItemId || (parentItems.length > 0 ? parentItems[0].id : ''),
         });
       }
     }
-  }, [isOpen, equipamento, isEditMode, equipmentTypes, equipmentStatuses, parentItems]);
+  }, [isOpen, equipamento, isEditMode, initialData, equipmentTypes, equipmentStatuses, parentItems]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
@@ -113,6 +122,7 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
       addEquipment(formData);
     }
     setIsOpen(false);
+    onSaveSuccess?.();
   };
 
   const dcRoom = useMemo(() => {
@@ -133,7 +143,7 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-4xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -144,6 +154,14 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
           </DialogHeader>
           <ScrollArea className="h-[65vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4 pr-4">
+               {formData.imageUrl && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Imagem do Equipamento</Label>
+                  <div className="p-2 border rounded-md flex justify-center items-center bg-muted/30 h-32">
+                      <img src={formData.imageUrl} alt="Equipment Preview" className="max-h-full object-contain" />
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="hostname">Hostname</Label>
                 <Input id="hostname" value={formData.hostname} onChange={handleChange} required />
@@ -249,7 +267,7 @@ export function EquipamentoDialog({ children, equipamento }: EquipamentoDialogPr
           </ScrollArea>
           <DialogFooter className="pt-4">
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancelar</Button>
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
             </DialogClose>
             <Button type="submit">{isEditMode ? 'Salvar Alterações' : 'Adicionar'}</Button>
           </DialogFooter>
