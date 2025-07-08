@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
+import { AddFloorPlanItemTypeDialog } from "@/components/dashboard/add-floor-plan-item-type-dialog";
+import { getIconByName } from "@/lib/icon-map";
 
 // Mock data based on the image
 const initialEquipmentTypes = [
@@ -26,13 +28,12 @@ const initialDeletionReasons = [
 ];
 
 export default function SystemSettingsPage() {
-    const { floorPlanItemTypes, addFloorPlanItemType, deleteFloorPlanItemType } = useInfra();
+    const { floorPlanItemTypes, deleteFloorPlanItemType } = useInfra();
 
     const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [deletionReasons, setDeletionReasons] = useState(initialDeletionReasons);
     const [newDeletionReason, setNewDeletionReason] = useState("");
-    const [newFloorPlanItem, setNewFloorPlanItem] = useState("");
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
@@ -54,13 +55,6 @@ export default function SystemSettingsPage() {
 
     const handleDeleteDeletionReason = (id: string) => {
         setDeletionReasons(prev => prev.filter(item => item.id !== id));
-    };
-
-    const handleAddFloorPlanItem = () => {
-        if (newFloorPlanItem.trim()) {
-            addFloorPlanItemType(newFloorPlanItem.trim());
-            setNewFloorPlanItem("");
-        }
     };
 
     const handleDeleteFloorPlanItem = (id: string) => {
@@ -135,32 +129,43 @@ export default function SystemSettingsPage() {
                 </Card>
 
                 <Card className="shadow-lg">
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl font-headline">Items da Planta Baixa</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex gap-2 mb-4">
-                            <Input
-                                placeholder="Adicionar novo..."
-                                value={newFloorPlanItem}
-                                onChange={(e) => setNewFloorPlanItem(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddFloorPlanItem()}
-                            />
-                            <Button onClick={handleAddFloorPlanItem}>
+                        <AddFloorPlanItemTypeDialog>
+                             <Button size="sm">
                                 <Plus className="w-4 h-4 mr-2" />
                                 Adicionar
                             </Button>
-                        </div>
-                        <ScrollArea className="h-72">
+                        </AddFloorPlanItemTypeDialog>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-[320px]">
                             <div className="pr-4 space-y-2">
-                                {floorPlanItemTypes.map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
-                                        <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteFloorPlanItem(item.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                {floorPlanItemTypes.length > 0 ? floorPlanItemTypes.map(item => {
+                                    const Icon = getIconByName(item.icon);
+                                    return (
+                                        <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="w-5 h-5 text-muted-foreground"/>
+                                                <span className="font-medium">{item.name}</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <AddFloorPlanItemTypeDialog item={item}>
+                                                    <Button variant="ghost" size="icon" className="w-8 h-8 hover:bg-muted/80">
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                </AddFloorPlanItemTypeDialog>
+                                                <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteFloorPlanItem(item.id)}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                                        Nenhum item cadastrado.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </ScrollArea>
                     </CardContent>

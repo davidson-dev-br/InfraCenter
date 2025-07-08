@@ -41,10 +41,10 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
 };
 
 const initialFloorPlanItemTypes: FloorPlanItemType[] = [
-    { id: '1', name: 'Rack' },
-    { id: '2', name: 'Ar Condicionado' },
-    { id: '3', name: 'QDF' },
-    { id: '4', name: 'Patch Panel' },
+    { id: '1', name: 'Rack', icon: 'Server' },
+    { id: '2', name: 'Ar Condicionado', icon: 'AirVent' },
+    { id: '3', name: 'QDF', icon: 'Network' },
+    { id: '4', name: 'Patch Panel', icon: 'Cable' },
 ];
 
 // --- Context for sharing infrastructure state ---
@@ -66,7 +66,8 @@ interface InfraContextType {
     deleteRoom: (buildingId: string, roomId: string) => void;
     reorderRooms: (buildingId: string, roomId: string, direction: 'up' | 'down') => void;
 
-    addFloorPlanItemType: (name: string) => void;
+    addFloorPlanItemType: (item: Omit<FloorPlanItemType, 'id'>) => void;
+    updateFloorPlanItemType: (item: FloorPlanItemType) => void;
     deleteFloorPlanItemType: (id: string) => void;
 }
 
@@ -168,10 +169,15 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const addFloorPlanItemType = (name: string) => {
-        const newItemType: FloorPlanItemType = { id: Date.now().toString(), name };
+    const addFloorPlanItemType = (itemData: Omit<FloorPlanItemType, 'id'>) => {
+        const newItemType: FloorPlanItemType = { id: Date.now().toString(), ...itemData };
         setFloorPlanItemTypes(prev => [...prev, newItemType]);
-        toast({ title: "Tipo de Item Adicionado", description: `"${name}" foi adicionado à lista.`});
+        toast({ title: "Tipo de Item Adicionado", description: `"${newItemType.name}" foi adicionado à lista.`});
+    };
+
+    const updateFloorPlanItemType = (updatedItem: FloorPlanItemType) => {
+        setFloorPlanItemTypes(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+        toast({ title: "Tipo de Item Atualizado", description: `"${updatedItem.name}" foi salvo.`});
     };
 
     const deleteFloorPlanItemType = (id: string) => {
@@ -195,6 +201,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteRoom, 
             reorderRooms,
             addFloorPlanItemType,
+            updateFloorPlanItemType,
             deleteFloorPlanItemType
          }}>
             {children}

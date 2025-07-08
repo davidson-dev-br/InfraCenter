@@ -206,7 +206,7 @@ export function FloorPlan() {
 
         const newItemId = `${itemType.name.toLowerCase().replace(' ', '-')}-${Date.now()}`;
         const newCount = (items.filter(i => i.type === itemType.name).length) + 1;
-        const Icon = getIconByName(itemType.name);
+        const Icon = getIconByName(itemType.icon);
 
         const newItem: PlacedItem = {
             id: newItemId,

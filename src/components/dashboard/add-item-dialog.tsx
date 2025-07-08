@@ -39,7 +39,7 @@ export function AddItemDialog({ isOpen, onOpenChange, onSelectItem }: AddItemDia
         <ScrollArea className="h-72">
             <div className="grid grid-cols-2 gap-4 p-1">
             {floorPlanItemTypes.map((itemType) => {
-                const Icon = getIconByName(itemType.name);
+                const Icon = getIconByName(itemType.icon);
                 return (
                 <Button
                     key={itemType.id}
