@@ -23,8 +23,15 @@ import {
 } from "@/components/ui/select";
 import type { User } from "@/lib/types";
 import { useInfra } from "../datacenter-switcher";
+import { useToast } from "@/hooks/use-toast";
 
-const USER_ROLES: User['role'][] = ['Técnico', 'Supervisor', 'Gerente', 'Desenvolvedor'];
+const USER_ROLES: User['role'][] = ['technician', 'supervisor', 'manager', 'developer'];
+
+// Helper to capitalize role names for display
+const formatRoleName = (role: string) => {
+    if (!role) return '';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+};
 
 type UserDialogProps = {
     children: React.ReactNode;
@@ -32,7 +39,8 @@ type UserDialogProps = {
 }
 
 export function UserDialog({ children, user }: UserDialogProps) {
-    const { addUser, updateUser } = useInfra();
+    const { addUser, updateUser, buildings } = useInfra();
+    const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!user;
 
@@ -40,7 +48,8 @@ export function UserDialog({ children, user }: UserDialogProps) {
         name: '',
         email: '',
         password: '',
-        role: 'Técnico' as User['role'],
+        role: 'technician' as User['role'],
+        datacenterId: ''
     });
 
     useEffect(() => {
@@ -51,37 +60,50 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     email: user.email,
                     password: '', // Don't show existing password
                     role: user.role,
+                    datacenterId: user.datacenterId || ''
                 });
             } else {
                 setFormData({
                     name: '',
                     email: '',
                     password: '',
-                    role: 'Técnico' as User['role'],
+                    role: 'technician' as User['role'],
+                    datacenterId: buildings[0]?.id || ''
                 });
             }
         }
-    }, [isOpen, user, isEditMode]);
+    }, [isOpen, user, isEditMode, buildings]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({...prev, [id]: value }));
     };
 
-    const handleSelectChange = (value: User['role']) => {
-        setFormData(prev => ({ ...prev, role: value }));
+    const handleSelectChange = (field: 'role' | 'datacenterId') => (value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const { name, email, role } = formData;
         
+        // In a real app, user creation (auth) and profile creation (firestore)
+        // should be handled in a secure backend function.
+        // We are only handling the Firestore profile here.
         if (isEditMode && user) {
-            updateUser({ ...user, name, email, role });
+            updateUser({ ...user, ...formData });
         } else {
-            // In a real app, password would be handled securely.
-            // Here we're just passing it along conceptually.
-            addUser({ name, email, role, avatarUrl: `https://placehold.co/40x40.png` });
+            // New user password should be handled by a backend function that creates the Auth user.
+            if (!formData.password) {
+                toast({ variant: 'destructive', title: 'Senha é obrigatória para novos usuários.' });
+                return;
+            }
+            addUser({ 
+                name: formData.name, 
+                email: formData.email, 
+                role: formData.role, 
+                datacenterId: formData.datacenterId,
+                avatarUrl: `https://placehold.co/40x40.png` 
+            });
         }
         setIsOpen(false);
     }
@@ -112,17 +134,32 @@ export function UserDialog({ children, user }: UserDialogProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="role">Cargo</Label>
-                             <Select value={formData.role} onValueChange={handleSelectChange} required>
+                             <Select value={formData.role} onValueChange={handleSelectChange('role')} required>
                                 <SelectTrigger id="role">
                                     <SelectValue placeholder="Selecione um cargo" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {USER_ROLES.map(roleOption => (
-                                        <SelectItem key={roleOption} value={roleOption}>{roleOption}</SelectItem>
+                                        <SelectItem key={roleOption} value={roleOption}>{formatRoleName(roleOption)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
+                        {formData.role === 'technician' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="datacenterId">Datacenter Atribuído</Label>
+                                <Select value={formData.datacenterId} onValueChange={handleSelectChange('datacenterId')} required>
+                                    <SelectTrigger id="datacenterId">
+                                        <SelectValue placeholder="Selecione um datacenter" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {buildings.map(dc => (
+                                            <SelectItem key={dc.id} value={dc.id}>{dc.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>

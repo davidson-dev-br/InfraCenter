@@ -26,7 +26,7 @@ type AddFloorPlanItemTypeDialogProps = {
 };
 
 export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemTypeDialogProps) {
-    const { addFloorPlanItemType, updateFloorPlanItemType } = useInfra();
+    const { systemSettings, setSystemSettings } = useInfra();
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!item;
 
@@ -60,9 +60,15 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
         };
 
         if (isEditMode && item) {
-            updateFloorPlanItemType({ ...item, ...itemData });
+            const updatedItems = systemSettings.floorPlanItemTypes.map(i => 
+                i.id === item.id ? { ...item, ...itemData } : i
+            );
+            setSystemSettings({ floorPlanItemTypes: updatedItems });
         } else {
-            addFloorPlanItemType(itemData);
+            const newItem = { ...itemData, id: Date.now().toString() };
+            setSystemSettings({ 
+                floorPlanItemTypes: [...systemSettings.floorPlanItemTypes, newItem]
+            });
         }
         setIsOpen(false);
     };

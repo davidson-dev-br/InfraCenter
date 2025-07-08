@@ -14,14 +14,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SystemSettingsPage() {
-    const { 
-        floorPlanItemTypes, 
-        deleteFloorPlanItemType,
-        companyName,
-        setCompanyName,
-        companyLogo,
-        setCompanyLogo
-    } = useInfra();
+    const { systemSettings, setSystemSettings } = useInfra();
+    const { companyName, companyLogo, floorPlanItemTypes } = systemSettings;
     const { toast } = useToast();
 
     const [localCompanyName, setLocalCompanyName] = useState(companyName);
@@ -33,7 +27,8 @@ export default function SystemSettingsPage() {
     }, [companyName, companyLogo]);
 
     const handleDeleteFloorPlanItem = (id: string) => {
-        deleteFloorPlanItemType(id);
+        const updatedList = floorPlanItemTypes.filter(item => item.id !== id);
+        setSystemSettings({ floorPlanItemTypes: updatedList });
     };
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,12 +43,11 @@ export default function SystemSettingsPage() {
     };
 
     const handleSaveCompanySettings = () => {
-        setCompanyName(localCompanyName);
-        setCompanyLogo(localCompanyLogo);
-        toast({
-            title: "Configurações Salvas",
-            description: "As informações da empresa foram atualizadas.",
+        setSystemSettings({
+            companyName: localCompanyName,
+            companyLogo: localCompanyLogo
         });
+        // The toast is now handled within setSystemSettings
     };
     
     return (

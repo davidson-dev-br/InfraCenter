@@ -13,26 +13,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { LogOut, Settings, User } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useAuth } from "./auth-provider";
+import { useToast } from "@/hooks/use-toast";
 
 export function UserNav() {
   const router = useRouter();
+  const { userData } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/");
+      toast({ title: "Você foi desconectado." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro ao sair", description: "Não foi possível desconectar. Tente novamente."})
+    }
+  };
+
+  const getInitials = (name: string = '') => {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative w-10 h-10 rounded-full">
           <Avatar className="w-10 h-10">
-            <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
-            <AvatarFallback>A</AvatarFallback>
+            <AvatarImage src={userData?.avatarUrl} alt={userData?.name} data-ai-hint="user avatar" />
+            <AvatarFallback>{getInitials(userData?.name)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Admin User</p>
+            <p className="text-sm font-medium leading-none">{userData?.name || 'Carregando...'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              admin@example.com
+              {userData?.email || ''}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -40,17 +60,17 @@ export function UserNav() {
         <DropdownMenuGroup>
           <DropdownMenuItem className="cursor-pointer">
             <User className="w-4 h-4 mr-2" />
-            <span>Profile</span>
+            <span>Perfil</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer">
             <Settings className="w-4 h-4 mr-2" />
-            <span>Settings</span>
+            <span>Configurações</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/")} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
           <LogOut className="w-4 h-4 mr-2" />
-          <span>Log out</span>
+          <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

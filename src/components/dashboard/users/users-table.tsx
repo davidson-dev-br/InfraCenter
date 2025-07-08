@@ -18,25 +18,36 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useInfra } from "../datacenter-switcher";
 import { UserDialog } from "./user-dialog";
 
+// Helper to capitalize role names for display
+const formatRoleName = (role: string) => {
+    if (!role) return '';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
 type UsersTableProps = {
   data: User[];
 };
 
 export function UsersTable({ data }: UsersTableProps) {
-  const { deleteUser } = useInfra();
+  const { deleteUser, buildings } = useInfra();
 
   const getRoleVariant = (role: User['role']): 'default' | 'secondary' | 'outline' => {
       switch (role) {
-          case 'Desenvolvedor':
-          case 'Gerente':
+          case 'developer':
+          case 'manager':
               return 'default';
-          case 'Supervisor':
+          case 'supervisor':
               return 'secondary';
-          case 'Técnico':
+          case 'technician':
               return 'outline';
           default:
               return 'secondary';
       }
+  }
+
+  const getDatacenterName = (id?: string) => {
+    if (!id) return 'N/A';
+    return buildings.find(b => b.id === id)?.name || 'Desconhecido';
   }
 
   return (
@@ -48,13 +59,14 @@ export function UsersTable({ data }: UsersTableProps) {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Cargo</TableHead>
+                    <TableHead>Datacenter</TableHead>
                     <TableHead><span className="sr-only">Ações</span></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {data.length === 0 ? (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                             Nenhum usuário cadastrado.
                         </TableCell>
                     </TableRow>
@@ -70,7 +82,10 @@ export function UsersTable({ data }: UsersTableProps) {
                             <TableCell className="font-medium">{user.name}</TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell>
-                                <Badge variant={getRoleVariant(user.role)}>{user.role}</Badge>
+                                <Badge variant={getRoleVariant(user.role)}>{formatRoleName(user.role)}</Badge>
+                            </TableCell>
+                            <TableCell>
+                                {user.role === 'technician' ? getDatacenterName(user.datacenterId) : 'Todos'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>

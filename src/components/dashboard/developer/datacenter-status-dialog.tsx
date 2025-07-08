@@ -23,7 +23,7 @@ type DatacenterStatusDialogProps = {
 };
 
 export function DatacenterStatusDialog({ children, status }: DatacenterStatusDialogProps) {
-    const { addDatacenterStatus, updateDatacenterStatus } = useInfra();
+    const { systemSettings, setSystemSettings } = useInfra();
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!status;
 
@@ -47,9 +47,15 @@ export function DatacenterStatusDialog({ children, status }: DatacenterStatusDia
         };
 
         if (isEditMode && status) {
-            updateDatacenterStatus({ ...status, ...statusData });
+            const updatedStatuses = systemSettings.datacenterStatuses.map(s => 
+                s.id === status.id ? { ...s, ...statusData } : s
+            );
+            setSystemSettings({ datacenterStatuses: updatedStatuses });
         } else {
-            addDatacenterStatus(statusData);
+            const newStatus = { ...statusData, id: Date.now().toString() };
+            setSystemSettings({ 
+                datacenterStatuses: [...systemSettings.datacenterStatuses, newStatus] 
+            });
         }
         setIsOpen(false);
     };

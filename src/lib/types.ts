@@ -4,21 +4,22 @@ export interface FloorPlanItemType {
   id: string;
   name: string;
   icon: string;
-  defaultWidth?: number; // in meters
-  defaultLength?: number; // in meters
-  color?: string;
+  defaultWidth: number; 
+  defaultLength: number;
+  color: string;
 }
 
 export interface PlacedItem {
   id: string;
+  roomId: string; // ID of the room it's in
   name: string;
   type: string;
-  icon: LucideIcon;
+  icon: LucideIcon | string; // Allow string for serialization
   x: number;
   y: number;
   status: 'Ativo' | 'Inativo' | 'Manutenção';
-  width: number; // in meters
-  length: number; // in meters
+  width: number;
+  length: number;
   sizeU?: number;
   row?: string;
   observations?: string;
@@ -35,7 +36,7 @@ export interface Equipment {
   parentItemId: string; // Cabinet ID
   positionU: string;
   imageUrl?: string;
-  brand?: string; // Fabricante
+  brand?: string;
   model?: string;
   price?: number;
   serialNumber?: string;
@@ -72,26 +73,28 @@ export interface DeletionLogEntry {
   deletedBy: string;
   deletedAt: string;
   reason: string;
-  roomId: string; // ID of the room it was in
-  itemData: PlacedItem; // Full data of the deleted item
+  roomId: string; 
+  itemData: Omit<PlacedItem, 'icon'> & { icon: string }; // Store icon name as string
 }
+
+export type UserRole = 'technician' | 'supervisor' | 'manager' | 'developer';
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Técnico' | 'Supervisor' | 'Gerente' | 'Desenvolvedor';
+  role: UserRole;
   avatarUrl?: string;
+  datacenterId?: string; // ID of the datacenter for technicians
 }
 
-// For the main dashboard infrastructure
 export interface Room {
   id: string;
   name: string;
-  width: number; // in meters
-  length: number; // in meters
-  tileWidth: number; // in cm
-  tileLength: number; // in cm
+  width: number;
+  length: number;
+  tileWidth: number;
+  tileLength: number;
 }
 
 export interface Building {
@@ -106,4 +109,20 @@ export interface StatusOption {
   id: string;
   name: string;
   color: string;
+}
+
+export interface SelectOption {
+    id: string;
+    name: string;
+}
+
+export interface SystemSettings {
+    companyName: string;
+    companyLogo: string | null;
+    equipmentTypes: SelectOption[];
+    deletionReasons: SelectOption[];
+    datacenterStatuses: StatusOption[];
+    equipmentStatuses: SelectOption[];
+    cableTypes: SelectOption[];
+    floorPlanItemTypes: FloorPlanItemType[];
 }
