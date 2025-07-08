@@ -43,6 +43,6 @@ export interface Building {
   id: string;
   name: string;
   location: string;
-  status: "Online" | "Offline" | "Maintenance";
+  status: string;
   rooms: Room[];
 }

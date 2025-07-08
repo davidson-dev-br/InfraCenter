@@ -53,6 +53,28 @@ const initialFloorPlanItemTypes: FloorPlanItemType[] = [
     { id: '4', name: 'Patch Panel', icon: 'Cable', defaultWidth: 0.6, defaultLength: 0.3, color: '#65a30d' },
 ];
 
+// Developer settings options
+type SelectOption = { id: string; name: string };
+const initialEquipmentTypes: SelectOption[] = [
+    { id: '1', name: 'Servidor' },
+    { id: '2', name: 'Switch' },
+    { id: '3', name: 'Patch Panel' },
+    { id: '4', name: 'Storage' },
+    { id: '5', name: 'Roteador' },
+];
+const initialDeletionReasons: SelectOption[] = [
+    { id: '1', name: 'Item criado por engano' },
+    { id: '2', name: 'Item desativado (decommissioned)' },
+    { id: '3', name: 'Substituído por novo item' },
+    { id: '4', name: 'Erro de inventário' },
+];
+const initialDatacenterStatuses: SelectOption[] = [
+    { id: '1', name: 'Online' },
+    { id: '2', name: 'Offline' },
+    { id: '3', name: 'Maintenance' },
+];
+
+
 // --- Context for sharing infrastructure state ---
 interface InfraContextType {
     buildings: BuildingType[];
@@ -62,6 +84,9 @@ interface InfraContextType {
     selectedRoomId: string | null;
     companyName: string;
     companyLogo: string | null;
+    equipmentTypes: SelectOption[];
+    deletionReasons: SelectOption[];
+    datacenterStatuses: SelectOption[];
     
     setSelectedBuildingId: (buildingId: string) => void;
     setSelectedRoomId: (roomId: string) => void;
@@ -83,6 +108,13 @@ interface InfraContextType {
     addFloorPlanItemType: (item: Omit<FloorPlanItemType, 'id'>) => void;
     updateFloorPlanItemType: (item: FloorPlanItemType) => void;
     deleteFloorPlanItemType: (id: string) => void;
+
+    addEquipmentType: (name: string) => void;
+    deleteEquipmentType: (id: string) => void;
+    addDeletionReason: (name: string) => void;
+    deleteDeletionReason: (id: string) => void;
+    addDatacenterStatus: (name: string) => void;
+    deleteDatacenterStatus: (id: string) => void;
 }
 
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
@@ -96,6 +128,11 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [companyName, setCompanyName] = React.useState<string>("TIM BLMSAC");
     const [companyLogo, setCompanyLogo] = React.useState<string | null>(null);
     const { toast } = useToast();
+
+    // Developer settings states
+    const [equipmentTypes, setEquipmentTypes] = React.useState<SelectOption[]>(initialEquipmentTypes);
+    const [deletionReasons, setDeletionReasons] = React.useState<SelectOption[]>(initialDeletionReasons);
+    const [datacenterStatuses, setDatacenterStatuses] = React.useState<SelectOption[]>(initialDatacenterStatuses);
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
@@ -226,6 +263,32 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: "destructive", title: "Tipo de Item Removido" });
     };
     
+    // Developer options handlers
+    const addEquipmentType = (name: string) => {
+        const newType: SelectOption = { id: Date.now().toString(), name };
+        setEquipmentTypes(prev => [...prev, newType]);
+    };
+    const deleteEquipmentType = (id: string) => {
+        setEquipmentTypes(prev => prev.filter(item => item.id !== id));
+    };
+
+    const addDeletionReason = (name: string) => {
+        const newReason: SelectOption = { id: Date.now().toString(), name };
+        setDeletionReasons(prev => [...prev, newReason]);
+    };
+    const deleteDeletionReason = (id: string) => {
+        setDeletionReasons(prev => prev.filter(item => item.id !== id));
+    };
+
+    const addDatacenterStatus = (name: string) => {
+        const newStatus: SelectOption = { id: Date.now().toString(), name };
+        setDatacenterStatuses(prev => [...prev, newStatus]);
+    };
+    const deleteDatacenterStatus = (id: string) => {
+        setDatacenterStatuses(prev => prev.filter(item => item.id !== id));
+    };
+
+
     return (
         <InfraContext.Provider value={{ 
             buildings, 
@@ -235,6 +298,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             selectedRoomId, 
             companyName,
             companyLogo,
+            equipmentTypes,
+            deletionReasons,
+            datacenterStatuses,
             setSelectedBuildingId, 
             setSelectedRoomId,
             setCompanyName,
@@ -250,7 +316,13 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             reorderRooms,
             addFloorPlanItemType,
             updateFloorPlanItemType,
-            deleteFloorPlanItemType
+            deleteFloorPlanItemType,
+            addEquipmentType,
+            deleteEquipmentType,
+            addDeletionReason,
+            deleteDeletionReason,
+            addDatacenterStatus,
+            deleteDatacenterStatus
          }}>
             {children}
         </InfraContext.Provider>

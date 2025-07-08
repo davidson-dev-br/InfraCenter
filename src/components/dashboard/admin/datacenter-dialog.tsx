@@ -30,13 +30,13 @@ type DatacenterDialogProps = {
 }
 
 export function DatacenterDialog({ children, building }: DatacenterDialogProps) {
-    const { addBuilding, updateBuilding } = useInfra();
+    const { addBuilding, updateBuilding, datacenterStatuses } = useInfra();
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!building;
 
     const [name, setName] = useState('');
     const [location, setLocation] = useState('');
-    const [status, setStatus] = useState<BuildingType['status']>('Online');
+    const [status, setStatus] = useState('Online');
 
     useEffect(() => {
         if (isOpen) {
@@ -47,10 +47,10 @@ export function DatacenterDialog({ children, building }: DatacenterDialogProps) 
             } else {
                 setName('');
                 setLocation('');
-                setStatus('Online');
+                setStatus(datacenterStatuses[0]?.name || 'Online');
             }
         }
-    }, [isOpen, building, isEditMode]);
+    }, [isOpen, building, isEditMode, datacenterStatuses]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,14 +92,14 @@ export function DatacenterDialog({ children, building }: DatacenterDialogProps) 
                             <Label htmlFor="status" className="text-right">
                                 Status
                             </Label>
-                            <Select value={status} onValueChange={(v) => setStatus(v as BuildingType['status'])} required>
+                            <Select value={status} onValueChange={setStatus} required>
                                 <SelectTrigger id="status" className="col-span-3">
                                     <SelectValue placeholder="Selecione um status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Online">Online</SelectItem>
-                                    <SelectItem value="Offline">Offline</SelectItem>
-                                    <SelectItem value="Maintenance">Manutenção</SelectItem>
+                                    {datacenterStatuses.map(statusOption => (
+                                        <SelectItem key={statusOption.id} value={statusOption.name}>{statusOption.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

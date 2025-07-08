@@ -6,51 +6,40 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2 } from "lucide-react";
-
-// Mock data, as these are developer-level configurations
-const initialEquipmentTypes = [
-    { id: '1', name: 'Servidor' },
-    { id: '2', name: 'Switch' },
-    { id: '3', name: 'Patch Panel' },
-    { id: '4', name: 'Storage' },
-    { id: '5', name: 'Roteador' },
-];
-
-const initialDeletionReasons = [
-    { id: '1', name: 'Item criado por engano' },
-    { id: '2', name: 'Item desativado (decommissioned)' },
-    { id: '3', name: 'Substituído por novo item' },
-    { id: '4', name: 'Erro de inventário' },
-];
+import { useInfra } from "@/components/dashboard/datacenter-switcher";
 
 
 export default function DeveloperSettingsPage() {
-    const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
+    const {
+        equipmentTypes, addEquipmentType, deleteEquipmentType,
+        deletionReasons, addDeletionReason, deleteDeletionReason,
+        datacenterStatuses, addDatacenterStatus, deleteDatacenterStatus,
+    } = useInfra();
+
     const [newEquipmentType, setNewEquipmentType] = useState("");
-    const [deletionReasons, setDeletionReasons] = useState(initialDeletionReasons);
     const [newDeletionReason, setNewDeletionReason] = useState("");
+    const [newDatacenterStatus, setNewDatacenterStatus] = useState("");
 
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
-            setEquipmentTypes(prev => [...prev, { id: Date.now().toString(), name: newEquipmentType.trim() }]);
+            addEquipmentType(newEquipmentType.trim());
             setNewEquipmentType("");
         }
     };
 
-    const handleDeleteEquipmentType = (id: string) => {
-        setEquipmentTypes(prev => prev.filter(item => item.id !== id));
-    };
-
     const handleAddDeletionReason = () => {
         if (newDeletionReason.trim()) {
-            setDeletionReasons(prev => [...prev, { id: Date.now().toString(), name: newDeletionReason.trim() }]);
+            addDeletionReason(newDeletionReason.trim());
             setNewDeletionReason("");
         }
     };
 
-    const handleDeleteDeletionReason = (id: string) => {
-        setDeletionReasons(prev => prev.filter(item => item.id !== id));
+    const handleAddDatacenterStatus = () => {
+        if (newDatacenterStatus.trim()) {
+            addDatacenterStatus(newDatacenterStatus.trim());
+            setNewDatacenterStatus("");
+        }
     };
 
     return (
@@ -61,7 +50,7 @@ export default function DeveloperSettingsPage() {
                     <CardDescription>Gerencie opções e seletores utilizados em todo o sistema. As alterações aqui podem afetar a operação da aplicação.</CardDescription>
                 </CardHeader>
             </Card>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
@@ -84,7 +73,7 @@ export default function DeveloperSettingsPage() {
                                 {equipmentTypes.map(item => (
                                     <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
                                         <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteEquipmentType(item.id)}>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteEquipmentType(item.id)}>
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
@@ -116,7 +105,39 @@ export default function DeveloperSettingsPage() {
                                 {deletionReasons.map(item => (
                                     <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
                                         <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDeletionReason(item.id)}>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteDeletionReason(item.id)}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-headline">Status do Datacenter</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex gap-2 mb-4">
+                            <Input
+                                placeholder="Adicionar novo..."
+                                value={newDatacenterStatus}
+                                onChange={(e) => setNewDatacenterStatus(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddDatacenterStatus()}
+                            />
+                            <Button onClick={handleAddDatacenterStatus}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Adicionar
+                            </Button>
+                        </div>
+                        <ScrollArea className="h-72">
+                            <div className="pr-4 space-y-2">
+                                {datacenterStatuses.map(item => (
+                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
+                                        <span className="font-medium">{item.name}</span>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteDatacenterStatus(item.id)}>
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
