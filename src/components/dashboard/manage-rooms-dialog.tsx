@@ -76,7 +76,7 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
     
     const handleCancelEdit = () => {
         setEditingRoom(null);
-    }
+    };
     
     const handleDeleteClick = (roomId: string) => {
         if (selectedBuildingId) {
@@ -144,7 +144,7 @@ export function ManageRoomsDialog({ children }: { children: React.ReactNode }) {
                                 </Button>
                             )}
                             <Button type="submit" disabled={!selectedBuilding || !formData.name.trim()}>
-                                {editingRoom ? 'Salvar Sala' : 'Adicionar Sala'}
+                                {editingRoom ? 'Salvar Alterações' : 'Adicionar Sala'}
                             </Button>
                         </div>
                     </form>
