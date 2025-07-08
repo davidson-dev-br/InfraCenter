@@ -35,8 +35,7 @@ export function Header() {
   const pathname = usePathname();
   const { 
     itemsByRoom,
-    approveItem,
-    companyName
+    approveItem
   } = useInfra();
   
   const allItems = Object.values(itemsByRoom).flat();
@@ -55,12 +54,15 @@ export function Header() {
         <div className="flex items-center gap-2 mr-4">
             <Building2 className="w-6 h-6 text-primary" />
             <span className="text-lg font-bold sm:inline-block font-headline">
-                {companyName}
+                InfraCenter Manager
             </span>
             <Badge variant="secondary">v3.2.6</Badge>
         </div>
         
-        <DatacenterSwitcher />
+        <div className="flex items-center gap-2">
+            <span className="hidden text-sm font-medium sm:inline text-muted-foreground">Prédio:</span>
+            <DatacenterSwitcher />
+        </div>
 
         <div className="flex items-center gap-2 ml-auto">
            <DropdownMenu>
