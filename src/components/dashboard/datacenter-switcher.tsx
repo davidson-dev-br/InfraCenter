@@ -111,7 +111,7 @@ interface InfraContextType {
     updateConnection: (updatedConnection: Connection) => Promise<void>;
     deleteConnection: (connectionId: string) => Promise<void>;
     
-    addUser: (userData: Omit<User, 'id'>) => Promise<void>;
+    addUser: (userData: Omit<User, 'id'>, userId?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
 }
@@ -119,7 +119,7 @@ interface InfraContextType {
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
 
 export function InfraProvider({ children }: { children: React.ReactNode }) {
-    const { userData } = useAuth();
+    const { user: authUser, userData } = useAuth();
     const { toast } = useToast();
 
     // Overall state
@@ -150,7 +150,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             if (doc.exists()) {
                 setSystemSettingsState(doc.data() as SystemSettings);
             } else {
-                // If settings don't exist, create them with initial values
                 setDoc(settingsDocRef, initialSystemSettings);
             }
         });
@@ -162,9 +161,45 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setUsers(usersData);
         });
 
+        const seedInitialData = async () => {
+            if (!db) return;
+            console.log("Database is empty. Seeding initial data...");
+        
+            const batch = writeBatch(db);
+        
+            // 1. Seed Datacenter
+            const buildingData: Omit<BuildingType, 'id'> = { 
+                name: 'Datacenter Principal', 
+                location: 'Localização Principal', 
+                status: 'Online',
+                rooms: [{
+                    id: `r-${Date.now()}`,
+                    name: 'Sala Principal',
+                    width: 20,
+                    length: 20,
+                    tileWidth: 60,
+                    tileLength: 60,
+                }]
+            };
+            const newBuildingRef = doc(collection(db, 'datacenters'));
+            batch.set(newBuildingRef, buildingData);
+
+            await batch.commit();
+
+            toast({
+              title: "Bem-vindo ao InfraCenter!",
+              description: "Criamos um datacenter de exemplo para você começar.",
+            });
+        };
+
         // Listen to datacenters (buildings) collection
         const datacentersColRef = collection(db, 'datacenters');
         const unsubDatacenters = onSnapshot(datacentersColRef, (snapshot) => {
+            if (snapshot.empty) {
+                seedInitialData();
+                return;
+            }
+            
             const buildingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuildingType));
             setBuildings(buildingsData);
 
@@ -240,7 +275,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const setSystemSettings = async (settings: Partial<SystemSettings>) => {
         if (!db) return;
         try {
-            // Using updateDoc allows partial updates
             await updateDoc(doc(db, 'system', 'settings'), settings);
             toast({ title: 'Configurações Salvas!' });
         } catch (error) {
@@ -350,8 +384,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
       
       try {
         const { itemData } = logEntry;
-        // This doesn't handle collisions as that logic is complex and needs the full room layout.
-        // For simplicity, we restore it. The user can move it if it collides.
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemData.id), itemData);
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'deletion_log', logId));
         toast({ title: 'Item Restaurado!' });
@@ -385,7 +417,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return;
         const updatedRooms = (building.rooms || []).filter(r => r.id !== roomId);
-        // Also delete items in that room
         const itemsToDelete = await getDocs(query(collection(db, 'datacenters', buildingId, 'items'), where('roomId', '==', roomId)));
         const batch = writeBatch(db);
         itemsToDelete.forEach(doc => batch.delete(doc.ref));
@@ -445,12 +476,19 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: 'destructive', title: 'Conexão Excluída!' });
     };
 
-    const addUser = async (userData: Omit<User, 'id'>) => {
+    const addUser = async (userData: Omit<User, 'id'>, userId?: string) => {
         if (!db) return;
-        // This is complex. Creating a user in Auth is separate from Firestore.
-        // For now, we just add to Firestore. Auth user must be created manually or via a backend function.
-        await addDoc(collection(db, 'users'), userData);
-        toast({ title: 'Usuário Adicionado!' });
+        try {
+            if (userId) {
+                await setDoc(doc(db, 'users', userId), userData);
+            } else {
+                await addDoc(collection(db, 'users'), userData);
+            }
+            toast({ title: 'Usuário Salvo!' });
+        } catch(error) {
+            console.error("Error adding/updating user:", error);
+            toast({ variant: 'destructive', title: 'Erro ao salvar usuário.'});
+        }
     };
     const updateUser = async (updatedUser: User) => {
         if (!db) return;

@@ -24,6 +24,8 @@ import {
 import type { User } from "@/lib/types";
 import { useInfra } from "../datacenter-switcher";
 import { useToast } from "@/hooks/use-toast";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const USER_ROLES: User['role'][] = ['technician', 'supervisor', 'manager', 'developer'];
 
@@ -83,27 +85,43 @@ export function UserDialog({ children, user }: UserDialogProps) {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // In a real app, user creation (auth) and profile creation (firestore)
-        // should be handled in a secure backend function.
-        // We are only handling the Firestore profile here.
         if (isEditMode && user) {
             updateUser({ ...user, ...formData });
         } else {
-            // New user password should be handled by a backend function that creates the Auth user.
-            if (!formData.password) {
+            if (!formData.password || !auth) {
                 toast({ variant: 'destructive', title: 'Senha é obrigatória para novos usuários.' });
                 return;
             }
-            addUser({ 
-                name: formData.name, 
-                email: formData.email, 
-                role: formData.role, 
-                datacenterId: formData.datacenterId,
-                avatarUrl: `https://placehold.co/40x40.png` 
-            });
+            try {
+                // 1. Create user in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+                const authUser = userCredential.user;
+
+                // 2. Add user profile to Firestore with the same UID
+                await addUser({ 
+                    name: formData.name, 
+                    email: formData.email, 
+                    role: formData.role, 
+                    datacenterId: formData.datacenterId,
+                    avatarUrl: `https://placehold.co/40x40.png` 
+                }, authUser.uid);
+                
+                toast({ title: "Usuário Criado", description: "Usuário criado na autenticação e no banco de dados."});
+            } catch (error: any) {
+                console.error("Error creating user:", error);
+                const errorCode = error.code;
+                let message = "Falha ao criar usuário.";
+                if (errorCode === 'auth/email-already-in-use') {
+                    message = "Este email já está em uso.";
+                } else if (errorCode === 'auth/weak-password') {
+                    message = "A senha deve ter pelo menos 6 caracteres.";
+                }
+                toast({ variant: 'destructive', title: 'Erro', description: message });
+                return; // Stop execution
+            }
         }
         setIsOpen(false);
     }
@@ -126,7 +144,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
+                            <Input id="email" type="email" value={formData.email} onChange={handleChange} required disabled={isEditMode} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password">Senha</Label>
