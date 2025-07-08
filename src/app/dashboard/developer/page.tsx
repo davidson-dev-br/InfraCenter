@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
 import { DatacenterStatusDialog } from "@/components/dashboard/developer/datacenter-status-dialog";
+import { DbActionsCard } from "@/components/dashboard/developer/db-actions-card";
 
 
 export default function DeveloperSettingsPage() {
@@ -43,6 +44,8 @@ export default function DeveloperSettingsPage() {
                 </CardHeader>
             </Card>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <DbActionsCard />
+                
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
