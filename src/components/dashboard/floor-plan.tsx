@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock, Expand } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useInfra } from '@/components/dashboard/datacenter-switcher';
 import type { PlacedItem, FloorPlanItemType } from '@/lib/types';
@@ -254,6 +255,15 @@ export function FloorPlan() {
 
     const handlePrint = () => window.print();
 
+    const handleFullscreen = () => {
+        const element = floorPlanRef.current;
+        if (element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            }
+        }
+    };
+
     const InteractiveFloorPlan = (
         <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -277,6 +287,7 @@ export function FloorPlan() {
                 <div className="flex items-center gap-2">
                     <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar Item</Button>
                     <Button variant="outline" onClick={handlePrint}><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
+                    <Button variant="outline" onClick={handleFullscreen}><Expand className="mr-2" /> Tela Cheia</Button>
                 </div>
             </div>
 
