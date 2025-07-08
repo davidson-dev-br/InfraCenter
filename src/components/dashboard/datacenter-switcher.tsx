@@ -55,8 +55,8 @@ const initialEquipment: Equipment[] = [
 ];
 
 const initialConnections: Connection[] = [
-    { id: 'conn-1', sourceEquipmentId: 'eq-1', sourcePort: 'Gi1/0/1', destinationEquipmentId: 'eq-2', destinationPort: 'Gi1/0/24', cableType: 'CAT6 UTP', status: 'Conectado', notes: 'Link de uplink principal.' },
-    { id: 'conn-2', sourceEquipmentId: 'eq-3', sourcePort: 'Eth1', destinationEquipmentId: 'eq-4', destinationPort: 'Eth2', cableType: 'Fibra Óptica OM4', status: 'Planejado' },
+    { id: 'conn-1', sourceEquipmentId: 'eq-1', sourcePort: 'Gi1/0/1', destinationEquipmentId: 'eq-2', destinationPort: 'Gi1/0/24', cableType: 'CAT6 UTP', status: 'Conectado', isActive: true, notes: 'Link de uplink principal.' },
+    { id: 'conn-2', sourceEquipmentId: 'eq-3', sourcePort: 'Eth1', destinationEquipmentId: 'eq-4', destinationPort: 'Eth2', cableType: 'Fibra Óptica OM4', status: 'Planejado', isActive: false },
 ];
 
 
@@ -95,6 +95,16 @@ const initialEquipmentStatuses: SelectOption[] = [
     { id: '5', name: 'Desativado' },
 ];
 
+const initialCableTypes: SelectOption[] = [
+    { id: '1', name: 'CAT6 UTP' },
+    { id: '2', name: 'CAT6a UTP' },
+    { id: '3', name: 'CAT7 STP' },
+    { id: '4', name: 'Fibra Óptica OM3' },
+    { id: '5', name: 'Fibra Óptica OM4' },
+    { id: '6', name: 'Fibra Óptica OS2' },
+    { id: '7', name: 'DAC (Direct Attach Copper)' },
+];
+
 const initialDeletionLog: DeletionLogEntry[] = [
     { id: 'del-1', itemId: 'deleted-item-1', itemName: 'Old Server 01', itemType: 'Server Rack', deletedBy: 'Admin User', deletedAt: '01/07/2025', reason: 'Item desativado (decommissioned)' }
 ];
@@ -115,6 +125,7 @@ interface InfraContextType {
     deletionReasons: SelectOption[];
     datacenterStatuses: StatusOption[];
     equipmentStatuses: SelectOption[];
+    cableTypes: SelectOption[];
     deletionLog: DeletionLogEntry[];
     
     setSelectedBuildingId: (buildingId: string) => void;
@@ -150,6 +161,9 @@ interface InfraContextType {
 
     addEquipmentStatus: (name: string) => void;
     deleteEquipmentStatus: (id: string) => void;
+    
+    addCableType: (name: string) => void;
+    deleteCableType: (id: string) => void;
 
     addEquipment: (equipmentData: Omit<Equipment, 'id'>) => void;
     updateEquipment: (updatedEquipment: Equipment) => void;
@@ -179,6 +193,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [deletionReasons, setDeletionReasons] = React.useState<SelectOption[]>(initialDeletionReasons);
     const [datacenterStatuses, setDatacenterStatuses] = React.useState<StatusOption[]>(initialDatacenterStatuses);
     const [equipmentStatuses, setEquipmentStatuses] = React.useState<SelectOption[]>(initialEquipmentStatuses);
+    const [cableTypes, setCableTypes] = React.useState<SelectOption[]>(initialCableTypes);
     const [deletionLog, setDeletionLog] = React.useState<DeletionLogEntry[]>(initialDeletionLog);
 
     const setSelectedBuildingId = (buildingId: string) => {
@@ -374,6 +389,15 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         setEquipmentStatuses(prev => prev.filter(item => item.id !== id));
     };
 
+    const addCableType = (name: string) => {
+        const newType: SelectOption = { id: Date.now().toString(), name };
+        setCableTypes(prev => [...prev, newType]);
+    };
+    const deleteCableType = (id: string) => {
+        setCableTypes(prev => prev.filter(item => item.id !== id));
+    };
+
+
     // Equipment handlers
     const addEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
         const newEquipment: Equipment = { id: `eq-${Date.now()}`, ...equipmentData };
@@ -425,6 +449,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deletionReasons,
             datacenterStatuses,
             equipmentStatuses,
+            cableTypes,
             deletionLog,
             setSelectedBuildingId, 
             setSelectedRoomId,
@@ -452,6 +477,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteDatacenterStatus,
             addEquipmentStatus,
             deleteEquipmentStatus,
+            addCableType,
+            deleteCableType,
             addEquipment,
             updateEquipment,
             deleteEquipment,

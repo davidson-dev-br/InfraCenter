@@ -50,13 +50,14 @@ export function ConnectionsTable({ data }: ConnectionsTableProps) {
                     <TableHead>Porta</TableHead>
                     <TableHead>Tipo de Cabo</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Ativa</TableHead>
                     <TableHead><span className="sr-only">Ações</span></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {data.length === 0 ? (
                     <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                             Nenhuma conexão cadastrada.
                         </TableCell>
                     </TableRow>
@@ -72,6 +73,11 @@ export function ConnectionsTable({ data }: ConnectionsTableProps) {
                             </TableCell>
                             <TableCell>
                                <Badge variant={getStatusVariant(conn.status)}>{conn.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={conn.isActive ? 'default' : 'secondary'}>
+                                    {conn.isActive ? 'Sim' : 'Não'}
+                                </Badge>
                             </TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>

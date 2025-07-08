@@ -59,6 +59,7 @@ export interface Connection {
   destinationPort: string;
   cableType: string;
   status: 'Conectado' | 'Desconectado' | 'Planejado';
+  isActive: boolean;
   notes?: string;
 }
 

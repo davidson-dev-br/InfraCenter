@@ -25,8 +25,8 @@ import type { Connection } from "@/lib/types";
 import { useInfra } from "../datacenter-switcher";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
-const CABLE_TYPES = ['CAT6 UTP', 'CAT6a UTP', 'CAT7 STP', 'Fibra Óptica OM3', 'Fibra Óptica OM4', 'Fibra Óptica OS2', 'DAC (Direct Attach Copper)'];
 const CONNECTION_STATUSES: Connection['status'][] = ['Conectado', 'Desconectado', 'Planejado'];
 
 type ConnectionDialogProps = {
@@ -35,7 +35,7 @@ type ConnectionDialogProps = {
 };
 
 export function ConnectionDialog({ children, connection }: ConnectionDialogProps) {
-  const { equipment, addConnection, updateConnection } = useInfra();
+  const { equipment, addConnection, updateConnection, cableTypes } = useInfra();
   const [isOpen, setIsOpen] = useState(false);
   const isEditMode = !!connection;
 
@@ -44,8 +44,9 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
     sourcePort: '',
     destinationEquipmentId: equipment[1]?.id || '',
     destinationPort: '',
-    cableType: CABLE_TYPES[0],
+    cableType: cableTypes[0]?.name || '',
     status: 'Planejado',
+    isActive: false,
     notes: ''
   });
 
@@ -59,7 +60,7 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
         setFormData(getDefaultFormData());
       }
     }
-  }, [isOpen, connection, isEditMode, equipment]);
+  }, [isOpen, connection, isEditMode, equipment, cableTypes]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -68,6 +69,10 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
 
   const handleSelectChange = (id: keyof Omit<Connection, 'id'>) => (value: string) => {
     setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSwitchChange = (id: keyof Omit<Connection, 'id'>) => (checked: boolean) => {
+    setFormData(prev => ({ ...prev, [id]: checked }));
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -134,8 +139,8 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
                 <Select value={formData.cableType} onValueChange={handleSelectChange('cableType')} required>
                   <SelectTrigger id="cableType"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
-                    {CABLE_TYPES.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {cableTypes.map(type => (
+                      <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -150,6 +155,10 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch id="isActive" checked={formData.isActive} onCheckedChange={handleSwitchChange('isActive')} />
+                <Label htmlFor="isActive">Conexão Ativa</Label>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="notes">Observações</Label>

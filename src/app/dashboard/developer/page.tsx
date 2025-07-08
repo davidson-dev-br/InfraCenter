@@ -16,11 +16,13 @@ export default function DeveloperSettingsPage() {
         deletionReasons, addDeletionReason, deleteDeletionReason,
         datacenterStatuses, deleteDatacenterStatus,
         equipmentStatuses, addEquipmentStatus, deleteEquipmentStatus,
+        cableTypes, addCableType, deleteCableType,
     } = useInfra();
 
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [newDeletionReason, setNewDeletionReason] = useState("");
     const [newEquipmentStatus, setNewEquipmentStatus] = useState("");
+    const [newCableType, setNewCableType] = useState("");
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
@@ -42,6 +44,13 @@ export default function DeveloperSettingsPage() {
             setNewEquipmentStatus("");
         }
     };
+    
+    const handleAddCableType = () => {
+        if (newCableType.trim()) {
+            addCableType(newCableType.trim());
+            setNewCableType("");
+        }
+    };
 
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
@@ -51,7 +60,7 @@ export default function DeveloperSettingsPage() {
                     <CardDescription>Gerencie opções e seletores utilizados em todo o sistema. As alterações aqui podem afetar a operação da aplicação.</CardDescription>
                 </CardHeader>
             </Card>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
@@ -107,6 +116,38 @@ export default function DeveloperSettingsPage() {
                                     <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
                                         <span className="font-medium">{item.name}</span>
                                         <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteDeletionReason(item.id)}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+
+                 <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-headline">Tipos de Cabo</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex gap-2 mb-4">
+                            <Input
+                                placeholder="Adicionar novo..."
+                                value={newCableType}
+                                onChange={(e) => setNewCableType(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddCableType()}
+                            />
+                            <Button onClick={handleAddCableType}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Adicionar
+                            </Button>
+                        </div>
+                        <ScrollArea className="h-72">
+                            <div className="pr-4 space-y-2">
+                                {cableTypes.map(item => (
+                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
+                                        <span className="font-medium">{item.name}</span>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => deleteCableType(item.id)}>
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
