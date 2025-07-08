@@ -2,13 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Bell, LayoutGrid, Server, Spline, FileText } from "lucide-react";
+import { 
+  Building2, 
+  LayoutGrid, 
+  Server, 
+  Spline, 
+  FileText,
+  SlidersHorizontal,
+  ClipboardCheck,
+  History,
+  Users,
+  ClipboardX,
+  Building,
+  Settings
+} from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { ApprovalCenterDialog } from "./approval-center-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const pathname = usePathname();
@@ -41,15 +62,64 @@ export function Header() {
         <DatacenterSwitcher />
 
         <div className="flex items-center gap-2 ml-auto">
-            <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5"/>
-                  {pendingApprovalCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">{pendingApprovalCount}</span>
-                  )}
+                <SlidersHorizontal className="w-5 h-5" />
+                 {pendingApprovalCount > 0 && (
+                   <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex w-full h-full bg-red-500 rounded-full opacity-75 animate-ping"></span>
+                    <span className="relative inline-flex w-2.5 h-2.5 bg-red-600 rounded-full"></span>
+                  </span>
+                )}
+                <span className="sr-only">Abrir menu de gerenciamento</span>
               </Button>
-            </ApprovalCenterDialog>
-            <UserNav />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Gerenciamento</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+                <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                    <ClipboardCheck />
+                    <span>Centro de Aprovações</span>
+                    {pendingApprovalCount > 0 && (
+                      <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
+                    )}
+                  </DropdownMenuItem>
+                </ApprovalCenterDialog>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <History />
+                <span>Log de Atividades</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem className="cursor-pointer">
+                <Users />
+                <span>Gerenciar Usuários</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <ClipboardX />
+                <span>Log de Exclusões</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/dashboard/admin">
+                  <Building />
+                  <span>Gerenciar Datacenters</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings />
+                <span>Configurações do Sistema</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <UserNav />
         </div>
       </div>
       <Separator />
