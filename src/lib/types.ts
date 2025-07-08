@@ -15,9 +15,9 @@ export interface PlacedItem {
   icon: LucideIcon;
   x: number;
   y: number;
-  status?: 'Ativo' | 'Inativo' | 'Manutenção';
-  width?: number;
-  length?: number;
+  status: 'Ativo' | 'Inativo' | 'Manutenção';
+  width: number; // in meters
+  length: number; // in meters
   sizeU?: number;
   row?: string;
   observations?: string;

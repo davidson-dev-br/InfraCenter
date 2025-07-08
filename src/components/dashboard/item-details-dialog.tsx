@@ -53,15 +53,15 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDe
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     if (item) {
-        onSave({ ...item, ...formData });
+        // The collision check is now handled by the parent component (FloorPlan)
+        onSave({ ...item, ...formData } as PlacedItem);
     }
-    onOpenChange(false);
+    // The parent will decide whether to close the dialog or show an error
   };
 
   const handleApprove = () => {
     if (item) {
-      onSave({ ...item, ...formData, awaitingApproval: false });
-      onOpenChange(false);
+      onSave({ ...item, ...formData, awaitingApproval: false } as PlacedItem);
     }
   }
 

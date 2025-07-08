@@ -188,7 +188,7 @@ export function FloorPlan() {
         const itemWidthM = itemType.defaultWidth || tileWidthM;
         const itemLengthM = itemType.defaultLength || tileLengthM;
 
-        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM };
+        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM, x:0, y:0 };
         const { width, length } = getItemDimensions(newItemProto);
         
         let newX = -1, newY = -1;
@@ -311,6 +311,7 @@ export function FloorPlan() {
                         {/* Placed Items */}
                         {items.map(item => {
                             const { width, length } = getItemDimensions(item);
+                            const ItemIcon = item.icon || Server;
                             return (
                                 <div
                                     key={item.id}
@@ -334,8 +335,8 @@ export function FloorPlan() {
                                             draggingItemId === item.id && "opacity-50"
                                         )}
                                     >
-                                        <item.icon className="w-6 h-6 mb-1"/>
-                                        <p className="text-xs font-bold truncate">{item.name}</p>
+                                        <ItemIcon className="w-6 h-6 mb-1"/>
+                                        <p className="text-xs font-bold text-center break-words">{item.name}</p>
                                         {item.awaitingApproval && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800"><Clock className="w-3 h-3"/></div>}
                                     </div>
                                 </div>

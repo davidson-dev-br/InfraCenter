@@ -1,7 +1,7 @@
 "use client";
 
 import type { Building, PlacedItem, Room } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { Server } from "lucide-react";
 
 interface PrintableLayoutProps {
     building: Building;
@@ -52,6 +52,7 @@ export function PrintableLayout({ building, room, items, getItemDimensions, grid
                         >
                             {items.map(item => {
                                 const { width, length } = getItemDimensions(item);
+                                const ItemIcon = item.icon || Server;
                                 return (
                                     <div
                                         key={`print-${item.id}`}
@@ -61,9 +62,10 @@ export function PrintableLayout({ building, room, items, getItemDimensions, grid
                                             gridColumnEnd: `span ${width}`,
                                             gridRowEnd: `span ${length}`,
                                         }}
-                                        className="flex flex-col items-center justify-center p-1 border-2 border-black bg-gray-200"
+                                        className="flex flex-col items-center justify-center p-0.5 border border-black bg-gray-200"
                                     >
-                                         <p className="text-[8px] font-bold text-center leading-tight">{item.name}</p>
+                                        <ItemIcon className="w-3 h-3 mb-0.5" />
+                                        <p className="text-[6px] font-bold text-center leading-tight break-words">{item.name}</p>
                                     </div>
                                 );
                             })}
@@ -112,7 +114,7 @@ export function PrintableLayout({ building, room, items, getItemDimensions, grid
                         <p><span>Denominação - Title</span></p>
                         <p className="font-bold">{building?.name}</p>
                         <p className="font-bold">{room?.name}</p>
-                        <p className="mt-2"><span>Escala - Scale:</span> <span className="font-bold">1:100</span></p>
+                        <p className="mt-2"><span>Escala - Scale:</span> <span className="font-bold">N.T.S.</span></p>
                         <p><span>Document No.</span></p>
                         <p className="font-bold">193 05-IPB 076 9914/11 Upb</p>
                     </div>
