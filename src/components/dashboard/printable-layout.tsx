@@ -77,11 +77,12 @@ export function PrintableLayout({ building, room, items, gridCellSize }: Printab
                                             style={{
                                                 width: `${scaleX * 100}%`,
                                                 height: `${scaleY * 100}%`,
+                                                backgroundColor: item.color || '#E5E7EB'
                                             }}
-                                            className="flex flex-col items-center justify-center p-0.5 border border-black bg-gray-200"
+                                            className="flex flex-col items-center justify-center p-0.5 border border-black"
                                         >
-                                            <ItemIcon className="w-3 h-3 mb-0.5" />
-                                            <p className="text-[6px] font-bold text-center leading-tight break-words">{item.name}</p>
+                                            <ItemIcon className="w-3 h-3 mb-0.5 text-white" />
+                                            <p className="text-[6px] font-bold text-center leading-tight break-words text-white">{item.name}</p>
                                         </div>
                                     </div>
                                 );

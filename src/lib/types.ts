@@ -6,6 +6,7 @@ export interface FloorPlanItemType {
   icon: string;
   defaultWidth?: number; // in meters
   defaultLength?: number; // in meters
+  color?: string;
 }
 
 export interface PlacedItem {
@@ -25,6 +26,7 @@ export interface PlacedItem {
   awaitingDeletion?: boolean;
   createdBy?: string;
   createdAt?: string;
+  color?: string;
 }
 
 // For the main dashboard infrastructure

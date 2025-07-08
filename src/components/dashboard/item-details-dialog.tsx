@@ -123,6 +123,25 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave }: ItemDe
                         <Input id="row" value={formData.row || ''} onChange={handleChange} />
                     </div>
                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="color">Cor do Item</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            id="color"
+                            type="color"
+                            value={formData.color || '#334155'}
+                            onChange={handleChange}
+                            className="p-1 h-10 w-14"
+                        />
+                         <Input
+                            id="color"
+                            type="text"
+                            value={formData.color || '#334155'}
+                            onChange={handleChange}
+                            className="flex-1"
+                        />
+                    </div>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="observations">Observações</Label>
                     <Textarea id="observations" value={formData.observations || ''} onChange={handleChange} rows={3} />

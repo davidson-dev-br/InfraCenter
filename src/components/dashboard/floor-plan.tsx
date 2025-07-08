@@ -223,7 +223,8 @@ export function FloorPlan() {
             sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', 
             awaitingApproval: true,
             createdBy: "Admin User",
-            createdAt: new Date().toLocaleDateString('pt-BR')
+            createdAt: new Date().toLocaleDateString('pt-BR'),
+            color: itemType.color
         };
         
         setItemsForCurrentRoom([...items, newItem]);
@@ -337,16 +338,17 @@ export function FloorPlan() {
                                         style={{
                                             width: `${itemPixelWidth}px`,
                                             height: `${itemPixelLength}px`,
+                                            backgroundColor: item.color || '#334155'
                                         }}
                                         className={cn(
-                                            "bg-slate-800 text-white rounded-lg p-2 flex flex-col items-center justify-center shadow-lg relative transition-all",
+                                            "text-white rounded-lg p-2 flex flex-col items-center justify-center shadow-lg relative transition-all",
                                             selectedItemId === item.id && "ring-2 ring-offset-2 ring-primary ring-offset-card",
                                             draggingItemId === item.id && "opacity-50"
                                         )}
                                     >
                                         <ItemIcon className="w-6 h-6 mb-1"/>
                                         <p className="text-xs font-bold text-center break-words">{item.name}</p>
-                                        {item.awaitingApproval && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-slate-800"><Clock className="w-3 h-3"/></div>}
+                                        {item.awaitingApproval && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2" style={{ borderColor: item.color || '#334155' }}><Clock className="w-3 h-3"/></div>}
                                     </div>
                                 </div>
                             );

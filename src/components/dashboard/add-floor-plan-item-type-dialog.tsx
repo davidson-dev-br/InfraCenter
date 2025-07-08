@@ -34,6 +34,7 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
     const [icon, setIcon] = useState("Box");
     const [defaultWidth, setDefaultWidth] = useState(0.6);
     const [defaultLength, setDefaultLength] = useState(0.6);
+    const [color, setColor] = useState("#334155");
 
 
     useEffect(() => {
@@ -42,6 +43,7 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
             setIcon(item?.icon || "Box");
             setDefaultWidth(item?.defaultWidth || 0.6);
             setDefaultLength(item?.defaultLength || 0.6);
+            setColor(item?.color || "#334155");
         }
     }, [isOpen, item]);
 
@@ -53,7 +55,8 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
             name: name.trim(), 
             icon,
             defaultWidth,
-            defaultLength
+            defaultLength,
+            color
         };
 
         if (isEditMode && item) {
@@ -130,6 +133,26 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
                                     value={defaultLength}
                                     onChange={(e) => setDefaultLength(parseFloat(e.target.value) || 0)}
                                     required
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="item-color">Cor do Item</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    id="item-color-picker"
+                                    type="color"
+                                    value={color}
+                                    onChange={(e) => setColor(e.target.value)}
+                                    className="p-1 h-10 w-14"
+                                />
+                                <Input
+                                    id="item-color-text"
+                                    type="text"
+                                    value={color}
+                                    onChange={(e) => setColor(e.target.value)}
+                                    placeholder="#334155"
+                                    className="flex-1"
                                 />
                             </div>
                         </div>
