@@ -17,7 +17,10 @@ function MissingFirebaseConfig() {
              <CardDescription className="text-center text-lg space-y-4">
                 <p>As credenciais do Firebase não foram configuradas corretamente.</p>
                 <p>
-                    Por favor, abra o arquivo <code className="p-1 font-mono text-sm rounded-md bg-muted text-muted-foreground">.env</code> na raiz do projeto, cole as credenciais do seu projeto Firebase e reinicie o servidor de desenvolvimento.
+                    Por favor, abra o arquivo <code className="p-1 font-mono text-sm rounded-md bg-muted text-muted-foreground">.env</code> na raiz do projeto, cole as credenciais do seu projeto Firebase e <strong className="text-destructive">reinicie o servidor de desenvolvimento.</strong>
+                </p>
+                 <p className="text-sm text-muted-foreground pt-2">
+                    Este passo é crucial para que as novas credenciais sejam carregadas.
                 </p>
              </CardDescription>
           </CardContent>
