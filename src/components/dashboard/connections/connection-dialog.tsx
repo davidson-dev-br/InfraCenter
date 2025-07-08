@@ -94,7 +94,7 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
           <ScrollArea className="h-[60vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4 pr-4">
               
-              <div className="md:col-span-2 font-semibold text-lg pb-2 border-b">Ponto de Origem (A)</div>
+              <div className="md:col-span-2 font-semibold text-lg pb-2 border-b">Ponto de Origem (DE)</div>
               <div className="space-y-2">
                 <Label htmlFor="sourceEquipmentId">Equipamento de Origem</Label>
                 <Select value={formData.sourceEquipmentId} onValueChange={handleSelectChange('sourceEquipmentId')} required>
@@ -111,7 +111,7 @@ export function ConnectionDialog({ children, connection }: ConnectionDialogProps
                 <Input id="sourcePort" value={formData.sourcePort} onChange={handleChange} required placeholder="Ex: Gi1/0/1" />
               </div>
 
-              <div className="md:col-span-2 font-semibold text-lg pt-4 pb-2 border-b">Ponto de Destino (B)</div>
+              <div className="md:col-span-2 font-semibold text-lg pt-4 pb-2 border-b">Ponto de Destino (PARA)</div>
               <div className="space-y-2">
                 <Label htmlFor="destinationEquipmentId">Equipamento de Destino</Label>
                 <Select value={formData.destinationEquipmentId} onValueChange={handleSelectChange('destinationEquipmentId')} required>
