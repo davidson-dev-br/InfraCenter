@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2, Edit } from "lucide-react";
@@ -11,6 +11,7 @@ import { useInfra } from "@/components/dashboard/datacenter-switcher";
 import { AddFloorPlanItemTypeDialog } from "@/components/dashboard/add-floor-plan-item-type-dialog";
 import { getIconByName } from "@/lib/icon-map";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data based on the image
 const initialEquipmentTypes = [
@@ -37,11 +38,20 @@ export default function SystemSettingsPage() {
         companyLogo,
         setCompanyLogo
     } = useInfra();
+    const { toast } = useToast();
+
+    const [localCompanyName, setLocalCompanyName] = useState(companyName);
+    const [localCompanyLogo, setLocalCompanyLogo] = useState<string | null>(companyLogo);
 
     const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
     const [newEquipmentType, setNewEquipmentType] = useState("");
     const [deletionReasons, setDeletionReasons] = useState(initialDeletionReasons);
     const [newDeletionReason, setNewDeletionReason] = useState("");
+
+    useEffect(() => {
+        setLocalCompanyName(companyName);
+        setLocalCompanyLogo(companyLogo);
+    }, [companyName, companyLogo]);
 
     const handleAddEquipmentType = () => {
         if (newEquipmentType.trim()) {
@@ -74,10 +84,19 @@ export default function SystemSettingsPage() {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
-                setCompanyLogo(reader.result as string);
+                setLocalCompanyLogo(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleSaveCompanySettings = () => {
+        setCompanyName(localCompanyName);
+        setCompanyLogo(localCompanyLogo);
+        toast({
+            title: "Configurações Salvas",
+            description: "As informações da empresa foram atualizadas.",
+        });
     };
     
     return (
@@ -91,18 +110,21 @@ export default function SystemSettingsPage() {
                     <CardContent className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="company-name">Nome da Empresa</Label>
-                            <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                            <Input id="company-name" value={localCompanyName} onChange={(e) => setLocalCompanyName(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="company-logo">Logo da Empresa (PNG, JPG, SVG)</Label>
                             <Input id="company-logo" type="file" accept="image/*" onChange={handleLogoChange} className="file:text-primary file:font-medium" />
-                             {companyLogo && (
+                             {localCompanyLogo && (
                                 <div className="mt-4 p-2 border rounded-md flex justify-center items-center bg-muted/30 h-24">
-                                    <img src={companyLogo} alt="Company Logo Preview" className="max-h-full object-contain" />
+                                    <img src={localCompanyLogo} alt="Company Logo Preview" className="max-h-full object-contain" />
                                 </div>
                             )}
                         </div>
                     </CardContent>
+                    <CardFooter className="justify-end">
+                        <Button onClick={handleSaveCompanySettings}>Salvar Alterações</Button>
+                    </CardFooter>
                 </Card>
 
                 <Card className="shadow-lg">
