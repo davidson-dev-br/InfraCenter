@@ -32,8 +32,6 @@ if (isFirebaseConfigured) {
     db = getFirestore(app);
   } catch (e) {
     console.error("Firebase initialization error:", e);
-    // If initialization fails, ensure the flag is false.
-    // isFirebaseConfigured = false; // This line is commented as the export is now a const
   }
 }
 
