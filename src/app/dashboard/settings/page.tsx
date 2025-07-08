@@ -13,22 +13,6 @@ import { getIconByName } from "@/lib/icon-map";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data based on the image
-const initialEquipmentTypes = [
-    { id: '1', name: 'Servidor' },
-    { id: '2', name: 'Switch' },
-    { id: '3', name: 'Patch Panel' },
-    { id: '4', name: 'Storage' },
-    { id: '5', name: 'Roteador' },
-];
-
-const initialDeletionReasons = [
-    { id: '1', name: 'Item criado por engano' },
-    { id: '2', name: 'Item desativado (decommissioned)' },
-    { id: '3', name: 'Substituído por novo item' },
-    { id: '4', name: 'Erro de inventário' },
-];
-
 export default function SystemSettingsPage() {
     const { 
         floorPlanItemTypes, 
@@ -43,37 +27,10 @@ export default function SystemSettingsPage() {
     const [localCompanyName, setLocalCompanyName] = useState(companyName);
     const [localCompanyLogo, setLocalCompanyLogo] = useState<string | null>(companyLogo);
 
-    const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
-    const [newEquipmentType, setNewEquipmentType] = useState("");
-    const [deletionReasons, setDeletionReasons] = useState(initialDeletionReasons);
-    const [newDeletionReason, setNewDeletionReason] = useState("");
-
     useEffect(() => {
         setLocalCompanyName(companyName);
         setLocalCompanyLogo(companyLogo);
     }, [companyName, companyLogo]);
-
-    const handleAddEquipmentType = () => {
-        if (newEquipmentType.trim()) {
-            setEquipmentTypes(prev => [...prev, { id: Date.now().toString(), name: newEquipmentType.trim() }]);
-            setNewEquipmentType("");
-        }
-    };
-
-    const handleDeleteEquipmentType = (id: string) => {
-        setEquipmentTypes(prev => prev.filter(item => item.id !== id));
-    };
-
-    const handleAddDeletionReason = () => {
-        if (newDeletionReason.trim()) {
-            setDeletionReasons(prev => [...prev, { id: Date.now().toString(), name: newDeletionReason.trim() }]);
-            setNewDeletionReason("");
-        }
-    };
-
-    const handleDeleteDeletionReason = (id: string) => {
-        setDeletionReasons(prev => prev.filter(item => item.id !== id));
-    };
 
     const handleDeleteFloorPlanItem = (id: string) => {
         deleteFloorPlanItemType(id);
@@ -125,70 +82,6 @@ export default function SystemSettingsPage() {
                     <CardFooter className="justify-end">
                         <Button onClick={handleSaveCompanySettings}>Salvar Alterações</Button>
                     </CardFooter>
-                </Card>
-
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex gap-2 mb-4">
-                            <Input 
-                                placeholder="Adicionar novo..." 
-                                value={newEquipmentType}
-                                onChange={(e) => setNewEquipmentType(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddEquipmentType()}
-                            />
-                            <Button onClick={handleAddEquipmentType}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Adicionar
-                            </Button>
-                        </div>
-                        <ScrollArea className="h-72">
-                            <div className="pr-4 space-y-2">
-                                {equipmentTypes.map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
-                                        <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteEquipmentType(item.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-headline">Motivos de Exclusão</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex gap-2 mb-4">
-                            <Input 
-                                placeholder="Adicionar novo..."
-                                value={newDeletionReason}
-                                onChange={(e) => setNewDeletionReason(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddDeletionReason()}
-                            />
-                            <Button onClick={handleAddDeletionReason}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Adicionar
-                            </Button>
-                        </div>
-                        <ScrollArea className="h-72">
-                            <div className="pr-4 space-y-2">
-                                {deletionReasons.map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-2.5 border rounded-md bg-background hover:bg-muted/50">
-                                        <span className="font-medium">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDeletionReason(item.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
                 </Card>
 
                 <Card className="shadow-lg md:col-span-2">

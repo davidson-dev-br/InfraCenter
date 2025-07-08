@@ -14,7 +14,8 @@ import {
   Users,
   ClipboardX,
   Building,
-  Settings
+  Settings,
+  Code
 } from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { UserNav } from "./user-nav";
@@ -120,6 +121,13 @@ export function Header() {
                 <Link href="/dashboard/settings">
                   <Settings />
                   <span>Configurações do Sistema</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/dashboard/developer">
+                  <Code />
+                  <span>Opções do Desenvolvedor</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
