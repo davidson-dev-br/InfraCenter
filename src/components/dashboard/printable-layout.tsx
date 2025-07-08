@@ -7,19 +7,22 @@ interface PrintableLayoutProps {
     building: Building;
     room: Room;
     items: PlacedItem[];
-    getItemDimensions: (item: PlacedItem) => { width: number; length: number };
     gridCellSize: number;
 }
 
-export function PrintableLayout({ building, room, items, getItemDimensions, gridCellSize }: PrintableLayoutProps) {
+export function PrintableLayout({ building, room, items, gridCellSize }: PrintableLayoutProps) {
     if (!room) return null;
 
     const roomWidthM = room.width;
     const roomLengthM = room.length;
     const tileWidthCm = room.tileWidth;
     const tileLengthCm = room.tileLength;
-    const GRID_COLS = Math.max(1, Math.floor((roomWidthM * 100) / tileWidthCm));
-    const GRID_ROWS = Math.max(1, Math.floor((roomLengthM * 100) / tileLengthCm));
+    
+    const tileWidthM = tileWidthCm / 100;
+    const tileLengthM = tileLengthCm / 100;
+
+    const GRID_COLS = Math.max(1, Math.floor(roomWidthM / tileWidthM));
+    const GRID_ROWS = Math.max(1, Math.floor(roomLengthM / tileLengthM));
 
     return (
         <div className="w-full h-full p-2 font-mono text-black bg-white">
@@ -51,7 +54,13 @@ export function PrintableLayout({ building, room, items, getItemDimensions, grid
                             }}
                         >
                             {items.map(item => {
-                                const { width, length } = getItemDimensions(item);
+                                const itemWidthInCells = item.width / tileWidthM;
+                                const itemLengthInCells = item.length / tileLengthM;
+                                const gridSpanX = Math.ceil(itemWidthInCells);
+                                const gridSpanY = Math.ceil(itemLengthInCells);
+                                const scaleX = itemWidthInCells / gridSpanX;
+                                const scaleY = itemLengthInCells / gridSpanY;
+                                
                                 const ItemIcon = item.icon || Server;
                                 return (
                                     <div
@@ -59,13 +68,21 @@ export function PrintableLayout({ building, room, items, getItemDimensions, grid
                                         style={{
                                             gridColumnStart: item.x + 1,
                                             gridRowStart: item.y + 1,
-                                            gridColumnEnd: `span ${width}`,
-                                            gridRowEnd: `span ${length}`,
+                                            gridColumnEnd: `span ${gridSpanX}`,
+                                            gridRowEnd: `span ${gridSpanY}`,
                                         }}
-                                        className="flex flex-col items-center justify-center p-0.5 border border-black bg-gray-200"
+                                        className="flex items-start justify-start"
                                     >
-                                        <ItemIcon className="w-3 h-3 mb-0.5" />
-                                        <p className="text-[6px] font-bold text-center leading-tight break-words">{item.name}</p>
+                                        <div
+                                            style={{
+                                                width: `${scaleX * 100}%`,
+                                                height: `${scaleY * 100}%`,
+                                            }}
+                                            className="flex flex-col items-center justify-center p-0.5 border border-black bg-gray-200"
+                                        >
+                                            <ItemIcon className="w-3 h-3 mb-0.5" />
+                                            <p className="text-[6px] font-bold text-center leading-tight break-words">{item.name}</p>
+                                        </div>
                                     </div>
                                 );
                             })}

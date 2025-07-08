@@ -44,18 +44,13 @@ export function FloorPlan() {
     const roomLengthM = selectedRoom?.length || 12;
     const tileWidthCm = selectedRoom?.tileWidth || 60;
     const tileLengthCm = selectedRoom?.tileLength || 60;
-    const GRID_COLS = Math.max(1, Math.floor((roomWidthM * 100) / tileWidthCm));
-    const GRID_ROWS = Math.max(1, Math.floor((roomLengthM * 100) / tileLengthCm));
+    
     const tileWidthM = tileWidthCm / 100;
     const tileLengthM = tileLengthCm / 100;
 
-    const getItemDimensions = useCallback((item: PlacedItem) => {
-        return {
-            width: Math.max(1, Math.round((item.width || tileWidthM) / tileWidthM)),
-            length: Math.max(1, Math.round((item.length || tileLengthM) / tileLengthM)),
-        };
-    }, [tileWidthM, tileLengthM]);
-    
+    const GRID_COLS = Math.max(1, Math.floor(roomWidthM / tileWidthM));
+    const GRID_ROWS = Math.max(1, Math.floor(roomLengthM / tileLengthM));
+
     const items = selectedRoomId ? itemsByRoom[selectedRoomId] || [] : [];
     const setItemsForCurrentRoom = (newItems: PlacedItem[]) => {
         if (selectedRoomId) {
@@ -64,26 +59,30 @@ export function FloorPlan() {
     };
 
     const checkCollision = useCallback((testItem: PlacedItem, allItems: PlacedItem[]) => {
-        const testDim = getItemDimensions(testItem);
+        const testItemWidthInCells = testItem.width / tileWidthM;
+        const testItemLengthInCells = testItem.length / tileLengthM;
 
-        if (testItem.x < 0 || testItem.y < 0 || testItem.x + testDim.width > GRID_COLS || testItem.y + testDim.length > GRID_ROWS) {
+        if (testItem.x < 0 || testItem.y < 0 || testItem.x + testItemWidthInCells > GRID_COLS || testItem.y + testItemLengthInCells > GRID_ROWS) {
             return true;
         }
 
         for (const existingItem of allItems) {
             if (existingItem.id === testItem.id) continue;
-            const existingDim = getItemDimensions(existingItem);
+            
+            const existingItemWidthInCells = existingItem.width / tileWidthM;
+            const existingItemLengthInCells = existingItem.length / tileLengthM;
+            
             if (
-                testItem.x < existingItem.x + existingDim.width &&
-                testItem.x + testDim.width > existingItem.x &&
-                testItem.y < existingItem.y + existingDim.length &&
-                testItem.y + testDim.length > existingItem.y
+                testItem.x < existingItem.x + existingItemWidthInCells &&
+                testItem.x + testItemWidthInCells > existingItem.x &&
+                testItem.y < existingItem.y + existingItemLengthInCells &&
+                testItem.y + testItemLengthInCells > existingItem.y
             ) {
                 return true;
             }
         }
         return false;
-    }, [getItemDimensions, GRID_COLS, GRID_ROWS]);
+    }, [tileWidthM, tileLengthM, GRID_COLS, GRID_ROWS]);
 
     const handleWheel = useCallback((e: WheelEvent) => {
         if (e.ctrlKey) {
@@ -188,12 +187,14 @@ export function FloorPlan() {
         const itemWidthM = itemType.defaultWidth || tileWidthM;
         const itemLengthM = itemType.defaultLength || tileLengthM;
 
-        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM, x:0, y:0 };
-        const { width, length } = getItemDimensions(newItemProto);
+        const itemWidthInCells = itemWidthM / tileWidthM;
+        const itemLengthInCells = itemLengthM / tileLengthM;
+
+        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM, x:0, y:0, status: 'Ativo' as const };
         
         let newX = -1, newY = -1;
-        for (let y = 0; y <= GRID_ROWS - length; y++) {
-            for (let x = 0; x <= GRID_COLS - width; x++) {
+        for (let y = 0; y <= GRID_ROWS - itemLengthInCells; y++) {
+            for (let x = 0; x <= GRID_COLS - itemWidthInCells; x++) {
                 if (!checkCollision({ ...newItemProto, x, y }, items)) {
                     newX = x; newY = y;
                     break;
@@ -310,7 +311,11 @@ export function FloorPlan() {
 
                         {/* Placed Items */}
                         {items.map(item => {
-                            const { width, length } = getItemDimensions(item);
+                            const itemPixelWidth = (item.width / tileWidthM) * CELL_SIZE;
+                            const itemPixelLength = (item.length / tileLengthM) * CELL_SIZE;
+                            const gridSpanX = Math.ceil(item.width / tileWidthM);
+                            const gridSpanY = Math.ceil(item.length / tileLengthM);
+                            
                             const ItemIcon = item.icon || Server;
                             return (
                                 <div
@@ -322,15 +327,19 @@ export function FloorPlan() {
                                     style={{
                                         gridColumnStart: item.x + 2,
                                         gridRowStart: item.y + 2,
-                                        gridColumnEnd: `span ${width}`,
-                                        gridRowEnd: `span ${length}`,
+                                        gridColumnEnd: `span ${gridSpanX}`,
+                                        gridRowEnd: `span ${gridSpanY}`,
                                         zIndex: selectedItemId === item.id ? 10 : 5,
                                     }}
-                                    className="p-1 cursor-grab active:cursor-grabbing"
+                                    className="cursor-grab active:cursor-grabbing"
                                 >
                                     <div
+                                        style={{
+                                            width: `${itemPixelWidth}px`,
+                                            height: `${itemPixelLength}px`,
+                                        }}
                                         className={cn(
-                                            "bg-slate-800 text-white rounded-lg p-2 w-full h-full flex flex-col items-center justify-center shadow-lg relative transition-all",
+                                            "bg-slate-800 text-white rounded-lg p-2 flex flex-col items-center justify-center shadow-lg relative transition-all",
                                             selectedItemId === item.id && "ring-2 ring-offset-2 ring-primary ring-offset-card",
                                             draggingItemId === item.id && "opacity-50"
                                         )}
@@ -380,7 +389,6 @@ export function FloorPlan() {
                     building={selectedBuilding}
                     room={selectedRoom}
                     items={items}
-                    getItemDimensions={getItemDimensions}
                     gridCellSize={CELL_SIZE}
                 />
             </div>
