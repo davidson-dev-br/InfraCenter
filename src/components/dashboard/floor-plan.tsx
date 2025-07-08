@@ -266,23 +266,18 @@ export function FloorPlan() {
 
     const InteractiveFloorPlan = (
         <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
-                    <p className="text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.max(0.2, v.scale - 0.2)}))}><ZoomOut /></Button>
-                    <Slider value={[viewTransform.scale]} onValueChange={([val]) => setViewTransform(v => ({...v, scale: val}))} max={2.5} min={0.2} step={0.1} className="w-32" />
-                    <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.min(2.5, v.scale + 0.2)}))}><ZoomIn /></Button>
-                    <Button variant="outline" size="icon" onClick={resetView}><Maximize /></Button>
-                </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 py-4 border-t">
+            <p className="text-sm text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
+            
+            <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-t">
                 <div className="flex items-center gap-2">
                     <RoomSwitcher />
                     <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.max(0.2, v.scale - 0.2)}))}><ZoomOut /></Button>
+                        <Slider value={[viewTransform.scale]} onValueChange={([val]) => setViewTransform(v => ({...v, scale: val}))} max={2.5} min={0.2} step={0.1} className="w-32" />
+                        <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.min(2.5, v.scale + 0.2)}))}><ZoomIn /></Button>
+                        <Button variant="outline" size="icon" onClick={resetView}><Maximize /></Button>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar Item</Button>
@@ -378,14 +373,9 @@ export function FloorPlan() {
     if (!selectedBuilding || !selectedRoom) {
         return (
             <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold font-headline">Planta Baixa</h1>
-                        <p className="text-muted-foreground">Selecione um prédio e uma sala para começar.</p>
-                    </div>
-                     <div className="flex flex-wrap items-center gap-2">
-                        <ManageRoomsDialog><Button variant="outline"><Settings className="mr-2" /> Gerenciar Salas</Button></ManageRoomsDialog>
-                    </div>
+                <div className="flex items-center justify-between py-4 border-b">
+                     <p className="text-sm text-muted-foreground">Selecione um prédio e uma sala para começar.</p>
+                     <ManageRoomsDialog><Button variant="outline"><Settings className="mr-2" /> Gerenciar Salas</Button></ManageRoomsDialog>
                 </div>
                 <div className="flex items-center justify-center flex-grow p-4 border-2 border-dashed rounded-lg bg-card/50">
                     <p className="text-muted-foreground">Nenhum prédio ou sala selecionada.</p>
@@ -423,3 +413,5 @@ export function FloorPlan() {
         </>
     );
 }
+
+    
