@@ -23,7 +23,7 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [email, setEmail] = useState("davidson.cabista@gmail.com");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("123456");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +32,13 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    if (!auth) {
+      setError("A configuração do Firebase não foi carregada. Verifique o arquivo .env e reinicie o servidor.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login bem-sucedido!" });

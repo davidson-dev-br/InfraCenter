@@ -25,6 +25,7 @@ export function UserNav() {
 
   const handleLogout = async () => {
     try {
+      if (!auth) throw new Error("Firebase não configurado.");
       await signOut(auth);
       router.push("/");
       toast({ title: "Você foi desconectado." });

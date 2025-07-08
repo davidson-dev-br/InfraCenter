@@ -19,7 +19,7 @@ import {
 import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "./auth-provider";
-import { db } from "@/lib/firebase";
+import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, getDocs, query, where } from "firebase/firestore";
 
 const initialSystemSettings: SystemSettings = {
@@ -142,7 +142,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     
     // System-wide listeners (users, datacenters, settings)
     React.useEffect(() => {
-        if (!userData) return;
+        if (!userData || !isFirebaseConfigured || !db) return;
 
         // Listen to system settings
         const settingsDocRef = doc(db, 'system', 'settings');
@@ -184,7 +184,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     
     // Listeners for data within the selected datacenter
     React.useEffect(() => {
-        if (!selectedBuildingId) {
+        if (!selectedBuildingId || !isFirebaseConfigured || !db) {
             setItemsByRoom({});
             setEquipment([]);
             setConnections([]);
@@ -238,6 +238,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const setSystemSettings = async (settings: Partial<SystemSettings>) => {
+        if (!db) return;
         try {
             // Using updateDoc allows partial updates
             await updateDoc(doc(db, 'system', 'settings'), settings);
@@ -249,6 +250,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const addBuilding = async (buildingData: Omit<BuildingType, 'id' | 'rooms'>) => {
+        if (!db) return;
         try {
             const newBuilding = { ...buildingData, rooms: [] };
             await addDoc(collection(db, 'datacenters'), newBuilding);
@@ -260,6 +262,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const updateBuilding = async (updatedBuilding: BuildingType) => {
+        if (!db) return;
         try {
             const { id, ...data } = updatedBuilding;
             await updateDoc(doc(db, 'datacenters', id), data);
@@ -271,6 +274,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const deleteBuilding = async (buildingId: string) => {
+        if (!db) return;
         const buildingToDelete = buildings.find(b => b.id === buildingId);
         try {
             // This is a simple delete. A real app might want to delete all subcollections too.
@@ -283,10 +287,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const updateItemsForRoom = async (roomId: string, items: PlacedItem[]) => {
-        // This is tricky. A simple update might be inefficient.
-        // It's often better to update single documents.
-        // For drag/drop, we update the moved item.
-        if (!selectedBuildingId) return;
+        if (!selectedBuildingId || !db) return;
 
         const updatedItem = items.find(i => {
             const originalRoomItems = itemsByRoom[roomId] || [];
@@ -307,7 +308,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     
     // --- More Complex Actions ---
     const approveItem = async (itemId: string) => {
-      if (!selectedBuildingId) return;
+      if (!selectedBuildingId || !db) return;
       try {
         await updateDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemId), { awaitingApproval: false });
         toast({ title: "Item Aprovado!" });
@@ -317,7 +318,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const deleteItem = async (itemToDelete: PlacedItem, reason: string) => {
-      if (!selectedBuildingId) return;
+      if (!selectedBuildingId || !db) return;
       
       const newLogEntry: Omit<DeletionLogEntry, 'id'> = {
           itemId: itemToDelete.id,
@@ -343,7 +344,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const restoreItem = async (logId: string) => {
-      if (!selectedBuildingId) return;
+      if (!selectedBuildingId || !db) return;
       const logEntry = deletionLog.find(entry => entry.id === logId);
       if (!logEntry) return;
       
@@ -361,6 +362,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const addRoom = async (buildingId: string, roomData: Omit<Room, 'id'>) => {
+        if (!db) return;
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return;
         const newRoom = { ...roomData, id: `r-${Date.now()}` };
@@ -370,6 +372,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const updateRoom = async (buildingId: string, updatedRoom: Room) => {
+        if (!db) return;
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return;
         const updatedRooms = (building.rooms || []).map(r => r.id === updatedRoom.id ? updatedRoom : r);
@@ -378,6 +381,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const deleteRoom = async (buildingId: string, roomId: string) => {
+        if (!db) return;
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return;
         const updatedRooms = (building.rooms || []).filter(r => r.id !== roomId);
@@ -391,6 +395,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const reorderRooms = async (buildingId: string, roomId: string, direction: 'up' | 'down') => {
+        if (!db) return;
         const building = buildings.find(b => b.id === buildingId);
         if (!building || !building.rooms) return;
         const index = building.rooms.findIndex(r => r.id === roomId);
@@ -407,51 +412,54 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const addEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
-      if(!selectedBuildingId) return;
+      if(!selectedBuildingId || !db) return;
       await addDoc(collection(db, 'datacenters', selectedBuildingId, 'equipment'), equipmentData);
       toast({ title: 'Equipamento Adicionado!' });
     };
     const updateEquipment = async (updatedEquipment: Equipment) => {
-        if(!selectedBuildingId) return;
+        if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedEquipment;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'equipment', id), data);
         toast({ title: 'Equipamento Atualizado!' });
     };
     const deleteEquipment = async (equipmentId: string) => {
-        if(!selectedBuildingId) return;
+        if(!selectedBuildingId || !db) return;
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'equipment', equipmentId));
         toast({ variant: 'destructive', title: 'Equipamento Excluído!' });
     };
     
     const addConnection = async (connectionData: Omit<Connection, 'id'>) => {
-        if(!selectedBuildingId) return;
+        if(!selectedBuildingId || !db) return;
         await addDoc(collection(db, 'datacenters', selectedBuildingId, 'connections'), connectionData);
         toast({ title: 'Conexão Adicionada!' });
     };
     const updateConnection = async (updatedConnection: Connection) => {
-        if(!selectedBuildingId) return;
+        if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedConnection;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', id), data);
         toast({ title: 'Conexão Atualizada!' });
     };
     const deleteConnection = async (connectionId: string) => {
-        if(!selectedBuildingId) return;
+        if(!selectedBuildingId || !db) return;
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', connectionId));
         toast({ variant: 'destructive', title: 'Conexão Excluída!' });
     };
 
     const addUser = async (userData: Omit<User, 'id'>) => {
+        if (!db) return;
         // This is complex. Creating a user in Auth is separate from Firestore.
         // For now, we just add to Firestore. Auth user must be created manually or via a backend function.
         await addDoc(collection(db, 'users'), userData);
         toast({ title: 'Usuário Adicionado!' });
     };
     const updateUser = async (updatedUser: User) => {
+        if (!db) return;
         const { id, ...data } = updatedUser;
         await setDoc(doc(db, 'users', id), data);
         toast({ title: 'Usuário Atualizado!' });
     };
     const deleteUser = async (userId: string) => {
+        if (!db) return;
         await deleteDoc(doc(db, 'users', userId));
         toast({ variant: 'destructive', title: 'Usuário Excluído!' });
     };
@@ -497,7 +505,7 @@ export function DatacenterSwitcher() {
           role="combobox"
           aria-expanded={open}
           className="justify-between w-[200px]"
-          disabled={buildings.length === 0}
+          disabled={!isFirebaseConfigured || buildings.length === 0}
         >
           <Building className="w-4 h-4 mr-2" />
           {selectedBuilding ? selectedBuilding.name : "Selecione o Prédio"}
