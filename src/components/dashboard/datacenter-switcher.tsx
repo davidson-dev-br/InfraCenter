@@ -103,6 +103,10 @@ const initialCableTypes: SelectOption[] = [
     { id: '5', name: 'Fibra Óptica OM4' },
     { id: '6', name: 'Fibra Óptica OS2' },
     { id: '7', name: 'DAC (Direct Attach Copper)' },
+    { id: '8', name: 'Fibra Óptica LC/UPC' },
+    { id: '9', name: 'Fibra Óptica LC/APC' },
+    { id: '10', name: 'Fibra Óptica SC/UPC' },
+    { id: '11', name: 'Fibra Óptica SC/APC' },
 ];
 
 const initialDeletionLog: DeletionLogEntry[] = [
