@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,11 +32,16 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
 
     const [name, setName] = useState("");
     const [icon, setIcon] = useState("Box");
+    const [defaultWidth, setDefaultWidth] = useState(0.6);
+    const [defaultLength, setDefaultLength] = useState(0.6);
+
 
     useEffect(() => {
         if (isOpen) {
             setName(item?.name || "");
             setIcon(item?.icon || "Box");
+            setDefaultWidth(item?.defaultWidth || 0.6);
+            setDefaultLength(item?.defaultLength || 0.6);
         }
     }, [isOpen, item]);
 
@@ -43,7 +49,13 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
         e.preventDefault();
         if (!name.trim()) return;
 
-        const itemData = { name: name.trim(), icon };
+        const itemData = { 
+            name: name.trim(), 
+            icon,
+            defaultWidth,
+            defaultLength
+        };
+
         if (isEditMode && item) {
             updateFloorPlanItemType({ ...item, ...itemData });
         } else {
@@ -59,6 +71,9 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? 'Editar Tipo de Item' : 'Adicionar Novo Tipo de Item'}</DialogTitle>
+                         <DialogDescription>
+                            Configure o nome, ícone e dimensões padrão para este tipo de item.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
@@ -93,6 +108,30 @@ export function AddFloorPlanItemTypeDialog({ children, item }: AddFloorPlanItemT
                                     </ScrollArea>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="item-default-width">Largura Padrão (m)</Label>
+                                <Input
+                                    id="item-default-width"
+                                    type="number"
+                                    step="0.1"
+                                    value={defaultWidth}
+                                    onChange={(e) => setDefaultWidth(parseFloat(e.target.value) || 0)}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="item-default-length">Comprimento Padrão (m)</Label>
+                                <Input
+                                    id="item-default-length"
+                                    type="number"
+                                    step="0.1"
+                                    value={defaultLength}
+                                    onChange={(e) => setDefaultLength(parseFloat(e.target.value) || 0)}
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>

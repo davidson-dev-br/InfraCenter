@@ -41,10 +41,10 @@ const initialItemsByRoom: Record<string, PlacedItem[]> = {
 };
 
 const initialFloorPlanItemTypes: FloorPlanItemType[] = [
-    { id: '1', name: 'Rack', icon: 'Server' },
-    { id: '2', name: 'Ar Condicionado', icon: 'AirVent' },
-    { id: '3', name: 'QDF', icon: 'Zap' },
-    { id: '4', name: 'Patch Panel', icon: 'Cable' },
+    { id: '1', name: 'Rack', icon: 'Server', defaultWidth: 0.6, defaultLength: 1.2 },
+    { id: '2', name: 'Ar Condicionado', icon: 'AirVent', defaultWidth: 0.8, defaultLength: 0.8 },
+    { id: '3', name: 'QDF', icon: 'Zap', defaultWidth: 0.6, defaultLength: 0.3 },
+    { id: '4', name: 'Patch Panel', icon: 'Cable', defaultWidth: 0.6, defaultLength: 0.3 },
 ];
 
 // --- Context for sharing infrastructure state ---

@@ -4,6 +4,8 @@ export interface FloorPlanItemType {
   id: string;
   name: string;
   icon: string;
+  defaultWidth?: number; // in meters
+  defaultLength?: number; // in meters
 }
 
 export interface PlacedItem {

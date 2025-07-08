@@ -185,7 +185,10 @@ export function FloorPlan() {
     const resetView = () => setViewTransform({ x: 20, y: 20, scale: 1 });
 
     const handleSelectItemAndAdd = (itemType: FloorPlanItemType) => {
-        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: tileWidthM, length: tileLengthM };
+        const itemWidthM = itemType.defaultWidth || tileWidthM;
+        const itemLengthM = itemType.defaultLength || tileLengthM;
+
+        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: Server, width: itemWidthM, length: itemLengthM };
         const { width, length } = getItemDimensions(newItemProto);
         
         let newX = -1, newY = -1;
@@ -213,7 +216,9 @@ export function FloorPlan() {
             name: `${itemType.name}-${String(newCount).padStart(2, '0')}`,
             type: itemType.name,
             icon: Icon,
-            x: newX, y: newY, status: 'Ativo', width: tileWidthM, length: tileLengthM,
+            x: newX, y: newY, status: 'Ativo', 
+            width: itemWidthM,
+            length: itemLengthM,
             sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', 
             awaitingApproval: true,
             createdBy: "Admin User",
