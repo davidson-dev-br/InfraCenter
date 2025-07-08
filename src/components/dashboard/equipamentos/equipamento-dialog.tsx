@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,39 @@ import { useInfra } from "../datacenter-switcher";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { Camera, FileImage, Trash2 } from 'lucide-react';
+
+const MAX_IMAGE_DIMENSION = 1024;
+const resizeImage = (imageSrc: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+
+            if (width > height) {
+                if (width > MAX_IMAGE_DIMENSION) {
+                    height *= MAX_IMAGE_DIMENSION / width;
+                    width = MAX_IMAGE_DIMENSION;
+                }
+            } else {
+                if (height > MAX_IMAGE_DIMENSION) {
+                    width *= MAX_IMAGE_DIMENSION / height;
+                    height = MAX_IMAGE_DIMENSION;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Could not get canvas context'));
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.onerror = reject;
+        img.src = imageSrc;
+    });
+};
 
 type EquipamentoDialogProps = {
   children?: React.ReactNode;
@@ -67,10 +101,16 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
     addEquipment,
     updateEquipment
   } = useInfra();
+  const { toast } = useToast();
 
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = openProp ?? internalOpen;
   const setIsOpen = onOpenChangeProp ?? setInternalOpen;
+
+  const [cameraMode, setCameraMode] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
 
   const isEditMode = !!equipamento;
 
@@ -81,8 +121,16 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
 
   const [formData, setFormData] = useState<Omit<Equipment, 'id'>>(getDefaultFormData());
 
+  const cleanupCamera = () => {
+    if (videoStreamRef.current) {
+        videoStreamRef.current.getTracks().forEach(track => track.stop());
+        videoStreamRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      setCameraMode(false);
       if (isEditMode && equipamento) {
         setFormData({
             ...getDefaultFormData(),
@@ -99,6 +147,16 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
       }
     }
   }, [isOpen, equipamento, isEditMode, initialData, equipmentTypes, equipmentStatuses, parentItems]);
+  
+  useEffect(() => {
+    if (!isOpen) {
+        setCameraMode(false);
+        cleanupCamera();
+    }
+    return () => {
+        cleanupCamera();
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
@@ -123,6 +181,69 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
     }
     setIsOpen(false);
     onSaveSuccess?.();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          try {
+            const resizedUri = await resizeImage(event.target.result);
+            setFormData(prev => ({ ...prev, imageUrl: resizedUri }));
+          } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro ao processar imagem', description: 'O arquivo pode estar corrompido.' });
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUseCameraClick = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        toast({ variant: 'destructive', title: 'Câmera não suportada', description: 'Seu navegador não suporta acesso à câmera.' });
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        videoStreamRef.current = stream;
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
+        setCameraMode(true);
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        toast({ variant: 'destructive', title: 'Acesso à Câmera Negado', description: 'Habilite a permissão nas configurações do seu navegador.' });
+    }
+  };
+
+  const handleCapture = async () => {
+    if (videoRef.current) {
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const capturedUri = canvas.toDataURL('image/jpeg');
+            try {
+              const resizedUri = await resizeImage(capturedUri);
+              setFormData(prev => ({ ...prev, imageUrl: resizedUri }));
+            } catch (error) {
+              toast({ variant: 'destructive', title: 'Erro ao capturar imagem' });
+            } finally {
+              setCameraMode(false);
+              cleanupCamera();
+            }
+        }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({...prev, imageUrl: ''}));
   };
 
   const dcRoom = useMemo(() => {
@@ -154,14 +275,6 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
           </DialogHeader>
           <ScrollArea className="h-[65vh] p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4 pr-4">
-               {formData.imageUrl && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Imagem do Equipamento</Label>
-                  <div className="p-2 border rounded-md flex justify-center items-center bg-muted/30 h-32">
-                      <img src={formData.imageUrl} alt="Equipment Preview" className="max-h-full object-contain" />
-                  </div>
-                </div>
-              )}
               <div className="space-y-2">
                 <Label htmlFor="hostname">Hostname</Label>
                 <Input id="hostname" value={formData.hostname} onChange={handleChange} required />
@@ -259,10 +372,53 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
                 <Label htmlFor="dataSheetUrl">Data Sheet</Label>
                 <Input id="dataSheetUrl" value={formData.dataSheetUrl} onChange={handleChange} placeholder="https://..." />
               </div>
+
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="imageUrl">URL da Imagem</Label>
-                <Input id="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="https://..." />
-              </div>
+                <Label>Imagem do Equipamento</Label>
+                <div className="p-2 border rounded-md bg-muted/30 min-h-[128px] flex justify-center items-center">
+                    {formData.imageUrl && !cameraMode && (
+                        <div className="relative group">
+                            <img src={formData.imageUrl} alt="Equipment Preview" className="max-h-32 object-contain rounded-md" />
+                            <div className="absolute inset-0 flex items-center justify-center transition-opacity bg-black/50 opacity-0 group-hover:opacity-100">
+                                <Button type="button" variant="destructive" size="sm" onClick={handleRemoveImage}>
+                                    <Trash2 className="mr-2" /> Remover
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    {!formData.imageUrl && !cameraMode && (
+                        <p className="text-sm text-muted-foreground">Nenhuma imagem</p>
+                    )}
+                    {cameraMode && (
+                        <div className="w-full">
+                            <video ref={videoRef} className="w-full rounded-md aspect-video" autoPlay playsInline muted />
+                        </div>
+                    )}
+                </div>
+                {cameraMode ? (
+                    <div className="flex gap-2">
+                        <Button type="button" className="w-full" onClick={handleCapture}>
+                            <Camera className="mr-2" />
+                            Capturar Foto
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => { setCameraMode(false); cleanupCamera(); }}>
+                            Cancelar
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex gap-2">
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            <FileImage className="mr-2" />
+                            {formData.imageUrl ? "Alterar Imagem" : "Escolher Arquivo"}
+                        </Button>
+                        <Input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                        <Button type="button" variant="outline" onClick={handleUseCameraClick}>
+                            <Camera className="mr-2" />
+                            Usar Câmera
+                        </Button>
+                    </div>
+                )}
+            </div>
             </div>
           </ScrollArea>
           <DialogFooter className="pt-4">
