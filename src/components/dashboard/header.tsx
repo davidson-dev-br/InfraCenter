@@ -113,9 +113,11 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings />
-                <span>Configurações do Sistema</span>
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/dashboard/settings">
+                  <Settings />
+                  <span>Configurações do Sistema</span>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
