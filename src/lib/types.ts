@@ -80,7 +80,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Editor' | 'Viewer';
+  role: 'Técnico' | 'Supervisor' | 'Gerente' | 'Desenvolvedor';
   avatarUrl?: string;
 }
 

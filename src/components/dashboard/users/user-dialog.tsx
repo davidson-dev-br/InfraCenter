@@ -24,7 +24,7 @@ import {
 import type { User } from "@/lib/types";
 import { useInfra } from "../datacenter-switcher";
 
-const USER_ROLES: User['role'][] = ['Admin', 'Editor', 'Viewer'];
+const USER_ROLES: User['role'][] = ['Técnico', 'Supervisor', 'Gerente', 'Desenvolvedor'];
 
 type UserDialogProps = {
     children: React.ReactNode;
@@ -40,7 +40,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
         name: '',
         email: '',
         password: '',
-        role: 'Viewer' as User['role'],
+        role: 'Técnico' as User['role'],
     });
 
     useEffect(() => {
@@ -57,7 +57,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     name: '',
                     email: '',
                     password: '',
-                    role: 'Viewer' as User['role'],
+                    role: 'Técnico' as User['role'],
                 });
             }
         }

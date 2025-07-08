@@ -1,9 +1,5 @@
-import { RegisterForm } from "@/components/register-form";
+import { redirect } from 'next/navigation';
 
 export default function RegisterPage() {
-  return (
-    <main className="flex items-center justify-center min-h-screen bg-background p-4">
-      <RegisterForm />
-    </main>
-  );
+  redirect('/');
 }

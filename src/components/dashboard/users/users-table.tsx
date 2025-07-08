@@ -27,11 +27,12 @@ export function UsersTable({ data }: UsersTableProps) {
 
   const getRoleVariant = (role: User['role']): 'default' | 'secondary' | 'outline' => {
       switch (role) {
-          case 'Admin':
+          case 'Desenvolvedor':
+          case 'Gerente':
               return 'default';
-          case 'Editor':
+          case 'Supervisor':
               return 'secondary';
-          case 'Viewer':
+          case 'Técnico':
               return 'outline';
           default:
               return 'secondary';

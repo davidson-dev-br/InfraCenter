@@ -60,9 +60,10 @@ const initialConnections: Connection[] = [
 ];
 
 const initialUsers: User[] = [
-    { id: 'u1', name: 'Admin User', email: 'admin@example.com', role: 'Admin', avatarUrl: 'https://placehold.co/40x40.png' },
-    { id: 'u2', name: 'Davidson Conceição', email: 'davidson.conceicao@example.com', role: 'Editor', avatarUrl: 'https://placehold.co/40x40.png' },
-    { id: 'u3', name: 'Regular Viewer', email: 'viewer@example.com', role: 'Viewer', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u1', name: 'Admin User', email: 'admin@example.com', role: 'Desenvolvedor', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u2', name: 'Davidson Conceição', email: 'davidson.conceicao@example.com', role: 'Gerente', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u3', name: 'Supervisor User', email: 'supervisor@example.com', role: 'Supervisor', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u4', name: 'Técnico User', email: 'tecnico@example.com', role: 'Técnico', avatarUrl: 'https://placehold.co/40x40.png' },
 ];
 
 
