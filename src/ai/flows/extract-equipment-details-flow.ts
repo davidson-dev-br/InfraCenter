@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ExtractEquipmentInputSchema = z.object({
+const ExtractEquipmentInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
@@ -19,7 +19,7 @@ export const ExtractEquipmentInputSchema = z.object({
 });
 export type ExtractEquipmentInput = z.infer<typeof ExtractEquipmentInputSchema>;
 
-export const ExtractEquipmentOutputSchema = z.object({
+const ExtractEquipmentOutputSchema = z.object({
     hostname: z.string().optional().describe("The hostname of the device, if visible."),
     model: z.string().optional().describe("The model number or name of the device."),
     brand: z.string().optional().describe("The manufacturer or brand of the device (e.g., Cisco, Dell, HPE)."),
