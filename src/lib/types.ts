@@ -76,6 +76,14 @@ export interface DeletionLogEntry {
   itemData: PlacedItem; // Full data of the deleted item
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Editor' | 'Viewer';
+  avatarUrl?: string;
+}
+
 // For the main dashboard infrastructure
 export interface Room {
   id: string;

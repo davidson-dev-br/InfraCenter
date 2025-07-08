@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -57,6 +57,12 @@ const initialEquipment: Equipment[] = [
 const initialConnections: Connection[] = [
     { id: 'conn-1', sourceEquipmentId: 'eq-1', sourcePort: 'Gi1/0/1', destinationEquipmentId: 'eq-2', destinationPort: 'Gi1/0/24', cableType: 'CAT6 UTP', status: 'Conectado', isActive: true, notes: 'Link de uplink principal.' },
     { id: 'conn-2', sourceEquipmentId: 'eq-3', sourcePort: 'Eth1', destinationEquipmentId: 'eq-4', destinationPort: 'Eth2', cableType: 'Fibra Óptica OM4', status: 'Planejado', isActive: false },
+];
+
+const initialUsers: User[] = [
+    { id: 'u1', name: 'Admin User', email: 'admin@example.com', role: 'Admin', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u2', name: 'Davidson Conceição', email: 'davidson.conceicao@example.com', role: 'Editor', avatarUrl: 'https://placehold.co/40x40.png' },
+    { id: 'u3', name: 'Regular Viewer', email: 'viewer@example.com', role: 'Viewer', avatarUrl: 'https://placehold.co/40x40.png' },
 ];
 
 
@@ -152,6 +158,7 @@ interface InfraContextType {
     equipmentStatuses: SelectOption[];
     cableTypes: SelectOption[];
     deletionLog: DeletionLogEntry[];
+    users: User[];
     
     setSelectedBuildingId: (buildingId: string) => void;
     setSelectedRoomId: (roomId: string) => void;
@@ -198,6 +205,10 @@ interface InfraContextType {
     addConnection: (connectionData: Omit<Connection, 'id'>) => void;
     updateConnection: (updatedConnection: Connection) => void;
     deleteConnection: (connectionId: string) => void;
+    
+    addUser: (userData: Omit<User, 'id'>) => void;
+    updateUser: (updatedUser: User) => void;
+    deleteUser: (userId: string) => void;
 }
 
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
@@ -221,6 +232,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [equipmentStatuses, setEquipmentStatuses] = React.useState<SelectOption[]>(initialEquipmentStatuses);
     const [cableTypes, setCableTypes] = React.useState<SelectOption[]>(initialCableTypes);
     const [deletionLog, setDeletionLog] = React.useState<DeletionLogEntry[]>(initialDeletionLog);
+    const [users, setUsers] = React.useState<User[]>(initialUsers);
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
@@ -568,6 +580,24 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: "destructive", title: "Conexão Excluída" });
     };
 
+    // User handlers
+    const addUser = (userData: Omit<User, 'id'>) => {
+        const newUser: User = { id: `u-${Date.now()}`, ...userData };
+        setUsers(prev => [newUser, ...prev]);
+        toast({ title: "Usuário Adicionado", description: `O usuário "${newUser.name}" foi criado.` });
+    };
+
+    const updateUser = (updatedUser: User) => {
+        setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+        toast({ title: "Usuário Atualizado", description: `O usuário "${updatedUser.name}" foi salvo.` });
+    };
+
+    const deleteUser = (userId: string) => {
+        const userToDelete = users.find(u => u.id === userId);
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        toast({ variant: "destructive", title: "Usuário Excluído", description: `O usuário "${userToDelete?.name}" foi removido.` });
+    };
+
 
     return (
         <InfraContext.Provider value={{ 
@@ -586,6 +616,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             equipmentStatuses,
             cableTypes,
             deletionLog,
+            users,
             setSelectedBuildingId, 
             setSelectedRoomId,
             setCompanyName,
@@ -620,7 +651,10 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteEquipment,
             addConnection,
             updateConnection,
-            deleteConnection
+            deleteConnection,
+            addUser,
+            updateUser,
+            deleteUser
          }}>
             {children}
         </InfraContext.Provider>

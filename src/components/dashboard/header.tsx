@@ -122,9 +122,11 @@ export function Header() {
                     <span>Log de Atividades</span>
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Users />
-                    <span>Gerenciar Usuários</span>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                     <Link href="/dashboard/users" onClick={() => handleNavClick('/dashboard/users')}>
+                        {renderIcon('/dashboard/users', Users)}
+                        <span>Gerenciar Usuários</span>
+                    </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild className="cursor-pointer">
