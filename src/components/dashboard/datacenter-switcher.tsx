@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -52,6 +52,11 @@ const initialEquipment: Equipment[] = [
     { id: 'eq-2', hostname: 'Swblmsac0101', type: 'Switch', parentItemId: 'rack-2', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Juniper', model: 'EX4300', status: 'Ativo' },
     { id: 'eq-3', hostname: 'Roteador-Central', type: 'Roteador', parentItemId: 'rack-0', positionU: '20-29', imageUrl: 'https://placehold.co/128x64.png', brand: 'HPE', model: 'Aruba 8325', status: 'Aposentado' },
     { id: 'eq-4', hostname: 'Swblmsac0102', type: 'Switch', parentItemId: 'rack-0', positionU: '1', imageUrl: 'https://placehold.co/128x64.png', brand: 'Dell', model: 'PowerSwitch S4148F-ON', status: 'Desativado' },
+];
+
+const initialConnections: Connection[] = [
+    { id: 'conn-1', sourceEquipmentId: 'eq-1', sourcePort: 'Gi1/0/1', destinationEquipmentId: 'eq-2', destinationPort: 'Gi1/0/24', cableType: 'CAT6 UTP', status: 'Conectado', notes: 'Link de uplink principal.' },
+    { id: 'conn-2', sourceEquipmentId: 'eq-3', sourcePort: 'Eth1', destinationEquipmentId: 'eq-4', destinationPort: 'Eth2', cableType: 'Fibra Óptica OM4', status: 'Planejado' },
 ];
 
 
@@ -100,6 +105,7 @@ interface InfraContextType {
     buildings: BuildingType[];
     itemsByRoom: Record<string, PlacedItem[]>;
     equipment: Equipment[];
+    connections: Connection[];
     floorPlanItemTypes: FloorPlanItemType[];
     selectedBuildingId: string | null;
     selectedRoomId: string | null;
@@ -148,6 +154,10 @@ interface InfraContextType {
     addEquipment: (equipmentData: Omit<Equipment, 'id'>) => void;
     updateEquipment: (updatedEquipment: Equipment) => void;
     deleteEquipment: (equipmentId: string) => void;
+
+    addConnection: (connectionData: Omit<Connection, 'id'>) => void;
+    updateConnection: (updatedConnection: Connection) => void;
+    deleteConnection: (connectionId: string) => void;
 }
 
 const InfraContext = React.createContext<InfraContextType | undefined>(undefined);
@@ -156,6 +166,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [buildings, setBuildings] = React.useState<BuildingType[]>(initialBuildings);
     const [itemsByRoom, setItemsByRoom] = React.useState<Record<string, PlacedItem[]>>(initialItemsByRoom);
     const [equipment, setEquipment] = React.useState<Equipment[]>(initialEquipment);
+    const [connections, setConnections] = React.useState<Connection[]>(initialConnections);
     const [floorPlanItemTypes, setFloorPlanItemTypes] = React.useState<FloorPlanItemType[]>(initialFloorPlanItemTypes);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
@@ -381,12 +392,30 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: "destructive", title: "Equipamento Excluído", description: `O equipamento "${eqToDelete?.hostname}" foi excluído.` });
     };
 
+    // Connection handlers
+    const addConnection = (connectionData: Omit<Connection, 'id'>) => {
+        const newConnection: Connection = { id: `conn-${Date.now()}`, ...connectionData };
+        setConnections(prev => [newConnection, ...prev]);
+        toast({ title: "Conexão Adicionada", description: `A conexão foi criada com sucesso.` });
+    };
+
+    const updateConnection = (updatedConnection: Connection) => {
+        setConnections(prev => prev.map(c => c.id === updatedConnection.id ? updatedConnection : c));
+        toast({ title: "Conexão Atualizada", description: `A conexão foi salva.` });
+    };
+
+    const deleteConnection = (connectionId: string) => {
+        setConnections(prev => prev.filter(c => c.id !== connectionId));
+        toast({ variant: "destructive", title: "Conexão Excluída" });
+    };
+
 
     return (
         <InfraContext.Provider value={{ 
             buildings, 
             itemsByRoom, 
             equipment,
+            connections,
             floorPlanItemTypes,
             selectedBuildingId, 
             selectedRoomId, 
@@ -425,7 +454,10 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteEquipmentStatus,
             addEquipment,
             updateEquipment,
-            deleteEquipment
+            deleteEquipment,
+            addConnection,
+            updateConnection,
+            deleteConnection
          }}>
             {children}
         </InfraContext.Provider>

@@ -51,6 +51,17 @@ export interface Equipment {
   dataSheetUrl?: string;
 }
 
+export interface Connection {
+  id: string;
+  sourceEquipmentId: string;
+  sourcePort: string;
+  destinationEquipmentId: string;
+  destinationPort: string;
+  cableType: string;
+  status: 'Conectado' | 'Desconectado' | 'Planejado';
+  notes?: string;
+}
+
 export interface DeletionLogEntry {
   id: string;
   itemId: string;
