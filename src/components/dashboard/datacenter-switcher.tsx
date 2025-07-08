@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const initialBuildings: BuildingType[] = [
@@ -74,6 +74,10 @@ const initialDatacenterStatuses: StatusOption[] = [
     { id: '3', name: 'Maintenance', color: '#f59e0b' },
 ];
 
+const initialDeletionLog: DeletionLogEntry[] = [
+    { id: 'del-1', itemId: 'deleted-item-1', itemName: 'Old Server 01', itemType: 'Server Rack', deletedBy: 'Admin User', deletedAt: '01/07/2025', reason: 'Item desativado (decommissioned)' }
+];
+
 
 // --- Context for sharing infrastructure state ---
 interface InfraContextType {
@@ -87,6 +91,7 @@ interface InfraContextType {
     equipmentTypes: SelectOption[];
     deletionReasons: SelectOption[];
     datacenterStatuses: StatusOption[];
+    deletionLog: DeletionLogEntry[];
     
     setSelectedBuildingId: (buildingId: string) => void;
     setSelectedRoomId: (roomId: string) => void;
@@ -99,6 +104,7 @@ interface InfraContextType {
     
     updateItemsForRoom: (roomId: string, items: PlacedItem[]) => void;
     approveItem: (itemId: string) => void;
+    deleteItem: (itemToDelete: PlacedItem, reason: string) => void;
     
     addRoom: (buildingId: string, roomData: Omit<Room, 'id'>) => void;
     updateRoom: (buildingId: string, updatedRoom: Room) => void;
@@ -135,6 +141,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [equipmentTypes, setEquipmentTypes] = React.useState<SelectOption[]>(initialEquipmentTypes);
     const [deletionReasons, setDeletionReasons] = React.useState<SelectOption[]>(initialDeletionReasons);
     const [datacenterStatuses, setDatacenterStatuses] = React.useState<StatusOption[]>(initialDatacenterStatuses);
+    const [deletionLog, setDeletionLog] = React.useState<DeletionLogEntry[]>(initialDeletionLog);
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
@@ -180,6 +187,33 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
                 );
             }
             return newItemsByRoom;
+        });
+    };
+
+    const deleteItem = (itemToDelete: PlacedItem, reason: string) => {
+        setItemsByRoom(prev => {
+            const newItemsByRoom = { ...prev };
+            for (const roomId in newItemsByRoom) {
+                newItemsByRoom[roomId] = newItemsByRoom[roomId].filter(item => item.id !== itemToDelete.id);
+            }
+            return newItemsByRoom;
+        });
+
+        const newLogEntry: DeletionLogEntry = {
+            id: `del-${Date.now()}`,
+            itemId: itemToDelete.id,
+            itemName: itemToDelete.name,
+            itemType: itemToDelete.type,
+            deletedBy: 'Admin User',
+            deletedAt: new Date().toLocaleDateString('pt-BR'),
+            reason: reason,
+        };
+        setDeletionLog(prev => [newLogEntry, ...prev]);
+
+        toast({
+            variant: "destructive",
+            title: "Item Excluído",
+            description: `O item "${itemToDelete.name}" foi movido para o log de exclusões.`,
         });
     };
 
@@ -307,6 +341,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             equipmentTypes,
             deletionReasons,
             datacenterStatuses,
+            deletionLog,
             setSelectedBuildingId, 
             setSelectedRoomId,
             setCompanyName,
@@ -316,6 +351,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deleteBuilding,
             updateItemsForRoom, 
             approveItem, 
+            deleteItem,
             addRoom, 
             updateRoom, 
             deleteRoom, 

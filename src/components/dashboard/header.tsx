@@ -105,9 +105,11 @@ export function Header() {
                     <span>Gerenciar Usuários</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem className="cursor-pointer">
-                    <ClipboardX />
-                    <span>Log de Exclusões</span>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                     <Link href="/dashboard/deletion-log">
+                        <ClipboardX />
+                        <span>Log de Exclusões</span>
+                    </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />

@@ -23,10 +23,19 @@ export interface PlacedItem {
   row?: string;
   observations?: string;
   awaitingApproval?: boolean;
-  awaitingDeletion?: boolean;
   createdBy?: string;
   createdAt?: string;
   color?: string;
+}
+
+export interface DeletionLogEntry {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemType: string;
+  deletedBy: string;
+  deletedAt: string;
+  reason: string;
 }
 
 // For the main dashboard infrastructure

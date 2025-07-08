@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import type { PlacedItem } from "@/lib/types";
 import { Clock, CheckCircle2, Trash2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { DeleteItemDialog } from "./delete-item-dialog";
 
 type ItemDetailsDialogProps = {
   item: PlacedItem | null;
@@ -65,6 +66,10 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
       onSave({ ...item, ...formData, awaitingApproval: false } as PlacedItem);
     }
   }
+
+  const handleDeletionSuccess = () => {
+    onOpenChange(false); // Close the details dialog after deletion
+  };
 
   if (!item) return null;
 
@@ -154,7 +159,9 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
             </div>
 
             <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between sm:w-full">
-                <Button variant="destructive" type="button" className="sm:mr-auto"><Trash2 className="mr-2 h-4 w-4"/> Mover para Lixeira</Button>
+                <DeleteItemDialog item={item} onDeletionSuccess={handleDeletionSuccess} container={container}>
+                    <Button variant="destructive" type="button" className="sm:mr-auto"><Trash2 className="mr-2 h-4 w-4"/> Mover para Lixeira</Button>
+                </DeleteItemDialog>
                 <div className="flex flex-col-reverse gap-2 sm:flex-row">
                     {formData.awaitingApproval && (
                       <Button variant="default" className="text-white bg-green-600 hover:bg-green-700" type="button" onClick={handleApprove}>

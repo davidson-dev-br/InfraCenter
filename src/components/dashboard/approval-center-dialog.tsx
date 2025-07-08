@@ -36,7 +36,7 @@ type ApprovalCenterDialogProps = {
 export function ApprovalCenterDialog({ children, items, onApproveItem }: ApprovalCenterDialogProps) {
     const { toast } = useToast();
     const itemsAwaitingApproval = items.filter(item => item.awaitingApproval);
-    const itemsAwaitingDeletion = items.filter(item => item.awaitingDeletion);
+    const itemsAwaitingDeletion: PlacedItem[] = [];
 
     const handleApprove = (item: PlacedItem) => {
         onApproveItem(item.id);
