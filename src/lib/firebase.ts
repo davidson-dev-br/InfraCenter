@@ -22,8 +22,7 @@ let isFirebaseConfigured = false;
 // and provides a clear flag for components to check.
 if (
   firebaseConfig.apiKey &&
-  firebaseConfig.projectId &&
-  !firebaseConfig.apiKey.includes('COLE_A_SUA')
+  firebaseConfig.projectId
 ) {
   try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
