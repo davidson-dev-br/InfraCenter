@@ -72,6 +72,8 @@ export interface DeletionLogEntry {
   deletedBy: string;
   deletedAt: string;
   reason: string;
+  roomId: string; // ID of the room it was in
+  itemData: PlacedItem; // Full data of the deleted item
 }
 
 // For the main dashboard infrastructure

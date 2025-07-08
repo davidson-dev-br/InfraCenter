@@ -110,7 +110,28 @@ const initialCableTypes: SelectOption[] = [
 ];
 
 const initialDeletionLog: DeletionLogEntry[] = [
-    { id: 'del-1', itemId: 'deleted-item-1', itemName: 'Old Server 01', itemType: 'Server Rack', deletedBy: 'Admin User', deletedAt: '01/07/2025', reason: 'Item desativado (decommissioned)' }
+    { 
+        id: 'del-1', 
+        itemId: 'deleted-item-1', 
+        itemName: 'Old Server 01', 
+        itemType: 'Server Rack', 
+        deletedBy: 'Admin User', 
+        deletedAt: '01/07/2025', 
+        reason: 'Item desativado (decommissioned)',
+        roomId: 'r1',
+        itemData: {
+            id: 'deleted-item-1',
+            name: 'Old Server 01',
+            type: 'Server Rack',
+            icon: Server,
+            x: 10, y: 10,
+            status: 'Inativo',
+            width: 0.6,
+            length: 1.2,
+            color: '#ef4444',
+            awaitingApproval: false,
+        }
+    }
 ];
 
 
@@ -144,6 +165,7 @@ interface InfraContextType {
     updateItemsForRoom: (roomId: string, items: PlacedItem[]) => void;
     approveItem: (itemId: string) => void;
     deleteItem: (itemToDelete: PlacedItem, reason: string) => void;
+    restoreItem: (logId: string) => void;
     
     addRoom: (buildingId: string, roomData: Omit<Room, 'id'>) => void;
     updateRoom: (buildingId: string, updatedRoom: Room) => void;
@@ -248,9 +270,28 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
 
     const deleteItem = (itemToDelete: PlacedItem, reason: string) => {
+        const findRoomIdForItem = (itemId: string): string | null => {
+            for (const roomId in itemsByRoom) {
+                if (itemsByRoom[roomId].some(item => item.id === itemId)) {
+                    return roomId;
+                }
+            }
+            return null;
+        };
+        const roomId = findRoomIdForItem(itemToDelete.id);
+
+        if (!roomId) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao Excluir",
+                description: "Não foi possível encontrar a sala do item.",
+            });
+            return;
+        }
+
         setItemsByRoom(prev => {
             const newItemsByRoom = { ...prev };
-            for (const roomId in newItemsByRoom) {
+            if (newItemsByRoom[roomId]) {
                 newItemsByRoom[roomId] = newItemsByRoom[roomId].filter(item => item.id !== itemToDelete.id);
             }
             return newItemsByRoom;
@@ -264,6 +305,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             deletedBy: 'Admin User',
             deletedAt: new Date().toLocaleDateString('pt-BR'),
             reason: reason,
+            roomId: roomId,
+            itemData: itemToDelete,
         };
         setDeletionLog(prev => [newLogEntry, ...prev]);
 
@@ -271,6 +314,94 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             variant: "destructive",
             title: "Item Excluído",
             description: `O item "${itemToDelete.name}" foi movido para o log de exclusões.`,
+        });
+    };
+
+    const restoreItem = (logId: string) => {
+        const logEntry = deletionLog.find(entry => entry.id === logId);
+        if (!logEntry) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Entrada de log não encontrada.' });
+            return;
+        }
+
+        const { itemData, roomId } = logEntry;
+        const room = buildings.flatMap(b => b.rooms).find(r => r.id === roomId);
+
+        if (!room) {
+            toast({ variant: 'destructive', title: 'Erro', description: `Sala com ID ${roomId} não encontrada.` });
+            return;
+        }
+        
+        const itemsInRoom = itemsByRoom[roomId] || [];
+        const tileWidthM = (room.tileWidth || 60) / 100;
+        const tileLengthM = (room.tileLength || 60) / 100;
+        const GRID_COLS = Math.floor(room.width / tileWidthM);
+        const GRID_ROWS = Math.floor(room.length / tileLengthM);
+
+        const checkCollision = (testItem: PlacedItem, allItems: PlacedItem[]) => {
+            const testItemWidthInCells = testItem.width / tileWidthM;
+            const testItemLengthInCells = testItem.length / tileLengthM;
+
+            if (testItem.x < 0 || testItem.y < 0 || testItem.x + testItemWidthInCells > GRID_COLS || testItem.y + testItemLengthInCells > GRID_ROWS) {
+                return true;
+            }
+
+            for (const existingItem of allItems) {
+                if (existingItem.id === testItem.id) continue;
+                
+                const existingItemWidthInCells = existingItem.width / tileWidthM;
+                const existingItemLengthInCells = existingItem.length / tileLengthM;
+                
+                if (
+                    testItem.x < existingItem.x + existingItemWidthInCells &&
+                    testItem.x + testItemWidthInCells > existingItem.x &&
+                    testItem.y < existingItem.y + existingItemLengthInCells &&
+                    testItem.y + testItemLengthInCells > existingItem.y
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        let restoredItem = { ...itemData };
+        let wasMoved = false;
+
+        if (checkCollision(restoredItem, itemsInRoom)) {
+            wasMoved = true;
+            const itemWidthInCells = restoredItem.width / tileWidthM;
+            const itemLengthInCells = restoredItem.length / tileLengthM;
+            let foundSpot = false;
+
+            for (let y = 0; y <= GRID_ROWS - itemLengthInCells; y++) {
+                for (let x = 0; x <= GRID_COLS - itemWidthInCells; x++) {
+                    const newPositionItem = { ...restoredItem, x, y };
+                    if (!checkCollision(newPositionItem, itemsInRoom)) {
+                        restoredItem.x = x;
+                        restoredItem.y = y;
+                        foundSpot = true;
+                        break;
+                    }
+                }
+                if (foundSpot) break;
+            }
+
+            if (!foundSpot) {
+                toast({ variant: 'destructive', title: 'Restauração Falhou', description: 'Não há espaço livre na sala para restaurar o item.' });
+                return;
+            }
+        }
+
+        setItemsByRoom(prev => ({
+            ...prev,
+            [roomId]: [...(prev[roomId] || []), restoredItem],
+        }));
+
+        setDeletionLog(prev => prev.filter(entry => entry.id !== logId));
+
+        toast({
+            title: 'Item Restaurado',
+            description: `O item "${restoredItem.name}" foi restaurado com sucesso. ${wasMoved ? 'Ele foi movido para o primeiro espaço vago.' : ''}`,
         });
     };
 
@@ -465,6 +596,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             updateItemsForRoom, 
             approveItem, 
             deleteItem,
+            restoreItem,
             addRoom, 
             updateRoom, 
             deleteRoom, 

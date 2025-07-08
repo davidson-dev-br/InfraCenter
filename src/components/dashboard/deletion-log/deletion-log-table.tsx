@@ -13,12 +13,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useInfra } from "../datacenter-switcher";
 
 type DeletionLogTableProps = {
   data: DeletionLogEntry[];
 };
 
 export function DeletionLogTable({ data }: DeletionLogTableProps) {
+  const { restoreItem } = useInfra();
 
   return (
     <div className="border rounded-lg">
@@ -60,7 +62,7 @@ export function DeletionLogTable({ data }: DeletionLogTableProps) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                        <DropdownMenuItem disabled>
+                                        <DropdownMenuItem onClick={() => restoreItem(entry.id)} className="cursor-pointer">
                                             <History className="w-4 h-4 mr-2" /> Restaurar Item
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
