@@ -54,9 +54,13 @@ interface InfraContextType {
     floorPlanItemTypes: FloorPlanItemType[];
     selectedBuildingId: string | null;
     selectedRoomId: string | null;
+    companyName: string;
+    companyLogo: string | null;
     
     setSelectedBuildingId: (buildingId: string) => void;
     setSelectedRoomId: (roomId: string) => void;
+    setCompanyName: (name: string) => void;
+    setCompanyLogo: (logo: string | null) => void;
     
     updateItemsForRoom: (roomId: string, items: PlacedItem[]) => void;
     approveItem: (itemId: string) => void;
@@ -79,6 +83,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [floorPlanItemTypes, setFloorPlanItemTypes] = React.useState<FloorPlanItemType[]>(initialFloorPlanItemTypes);
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(initialBuildings[0]?.id || null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(initialBuildings[0]?.rooms[0]?.id || null);
+    const [companyName, setCompanyName] = React.useState<string>("TIM BLMSAC");
+    const [companyLogo, setCompanyLogo] = React.useState<string | null>(null);
     const { toast } = useToast();
 
     const setSelectedBuildingId = (buildingId: string) => {
@@ -192,8 +198,12 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             floorPlanItemTypes,
             selectedBuildingId, 
             selectedRoomId, 
+            companyName,
+            companyLogo,
             setSelectedBuildingId, 
-            setSelectedRoomId, 
+            setSelectedRoomId,
+            setCompanyName,
+            setCompanyLogo,
             updateItemsForRoom, 
             approveItem, 
             addRoom, 

@@ -36,6 +36,7 @@ export function Header() {
   const { 
     itemsByRoom,
     approveItem,
+    companyName
   } = useInfra();
   
   const allItems = Object.values(itemsByRoom).flat();
@@ -54,7 +55,7 @@ export function Header() {
         <div className="flex items-center gap-2 mr-4">
             <Building2 className="w-6 h-6 text-primary" />
             <span className="text-lg font-bold sm:inline-block font-headline">
-                TIM BLMSAC
+                {companyName}
             </span>
             <Badge variant="secondary">v3.2.6</Badge>
         </div>

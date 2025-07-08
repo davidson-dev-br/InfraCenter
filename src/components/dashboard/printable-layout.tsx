@@ -8,9 +8,11 @@ interface PrintableLayoutProps {
     room: Room;
     items: PlacedItem[];
     gridCellSize: number;
+    companyName: string;
+    companyLogo: string | null;
 }
 
-export function PrintableLayout({ building, room, items, gridCellSize }: PrintableLayoutProps) {
+export function PrintableLayout({ building, room, items, gridCellSize, companyName, companyLogo }: PrintableLayoutProps) {
     if (!room) return null;
 
     const roomWidthM = room.width;
@@ -96,8 +98,12 @@ export function PrintableLayout({ building, room, items, gridCellSize }: Printab
                     <div className="grid grid-rows-[auto_1fr] border-r-2 border-black">
                         <div className="grid grid-cols-[1fr_auto] p-1 border-b border-black">
                             <div className="flex flex-col items-center justify-center w-full h-12 gap-1 border-r border-black">
-                                <Building2 className="w-5 h-5 text-black" />
-                                <p className="text-[8px] font-bold">TIM BLMSAC</p>
+                                {companyLogo ? (
+                                    <img src={companyLogo} alt="Company Logo" className="max-h-8 object-contain" />
+                                ) : (
+                                    <Building2 className="w-5 h-5 text-black" />
+                                )}
+                                <p className="text-[8px] font-bold">{companyName}</p>
                             </div>
                             <div className="p-1 w-[80px]">
                                 <p><span>Rev.</span></p>

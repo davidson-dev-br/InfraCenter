@@ -33,7 +33,9 @@ export function FloorPlan() {
         selectedBuildingId,
         selectedRoomId,
         itemsByRoom,
-        updateItemsForRoom
+        updateItemsForRoom,
+        companyName,
+        companyLogo
     } = useInfra();
     const { toast } = useToast();
     
@@ -290,7 +292,7 @@ export function FloorPlan() {
             >
                 <div className="relative" style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left', width: `${(GRID_COLS * CELL_SIZE) + 40}px`, height: `${(GRID_ROWS * CELL_SIZE) + 30}px` }}>
                     <div
-                        className="absolute border-2 border-muted-foreground/50 pointer-events-none"
+                        className="absolute border-4 border-primary/80 pointer-events-none"
                         style={{
                             top: '30px',
                             left: '40px',
@@ -392,6 +394,8 @@ export function FloorPlan() {
                     room={selectedRoom}
                     items={items}
                     gridCellSize={CELL_SIZE}
+                    companyName={companyName}
+                    companyLogo={companyLogo}
                 />
             </div>
              <ItemDetailsDialog 

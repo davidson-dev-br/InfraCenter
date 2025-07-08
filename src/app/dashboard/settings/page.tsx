@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Plus, Trash2, Edit } from "lucide-react";
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
 import { AddFloorPlanItemTypeDialog } from "@/components/dashboard/add-floor-plan-item-type-dialog";
 import { getIconByName } from "@/lib/icon-map";
+import { Label } from "@/components/ui/label";
 
 // Mock data based on the image
 const initialEquipmentTypes = [
@@ -28,7 +29,14 @@ const initialDeletionReasons = [
 ];
 
 export default function SystemSettingsPage() {
-    const { floorPlanItemTypes, deleteFloorPlanItemType } = useInfra();
+    const { 
+        floorPlanItemTypes, 
+        deleteFloorPlanItemType,
+        companyName,
+        setCompanyName,
+        companyLogo,
+        setCompanyLogo
+    } = useInfra();
 
     const [equipmentTypes, setEquipmentTypes] = useState(initialEquipmentTypes);
     const [newEquipmentType, setNewEquipmentType] = useState("");
@@ -60,10 +68,43 @@ export default function SystemSettingsPage() {
     const handleDeleteFloorPlanItem = (id: string) => {
         deleteFloorPlanItemType(id);
     };
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCompanyLogo(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
     
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+
+                <Card className="shadow-lg md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-headline">Configurações da Empresa</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="company-name">Nome da Empresa</Label>
+                            <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="company-logo">Logo da Empresa (PNG, JPG, SVG)</Label>
+                            <Input id="company-logo" type="file" accept="image/*" onChange={handleLogoChange} className="file:text-primary file:font-medium" />
+                             {companyLogo && (
+                                <div className="mt-4 p-2 border rounded-md flex justify-center items-center bg-muted/30 h-24">
+                                    <img src={companyLogo} alt="Company Logo Preview" className="max-h-full object-contain" />
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Tipos de Equipamento</CardTitle>
@@ -128,7 +169,7 @@ export default function SystemSettingsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-lg">
+                <Card className="shadow-lg md:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl font-headline">Items da Planta Baixa</CardTitle>
                         <AddFloorPlanItemTypeDialog>
