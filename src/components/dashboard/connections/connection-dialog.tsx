@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -38,7 +39,8 @@ type ConnectionDialogProps = {
 };
 
 export function ConnectionDialog({ children, connection, initialData, open: openProp, onOpenChange: onOpenChangeProp }: ConnectionDialogProps) {
-  const { equipment, addConnection, updateConnection, cableTypes } = useInfra();
+  const { equipment, addConnection, updateConnection, systemSettings } = useInfra();
+  const { cableTypes } = systemSettings;
   
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = openProp ?? internalOpen;
@@ -52,7 +54,7 @@ export function ConnectionDialog({ children, connection, initialData, open: open
     sourcePort: '',
     destinationEquipmentId: equipment[1]?.id || '',
     destinationPort: '',
-    cableType: cableTypes[0]?.name || '',
+    cableType: cableTypes?.[0]?.name || '',
     status: 'Planejado',
     isActive: false,
     notes: ''
@@ -74,7 +76,7 @@ export function ConnectionDialog({ children, connection, initialData, open: open
         });
       }
     }
-  }, [isOpen, connection, isEditMode, equipment, cableTypes, initialData]);
+  }, [isOpen, connection, isEditMode, equipment, systemSettings, initialData]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -32,7 +33,8 @@ type DeleteItemDialogProps = {
 };
 
 export function DeleteItemDialog({ children, item, onDeletionSuccess, container }: DeleteItemDialogProps) {
-    const { deleteItem, deletionReasons } = useInfra();
+    const { deleteItem, systemSettings } = useInfra();
+    const { deletionReasons } = systemSettings;
     const [isOpen, setIsOpen] = useState(false);
     const [reason, setReason] = useState("");
     const [error, setError] = useState("");

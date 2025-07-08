@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -96,11 +97,11 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
   const {
     buildings,
     itemsByRoom,
-    equipmentTypes,
-    equipmentStatuses,
+    systemSettings,
     addEquipment,
     updateEquipment
   } = useInfra();
+  const { equipmentTypes, equipmentStatuses } = systemSettings;
   const { toast } = useToast();
 
   const [internalOpen, setInternalOpen] = useState(false);
@@ -146,7 +147,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
         });
       }
     }
-  }, [isOpen, equipamento, isEditMode, initialData, equipmentTypes, equipmentStatuses, parentItems]);
+  }, [isOpen, equipamento, isEditMode, initialData, systemSettings, parentItems]);
   
   useEffect(() => {
     if (!isOpen) {
