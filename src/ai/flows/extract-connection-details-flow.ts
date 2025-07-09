@@ -3,30 +3,15 @@
  * @fileOverview An AI flow to extract connection details from a cable label photo.
  *
  * - extractConnectionDetails - A function that handles the connection detail extraction process.
- * - ExtractConnectionInput - The input type for the extractConnectionDetails function.
- * - ExtractConnectionOutput - The return type for the extractConnectionDetails function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const ExtractConnectionInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a cable label, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type ExtractConnectionInput = z.infer<typeof ExtractConnectionInputSchema>;
-
-export const ExtractConnectionOutputSchema = z.object({
-    cableLabel: z.string().optional().describe("The primary identifier or name on the cable label."),
-    sourceHostname: z.string().optional().describe("The hostname of the source (DE) device."),
-    sourcePort: z.string().optional().describe("The port of the source (DE) device."),
-    destinationHostname: z.string().optional().describe("The hostname of the destination (PARA) device."),
-    destinationPort: z.string().optional().describe("The port of the destination (PARA) device."),
-});
-export type ExtractConnectionOutput = z.infer<typeof ExtractConnectionOutputSchema>;
+import {
+    ExtractConnectionInput,
+    ExtractConnectionInputSchema,
+    ExtractConnectionOutput,
+    ExtractConnectionOutputSchema,
+} from '@/ai/schemas';
 
 
 const prompt = ai.definePrompt({

@@ -4,9 +4,14 @@
  */
 
 import { z } from 'zod';
-import { ExtractConnectionInputSchema, ExtractConnectionOutputSchema } from './extract-connection-details-flow';
-import { ExtractEquipmentInputSchema, ExtractEquipmentOutputSchema } from './extract-equipment-details-flow';
-import { ImportFromSpreadsheetInputSchema, ImportFromSpreadsheetOutputSchema } from './import-spreadsheet-flow';
+import { 
+    ExtractConnectionInputSchema, 
+    ExtractConnectionOutputSchema,
+    ExtractEquipmentInputSchema,
+    ExtractEquipmentOutputSchema,
+    ImportFromSpreadsheetInputSchema,
+    ImportFromSpreadsheetOutputSchema,
+} from '@/ai/schemas';
 import { ai } from '@/ai/genkit';
 
 const RunDynamicFlowInputSchema = z.object({

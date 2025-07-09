@@ -3,31 +3,15 @@
  * @fileOverview An AI flow to extract equipment details from a photo.
  *
  * - extractEquipmentDetails - A function that handles the equipment detail extraction process.
- * - ExtractEquipmentInput - The input type for the extractEquipmentDetails function.
- * - ExtractEquipmentOutput - The return type for the extractEquipmentDetails function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const ExtractEquipmentInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a piece of hardware, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type ExtractEquipmentInput = z.infer<typeof ExtractEquipmentInputSchema>;
-
-export const ExtractEquipmentOutputSchema = z.object({
-    hostname: z.string().optional().describe("The hostname of the device, if visible."),
-    model: z.string().optional().describe("The model number or name of the device."),
-    brand: z.string().optional().describe("The manufacturer or brand of the device (e.g., Cisco, Dell, HPE)."),
-    serialNumber: z.string().optional().describe("The serial number of the device."),
-    type: z.string().optional().describe("The general type of equipment (e.g., Switch, Server, Router, Patch Panel, Firewall)."),
-    tag: z.string().optional().describe("Any asset tag or identification sticker number visible on the device."),
-});
-export type ExtractEquipmentOutput = z.infer<typeof ExtractEquipmentOutputSchema>;
+import {
+    ExtractEquipmentInput,
+    ExtractEquipmentInputSchema,
+    ExtractEquipmentOutput,
+    ExtractEquipmentOutputSchema,
+} from '@/ai/schemas';
 
 
 const prompt = ai.definePrompt({
