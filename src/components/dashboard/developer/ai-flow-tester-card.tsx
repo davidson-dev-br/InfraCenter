@@ -17,67 +17,67 @@ type FlowName = 'extractEquipmentDetails' | 'extractConnectionDetails' | 'import
 
 const FLOW_DETAILS: Record<FlowName, { prompt: string; input: string; hasImage: boolean }> = {
     extractEquipmentDetails: {
-        prompt: `You are an expert IT asset management assistant. Your task is to analyze the provided image of a piece of network or server hardware.
+        prompt: `Você é um assistente especialista em gerenciamento de ativos de TI. Sua tarefa é analisar a imagem fornecida de um equipamento de rede ou servidor.
 
-Carefully examine the image for any text, labels, or logos. Identify the equipment type, manufacturer (brand), model name/number, serial number, hostname, and any asset tags.
+Examine cuidadosamente a imagem em busca de textos, etiquetas ou logotipos. Identifique o tipo de equipamento, fabricante (marca), nome/número do modelo, número de série, hostname e quaisquer etiquetas de patrimônio.
 
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
 
-Photo: {{media url=photoDataUri}}`,
+Foto: {{media url=photoDataUri}}`,
         input: JSON.stringify({ photoDataUri: "data:image/jpeg;base64,..." }, null, 2),
         hasImage: true,
     },
     extractConnectionDetails: {
-        prompt: `You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label.
+        prompt: `Você é um assistente especialista em infraestrutura de TI, especializado em ler etiquetas de cabos. Sua tarefa é analisar a imagem fornecida de uma etiqueta de cabo.
 
-The label typically follows a DE/PARA (FROM/TO) format.
-- "DE" refers to the source device and port.
-- "PARA" refers to the destination device and port.
+A etiqueta geralmente segue o formato DE/PARA (FROM/TO).
+- "DE" refere-se ao dispositivo e porta de origem.
+- "PARA" refere-se ao dispositivo e porta de destino.
 
-Carefully examine the image for any text. Identify the main label identifier (the most prominent text, often a patch panel ID), the source device hostname and port, and the destination device hostname and port.
+Examine cuidadosamente a imagem em busca de qualquer texto. Identifique o identificador principal da etiqueta (o texto mais proeminente, muitas vezes um ID de patch panel), o hostname e a porta do dispositivo de origem, e o hostname e a porta do dispositivo de destino.
 
-Example label text:
+Exemplo de texto da etiqueta:
 "P-01-A-01
 DE: SW-CORE-01 | Gi1/0/1
 PARA: FW-EDGE-02 | PortA"
 
-For the example above, you would extract:
+Para o exemplo acima, você extrairia:
 - cableLabel: "P-01-A-01"
 - sourceHostname: "SW-CORE-01"
 - sourcePort: "Gi1/0/1"
 - destinationHostname: "FW-EDGE-02"
 - destinationPort: "PortA"
 
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
 
-Photo: {{media url=photoDataUri}}`,
+Foto: {{media url=photoDataUri}}`,
         input: JSON.stringify({ photoDataUri: "data:image/jpeg;base64,..." }, null, 2),
         hasImage: true,
     },
     importFromSpreadsheet: {
-        prompt: `You are an expert data migration assistant for an IT infrastructure management system.
-You will be provided with a JSON representation of a spreadsheet containing inventory data.
-Your task is to analyze this JSON data, intelligently map the columns to the equipment schema, and return a clean list of equipment objects.
+        prompt: `Você é um assistente especialista em migração de dados para um sistema de gerenciamento de infraestrutura de TI.
+Você receberá uma representação JSON de uma planilha contendo dados de inventário.
+Sua tarefa é analisar esses dados JSON, mapear inteligentemente as colunas para o esquema de equipamento e retornar uma lista limpa de objetos de equipamento.
 
-Spreadsheet JSON data:
+Dados JSON da planilha:
 \`\`\`json
 {{{jsonData}}}
 \`\`\`
 
-Mapping Heuristics:
-- 'hostname': Look for columns named 'Hostname', 'Device Name', 'Asset', 'Name', or similar. This is the primary identifier.
-- 'brand': Look for 'Manufacturer', 'Brand', 'Make', 'Fabricante'.
-- 'model': Look for 'Model', 'Product Name', 'Modelo'.
-- 'serialNumber': Look for 'Serial Number', 'S/N', 'Serial', 'Número de Série'.
-- 'type': Look for 'Type', 'Category', 'Tipo', 'Categoria' (e.g., Switch, Server, Router).
-- 'status': Look for 'Status', 'Condition'.
-- 'positionU': Look for 'U Position', 'Position', 'Posição'.
-- 'sizeU': Look for 'Size (U)', 'Height', 'Tamanho (U)'.
-- 'tag': Look for 'Asset Tag', 'TAG'.
-- 'description': Look for 'Description', 'Notes', 'Descrição'.
+Heurísticas de Mapeamento:
+- 'hostname': Procure por colunas nomeadas 'Hostname', 'Device Name', 'Asset', 'Name', 'Nome do Dispositivo', 'Ativo' ou similar. Este é o identificador primário.
+- 'brand': Procure por 'Manufacturer', 'Brand', 'Make', 'Fabricante', 'Marca'.
+- 'model': Procure por 'Model', 'Product Name', 'Modelo'.
+- 'serialNumber': Procure por 'Serial Number', 'S/N', 'Serial', 'Número de Série'.
+- 'type': Procure por 'Type', 'Category', 'Tipo', 'Categoria' (ex: Switch, Server, Roteador).
+- 'status': Procure por 'Status', 'Condition', 'Condição'.
+- 'positionU': Procure por 'U Position', 'Position', 'Posição U', 'Posição'.
+- 'sizeU': Procure por 'Size (U)', 'Height', 'Tamanho (U)', 'Altura'.
+- 'tag': Procure por 'Asset Tag', 'TAG', 'Etiqueta de Patrimônio'.
+- 'description': Procure por 'Description', 'Notes', 'Descrição', 'Observações'.
 
-For each row in the input JSON, create a corresponding equipment object in the output. If you cannot find a clear mapping for a field, omit it from the object. Do not invent data.
-Focus only on extracting the equipment list.
+Para cada linha no JSON de entrada, crie um objeto de equipamento correspondente na saída. Se você não conseguir encontrar um mapeamento claro para um campo, omita-o do objeto. Não invente dados.
+Foque apenas em extrair a lista de equipamentos.
 `,
         input: JSON.stringify({ jsonData: "[{\"Hostname\": \"SRV-01\", \"Modelo\": \"DL380\"}]" }, null, 2),
         hasImage: false,
@@ -216,7 +216,7 @@ export function AIFlowTesterCard() {
                     Laboratório de Prompts de IA
                 </CardTitle>
                 <CardDescription>
-                    Esta ferramenta é um "atalho" para testar e refinar a IA. Edite o prompt, forneça os dados de entrada (seja colando JSON ou enviando uma imagem) e execute para ver a resposta exata do modelo. Se o resultado for bom, copie o prompt e cole-o no arquivo de fluxo correspondente no seu código.
+                    Esta ferramenta é um "atalho" para testar e refinar a IA. Edite o prompt, forneça os dados de entrada (seja colando JSON ou enviando uma imagem) e execute para ver a resposta exata do modelo. Se o resultado for bom, salve o prompt no banco de dados para que toda a aplicação passe a usá-lo.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -239,9 +239,9 @@ export function AIFlowTesterCard() {
                         <Label htmlFor="custom-prompt">2. Editar o Prompt</Label>
                         <Textarea id="custom-prompt" value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Seu prompt personalizado aqui..." rows={12} className="font-mono text-xs" disabled={!selectedFlow || isLoading} />
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handleCopyPrompt} disabled={!customPrompt}><Copy className="mr-2" /> Copiar Prompt</Button>
+                            <Button variant="outline" size="sm" onClick={handleCopyPrompt} disabled={!customPrompt}><Copy className="w-4 h-4 mr-2" /> Copiar Prompt</Button>
                              <Button size="sm" onClick={handleSavePrompt} disabled={!selectedFlow || isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2" />}
+                                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                                 Salvar Prompt no DB
                             </Button>
                         </div>
@@ -255,12 +255,12 @@ export function AIFlowTesterCard() {
                                         <div className="relative group">
                                             <img src={imageDataUri} alt="Preview" className="max-h-20 object-contain rounded-md" />
                                             <div className="absolute inset-0 flex items-center justify-center transition-opacity bg-black/50 opacity-0 group-hover:opacity-100">
-                                                <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setImageDataUri(null)}><Trash2 /></Button>
+                                                <Button type="button" variant="destructive" size="icon" className="w-8 h-8" onClick={() => setImageDataUri(null)}><Trash2 className="w-4 h-4" /></Button>
                                             </div>
                                         </div>
                                     ) : ( <p className="text-xs text-muted-foreground">Nenhuma imagem</p>)}
                                 </div>
-                                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><FileImage className="mr-2" />{imageDataUri ? "Alterar Imagem" : "Carregar Imagem"}</Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><FileImage className="w-4 h-4 mr-2" />{imageDataUri ? "Alterar Imagem" : "Carregar Imagem"}</Button>
                                 <Input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                                 <p className="text-xs text-muted-foreground">A imagem será convertida para Data URI e inserida no JSON abaixo.</p>
                             </div>
@@ -288,7 +288,7 @@ export function AIFlowTesterCard() {
             </CardContent>
             <CardFooter className="justify-end">
                 <Button onClick={handleRunFlow} disabled={!selectedFlow || isLoading} size="lg">
-                    {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <TestTube2 className="mr-2" />}
+                    {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TestTube2 className="w-4 h-4 mr-2" />}
                     {isLoading ? 'Executando...' : 'Executar Fluxo com Prompt Editado'}
                 </Button>
             </CardFooter>
