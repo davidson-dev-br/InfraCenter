@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -203,10 +204,24 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             const buildingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuildingType));
             setBuildings(buildingsData);
 
-            if (!selectedBuildingId && buildingsData.length > 0) {
-              _setSelectedBuildingId(buildingsData[0].id);
+            const lastSelectedId = localStorage.getItem('selectedBuildingId');
+
+            if (lastSelectedId && buildingsData.some(b => b.id === lastSelectedId)) {
+                if (selectedBuildingId !== lastSelectedId) {
+                    _setSelectedBuildingId(lastSelectedId);
+                }
             } else if (selectedBuildingId && !buildingsData.some(b => b.id === selectedBuildingId)) {
-              _setSelectedBuildingId(buildingsData[0]?.id || null);
+                const firstId = buildingsData[0]?.id || null;
+                _setSelectedBuildingId(firstId);
+                if (firstId) {
+                    localStorage.setItem('selectedBuildingId', firstId);
+                } else {
+                    localStorage.removeItem('selectedBuildingId');
+                }
+            } else if (!selectedBuildingId && buildingsData.length > 0) {
+                const firstId = buildingsData[0].id;
+                _setSelectedBuildingId(firstId);
+                localStorage.setItem('selectedBuildingId', firstId);
             }
         });
 
@@ -268,6 +283,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
     const setSelectedBuildingId = (buildingId: string) => {
         _setSelectedBuildingId(buildingId);
+        localStorage.setItem('selectedBuildingId', buildingId);
         const building = buildings.find(b => b.id === buildingId);
         setSelectedRoomId(building?.rooms?.[0]?.id || null); 
     };
