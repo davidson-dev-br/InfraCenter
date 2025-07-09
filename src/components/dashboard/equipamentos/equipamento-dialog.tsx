@@ -73,24 +73,24 @@ type EquipamentoDialogProps = {
 
 const getDefaultFormData = (): Omit<Equipment, 'id'> => ({
   hostname: '',
-  model: '',
+  model: null,
   price: 0,
-  serialNumber: '',
-  entryDate: '',
+  serialNumber: null,
+  entryDate: null,
   type: '',
-  brand: '',
-  tag: '',
-  description: '',
-  sizeU: '',
-  trellisId: '',
-  positionU: '',
-  ownerEmail: '',
+  brand: null,
+  tag: null,
+  description: null,
+  sizeU: null,
+  trellisId: null,
+  positionU: null,
+  ownerEmail: null,
   isTagEligible: false,
   isFrontFacing: true,
-  status: '',
-  parentItemId: '',
-  dataSheetUrl: '',
-  imageUrl: '',
+  status: null,
+  parentItemId: null,
+  dataSheetUrl: null,
+  imageUrl: null,
 });
 
 export function EquipamentoDialog({ children, equipamento, initialData, open: openProp, onOpenChange: onOpenChangeProp, onSaveSuccess }: EquipamentoDialogProps) {
@@ -143,7 +143,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
             ...initialData,
             type: initialData?.type || (equipmentTypes.length > 0 ? equipmentTypes[0].name : ''),
             status: initialData?.status || (equipmentStatuses.length > 0 ? equipmentStatuses[0].name : ''),
-            parentItemId: initialData?.parentItemId || (parentItems.length > 0 ? parentItems[0].id : ''),
+            parentItemId: initialData?.parentItemId || (parentItems.length > 0 ? parentItems[0].id : null),
         });
       }
     }
@@ -165,7 +165,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
     setFormData(prev => ({ ...prev, [id]: isNumber ? parseFloat(value) : value }));
   };
 
-  const handleSelectChange = (id: 'type' | 'parentItemId' | 'status') => (value: string) => {
+  const handleSelectChange = (id: 'type' | 'parentItemId' | 'status') => (value: string | null) => {
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
@@ -263,7 +263,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
   };
 
   const handleRemoveImage = () => {
-    setFormData(prev => ({...prev, imageUrl: ''}));
+    setFormData(prev => ({...prev, imageUrl: null}));
   };
 
   const dcRoom = useMemo(() => {
@@ -305,7 +305,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Preço</Label>
-                <Input id="price" type="number" value={formData.price} onChange={handleChange} />
+                <Input id="price" type="number" value={formData.price || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="serialNumber">Serial</Label>
