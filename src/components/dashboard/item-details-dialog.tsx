@@ -24,10 +24,44 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import type { PlacedItem } from "@/lib/types";
-import { Clock, CheckCircle2, Trash2 } from "lucide-react";
-import React, { useState, useEffect, useMemo } from "react";
+import { Clock, CheckCircle2, Trash2, Camera, FileImage } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useInfra } from "./datacenter-switcher";
 import { DeleteItemDialog } from "./delete-item-dialog";
+import { useToast } from "@/hooks/use-toast";
+
+// Helper function to resize images
+const MAX_IMAGE_DIMENSION = 1024;
+const resizeImage = (imageSrc: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+
+            if (width > height) {
+                if (width > MAX_IMAGE_DIMENSION) {
+                    height *= MAX_IMAGE_DIMENSION / width;
+                    width = MAX_IMAGE_DIMENSION;
+                }
+            } else {
+                if (height > MAX_IMAGE_DIMENSION) {
+                    width *= MAX_IMAGE_DIMENSION / height;
+                    height = MAX_IMAGE_DIMENSION;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Could not get canvas context'));
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.onerror = reject;
+        img.src = imageSrc;
+    });
+};
+
 
 type ItemDetailsDialogProps = {
   item: PlacedItem | null;
@@ -39,13 +73,39 @@ type ItemDetailsDialogProps = {
 
 export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, container }: ItemDetailsDialogProps) {
   const { buildings } = useInfra();
+  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<PlacedItem>>({});
 
-  useEffect(() => {
-    if (item) {
-      setFormData(item);
+  const [cameraMode, setCameraMode] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+
+  const cleanupCamera = () => {
+    if (videoStreamRef.current) {
+        videoStreamRef.current.getTracks().forEach(track => track.stop());
+        videoStreamRef.current = null;
     }
-  }, [item]);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+        setCameraMode(false);
+        if (item) {
+          setFormData(item);
+        }
+    }
+  }, [item, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+        setCameraMode(false);
+        cleanupCamera();
+    }
+    return () => {
+        cleanupCamera();
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
@@ -70,12 +130,13 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
             entryDate: formData.entryDate || null,
             brand: formData.brand || null,
             tag: formData.tag || null,
-            description: formData.description || null,
+            description: formData.description || '',
             trellisId: formData.trellisId || null,
             ownerEmail: formData.ownerEmail || null,
             dataSheetUrl: formData.dataSheetUrl || null,
             row: formData.row || null,
             color: formData.color || null,
+            imageUrl: formData.imageUrl || null,
         };
         onSave({ ...item, ...sanitizedData } as PlacedItem);
     }
@@ -90,12 +151,13 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
           entryDate: formData.entryDate || null,
           brand: formData.brand || null,
           tag: formData.tag || null,
-          description: formData.description || null,
+          description: formData.description || '',
           trellisId: formData.trellisId || null,
           ownerEmail: formData.ownerEmail || null,
           dataSheetUrl: formData.dataSheetUrl || null,
           row: formData.row || null,
           color: formData.color || null,
+          imageUrl: formData.imageUrl || null,
       };
       onSave({ ...item, ...sanitizedData } as PlacedItem);
     }
@@ -103,6 +165,69 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
 
   const handleDeletionSuccess = () => {
     onOpenChange(false); // Close the details dialog after deletion
+  };
+  
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          try {
+            const resizedUri = await resizeImage(event.target.result);
+            setFormData(prev => ({ ...prev, imageUrl: resizedUri }));
+          } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro ao processar imagem', description: 'O arquivo pode estar corrompido.' });
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUseCameraClick = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        toast({ variant: 'destructive', title: 'Câmera não suportada', description: 'Seu navegador não suporta acesso à câmera.' });
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        videoStreamRef.current = stream;
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
+        setCameraMode(true);
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        toast({ variant: 'destructive', title: 'Acesso à Câmera Negado', description: 'Habilite a permissão nas configurações do seu navegador.' });
+    }
+  };
+
+  const handleCapture = async () => {
+    if (videoRef.current) {
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const capturedUri = canvas.toDataURL('image/jpeg');
+            try {
+              const resizedUri = await resizeImage(capturedUri);
+              setFormData(prev => ({ ...prev, imageUrl: resizedUri }));
+            } catch (error) {
+              toast({ variant: 'destructive', title: 'Erro ao capturar imagem' });
+            } finally {
+              setCameraMode(false);
+              cleanupCamera();
+            }
+        }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({...prev, imageUrl: null}));
   };
 
   const dcRoom = useMemo(() => {
@@ -209,8 +334,48 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
                   <div className="space-y-4 pt-4 border-t">
                       <Label className="font-semibold">Foto do Item</Label>
                       <div className="p-2 border rounded-md bg-muted/30 min-h-[128px] flex justify-center items-center">
-                          <p className="text-sm text-muted-foreground">Funcionalidade de Upload/Câmera será adicionada na Etapa 2.</p>
+                          {formData.imageUrl && !cameraMode && (
+                              <div className="relative group">
+                                  <img src={formData.imageUrl} alt="Item Preview" className="max-h-32 object-contain rounded-md" />
+                                  <div className="absolute inset-0 flex items-center justify-center transition-opacity bg-black/50 opacity-0 group-hover:opacity-100">
+                                      <Button type="button" variant="destructive" size="sm" onClick={handleRemoveImage}>
+                                          <Trash2 className="mr-2" /> Remover
+                                      </Button>
+                                  </div>
+                              </div>
+                          )}
+                          {!formData.imageUrl && !cameraMode && (
+                              <p className="text-sm text-muted-foreground">Nenhuma imagem</p>
+                          )}
+                          {cameraMode && (
+                              <div className="w-full">
+                                  <video ref={videoRef} className="w-full rounded-md aspect-video" autoPlay playsInline muted />
+                              </div>
+                          )}
                       </div>
+                      {cameraMode ? (
+                          <div className="flex gap-2">
+                              <Button type="button" className="w-full" onClick={handleCapture}>
+                                  <Camera className="mr-2" />
+                                  Capturar Foto
+                              </Button>
+                              <Button type="button" variant="outline" onClick={() => { setCameraMode(false); cleanupCamera(); }}>
+                                  Cancelar
+                              </Button>
+                          </div>
+                      ) : (
+                          <div className="flex gap-2">
+                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                  <FileImage className="mr-2" />
+                                  {formData.imageUrl ? "Alterar Imagem" : "Escolher Arquivo"}
+                              </Button>
+                              <Input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                              <Button type="button" variant="outline" onClick={handleUseCameraClick}>
+                                  <Camera className="mr-2" />
+                                  Usar Câmera
+                              </Button>
+                          </div>
+                      )}
                   </div>
                   
                   <div className="space-y-4 pt-4 border-t">
@@ -256,3 +421,5 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
     </Dialog>
   );
 }
+
+    
