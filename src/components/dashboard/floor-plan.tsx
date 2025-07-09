@@ -223,11 +223,23 @@ export function FloorPlan() {
             x: newX, y: newY, status: 'Ativo', 
             width: itemWidthM,
             length: itemLengthM,
-            sizeU: 42, row: String.fromCharCode(65 + newX), observations: '', 
+            sizeU: 42,
+            row: String.fromCharCode(65 + newX),
             awaitingApproval: true,
             createdBy: "Admin User",
             createdAt: new Date().toLocaleDateString('pt-BR'),
-            color: itemType.color
+            color: itemType.color,
+            // Initialize new fields
+            serialNumber: null,
+            entryDate: null,
+            brand: null,
+            tag: null,
+            description: '',
+            trellisId: null,
+            ownerEmail: null,
+            isTagEligible: false,
+            dataSheetUrl: null,
+            imageUrl: null,
         };
         
         setItemsForCurrentRoom([...items, newItem]);

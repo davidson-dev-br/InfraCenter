@@ -31,11 +31,21 @@ export interface PlacedItem {
   length: number;
   sizeU?: number | null;
   row?: string | null;
-  observations?: string | null;
+  description?: string | null;
   awaitingApproval?: boolean;
   createdBy?: string | null;
   createdAt?: string | null;
   color?: string | null;
+  // Fields for external system compatibility
+  serialNumber?: string | null;
+  entryDate?: string | null;
+  brand?: string | null;
+  tag?: string | null;
+  trellisId?: string | null;
+  ownerEmail?: string | null;
+  isTagEligible?: boolean;
+  dataSheetUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface Equipment {
