@@ -28,13 +28,9 @@ import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const USER_ROLES: User['role'][] = ['tecnico', 'supervisor', 'gerente', 'developer'];
-
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
-    if (role === 'tecnico') return 'Técnico';
-    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
@@ -44,7 +40,8 @@ type UserDialogProps = {
 }
 
 export function UserDialog({ children, user }: UserDialogProps) {
-    const { addUser, updateUser, buildings } = useInfra();
+    const { addUser, updateUser, buildings, systemSettings } = useInfra();
+    const { userRoles } = systemSettings;
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const isEditMode = !!user;
@@ -53,7 +50,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
         name: '',
         email: '',
         password: '',
-        role: 'tecnico' as User['role'],
+        role: 'tecnico',
         datacenterId: ''
     });
 
@@ -72,12 +69,12 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     name: '',
                     email: '',
                     password: '',
-                    role: 'tecnico' as User['role'],
+                    role: userRoles.find(r => r.name === 'tecnico')?.name || userRoles[0]?.name || '',
                     datacenterId: buildings[0]?.id || ''
                 });
             }
         }
-    }, [isOpen, user, isEditMode, buildings]);
+    }, [isOpen, user, isEditMode, buildings, userRoles]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -167,8 +164,8 @@ export function UserDialog({ children, user }: UserDialogProps) {
                                     <SelectValue placeholder="Selecione um cargo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {USER_ROLES.map(roleOption => (
-                                        <SelectItem key={roleOption} value={roleOption}>{formatRoleName(roleOption)}</SelectItem>
+                                    {userRoles.map(roleOption => (
+                                        <SelectItem key={roleOption.id} value={roleOption.name}>{formatRoleName(roleOption.name)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

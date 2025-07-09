@@ -98,10 +98,6 @@ export function ProfileDialog({ children }: ProfileDialogProps) {
 
     const formatRoleName = (role: string) => {
         if (!role) return '';
-        if (role === 'tecnico') return 'Técnico';
-        if (role === 'supervisor') return 'Supervisor';
-        if (role === 'gerente') return 'Gerente';
-        if (role === 'developer') return 'Developer';
         return role.charAt(0).toUpperCase() + role.slice(1);
     };
 

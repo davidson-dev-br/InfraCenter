@@ -96,7 +96,7 @@ export interface DeletionLogEntry {
   itemData: Omit<PlacedItem, 'icon'> & { icon: string }; // Store icon name as string
 }
 
-export type UserRole = 'tecnico' | 'supervisor' | 'gerente' | 'developer';
+export type UserRole = string;
 
 export interface User {
   id: string;
@@ -152,6 +152,7 @@ export interface RolePermissions {
 export interface SystemSettings {
     companyName: string;
     companyLogo: string | null;
+    userRoles: SelectOption[];
     equipmentTypes: SelectOption[];
     deletionReasons: SelectOption[];
     datacenterStatuses: StatusOption[];

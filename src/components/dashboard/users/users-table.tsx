@@ -22,8 +22,6 @@ import { UserDialog } from "./user-dialog";
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
-    if (role === 'tecnico') return 'Técnico';
-    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -10,14 +11,28 @@ import type { SystemSettings } from "@/lib/types";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function DeveloperSettingsPage() {
     const { systemSettings, setSystemSettings } = useInfra();
-    const { equipmentTypes, deletionReasons, datacenterStatuses, equipmentStatuses, cableTypes } = systemSettings;
+    const { toast } = useToast();
+    const { equipmentTypes, deletionReasons, datacenterStatuses, equipmentStatuses, cableTypes, userRoles } = systemSettings;
 
     const handleAdd = (field: keyof SystemSettings, value: string, setValue: (s:string)=>void) => {
         if (value.trim()) {
+            if (field === 'userRoles') {
+                const existingRoles = systemSettings.userRoles.map(r => r.name.toLowerCase());
+                if (existingRoles.includes(value.trim().toLowerCase())) {
+                    toast({
+                        variant: 'destructive',
+                        title: "Cargo já existe",
+                        description: "Um cargo com este nome já está cadastrado.",
+                    });
+                    return;
+                }
+            }
+
             const currentList = systemSettings[field] as { id: string, name: string }[];
             const updatedList = [...currentList, { id: Date.now().toString(), name: value.trim() }];
             setSystemSettings({ [field]: updatedList });
@@ -46,6 +61,14 @@ export default function DeveloperSettingsPage() {
                     title="Tipos de Equipamento"
                     field="equipmentTypes"
                     items={equipmentTypes}
+                    onAdd={handleAdd}
+                    onDelete={handleDelete}
+                />
+
+                <SystemSettingCard 
+                    title="Cargos de Usuário"
+                    field="userRoles"
+                    items={(userRoles || []).filter(r => r.name !== 'developer')}
                     onAdd={handleAdd}
                     onDelete={handleDelete}
                 />

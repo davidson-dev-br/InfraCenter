@@ -28,8 +28,6 @@ const PERMISSION_LABELS: Record<keyof RolePermissions, string> = {
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
-    if (role === 'tecnico') return 'Técnico';
-    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
@@ -58,7 +56,11 @@ export default function PermissionsPage() {
     // Toast is handled inside setSystemSettings
   };
 
-  const roles: UserRole[] = ['tecnico', 'supervisor', 'gerente', 'developer'];
+  const roles = Object.keys(permissions || {}).sort((a, b) => {
+      if (a === 'developer') return 1;
+      if (b === 'developer') return -1;
+      return a.localeCompare(b);
+  }) as UserRole[];
 
   return (
     <div className="container p-4 mx-auto my-8 sm:p-8">

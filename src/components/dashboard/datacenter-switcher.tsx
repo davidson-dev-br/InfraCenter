@@ -78,6 +78,12 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
 const initialSystemSettings: SystemSettings = {
     companyName: "InfraCenter Manager",
     companyLogo: null,
+    userRoles: [
+        { id: 'tecnico', name: 'tecnico' },
+        { id: 'supervisor', name: 'supervisor' },
+        { id: 'gerente', name: 'gerente' },
+        { id: 'developer', name: 'developer' },
+    ],
     equipmentTypes: [
         { id: '1', name: 'Servidor' },
         { id: '2', name: 'Switch' },
@@ -403,7 +409,38 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const setSystemSettings = async (settings: Partial<SystemSettings>) => {
         if (!db) return;
         try {
-            await updateDoc(doc(db, 'system', 'settings'), settings);
+            const settingsRef = doc(db, 'system', 'settings');
+            
+            // If userRoles are being updated, we need to adjust rolePermissions accordingly
+            if (settings.userRoles) {
+                const currentSettingsSnapshot = await getDoc(settingsRef);
+                const currentSettings = currentSettingsSnapshot.data() as SystemSettings || initialSystemSettings;
+                
+                const newRoles = settings.userRoles;
+                const newPermissions = { ...currentSettings.rolePermissions };
+
+                // Add new roles
+                newRoles.forEach(role => {
+                    if (!newPermissions[role.name]) {
+                        // Default new roles to the permissions of a 'tecnico'
+                        newPermissions[role.name] = { ...initialRolePermissions.tecnico };
+                    }
+                });
+
+                // Remove deleted roles
+                const newRoleNames = new Set(newRoles.map(r => r.name));
+                Object.keys(newPermissions).forEach(roleName => {
+                    // Prevent deleting the essential 'developer' role
+                    if (roleName !== 'developer' && !newRoleNames.has(roleName)) {
+                        delete newPermissions[roleName];
+                    }
+                });
+
+                // Update the settings object that will be saved
+                settings.rolePermissions = newPermissions;
+            }
+
+            await updateDoc(settingsRef, settings);
             toast({ title: 'Configurações Salvas!' });
         } catch (error) {
             console.error(error);
