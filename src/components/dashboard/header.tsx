@@ -19,7 +19,8 @@ import {
   Settings,
   Code,
   Loader2,
-  EyeOff
+  EyeOff,
+  BrainCircuit
 } from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { useAuth } from "./auth-provider";
@@ -199,6 +200,12 @@ export function Header() {
                     {isDeveloper && (
                       <>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/learning-machine" onClick={() => handleNavClick('/dashboard/learning-machine')}>
+                          {renderIcon('/dashboard/learning-machine', BrainCircuit)}
+                          <span>Treinamento de IA</span>
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
                           {renderIcon('/dashboard/developer', Code)}

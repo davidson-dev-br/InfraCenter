@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ExtractConnectionOutput } from "./ai/schemas";
 
 export interface ActivityLogEntry {
   id: string;
@@ -173,4 +174,10 @@ export interface SystemSettings {
     floorPlanItemTypes: FloorPlanItemType[];
     rolePermissions: Record<UserRole, RolePermissions>;
     prompts: Record<string, string>;
+}
+
+export interface LabelCorrection {
+  imageDataUri: string;
+  correctedData: ExtractConnectionOutput;
+  createdAt: string;
 }
