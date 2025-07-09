@@ -8,9 +8,6 @@ import { DbActionsCard } from "@/components/dashboard/developer/db-actions-card"
 import { SystemSettingCard } from "@/components/dashboard/developer/system-setting-card";
 import { DatacenterStatusCard } from "@/components/dashboard/developer/datacenter-status-card";
 import type { SystemSettings } from "@/lib/types";
-import Link from "next/link";
-import { Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -101,23 +98,6 @@ export default function DeveloperSettingsPage() {
                     onAdd={handleAdd}
                     onDelete={handleDelete}
                 />
-                
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-headline">Gerenciamento de Permissões</CardTitle>
-                        <CardDescription>
-                            Defina o que cada cargo de usuário pode ver e fazer no sistema.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Link href="/dashboard/developer/permissions">
-                            <Button className="w-full">
-                                <Users className="w-4 h-4 mr-2" />
-                                Gerenciar Permissões
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     );

@@ -2,21 +2,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Users } from "lucide-react";
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
+import { useAuth } from "@/components/dashboard/auth-provider";
 import { AddFloorPlanItemTypeDialog } from "@/components/dashboard/add-floor-plan-item-type-dialog";
 import { getIconByName } from "@/lib/icon-map";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SystemSettingsPage() {
+    const { userData } = useAuth();
     const { systemSettings, setSystemSettings } = useInfra();
     const { companyName, companyLogo, floorPlanItemTypes } = systemSettings;
     const { toast } = useToast();
+    
+    const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
 
     const [localCompanyName, setLocalCompanyName] = useState(companyName);
     const [localCompanyLogo, setLocalCompanyLogo] = useState<string | null>(companyLogo);
@@ -120,6 +125,25 @@ export default function SystemSettingsPage() {
                         </ScrollArea>
                     </CardContent>
                 </Card>
+
+                {permissions?.canManagePermissions && (
+                    <Card className="shadow-lg md:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="text-xl font-headline">Gerenciamento de Permissões</CardTitle>
+                            <CardDescription>
+                                Defina o que cada cargo de usuário pode ver e fazer no sistema.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Link href="/dashboard/settings/permissions">
+                                <Button className="w-full">
+                                    <Users className="w-4 h-4 mr-2" />
+                                    Gerenciar Permissões
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );
