@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -112,7 +113,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     email: formData.email, 
                     role: formData.role, 
                     datacenterId: formData.role === 'technician' ? (formData.datacenterId || null) : null,
-                    avatarUrl: `https://placehold.co/40x40.png` 
+                    avatarUrl: null
                 }, authUser.uid);
                 
                 toast({ title: "Usuário Criado", description: "Usuário criado na autenticação e no banco de dados."});

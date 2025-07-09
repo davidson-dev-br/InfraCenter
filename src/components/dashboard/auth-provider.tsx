@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: firebaseUser.email!,
               // Assign 'developer' role to the seed user, otherwise default to 'technician'
               role: isSeedUser ? 'developer' : 'technician',
-              avatarUrl: firebaseUser.photoURL || `https://placehold.co/40x40.png`,
+              avatarUrl: firebaseUser.photoURL || null,
               // datacenterId is left undefined. A manager can assign it later via the UI.
             };
 

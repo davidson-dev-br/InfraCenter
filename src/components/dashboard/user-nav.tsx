@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,7 +36,13 @@ export function UserNav() {
   };
 
   const getInitials = (name: string = '') => {
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
   }
 
   return (
@@ -43,7 +50,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative w-10 h-10 rounded-full">
           <Avatar className="w-10 h-10">
-            <AvatarImage src={userData?.avatarUrl} alt={userData?.name} data-ai-hint="user avatar" />
+            <AvatarImage src={userData?.avatarUrl || ''} alt={userData?.name || 'User avatar'} />
             <AvatarFallback>{getInitials(userData?.name)}</AvatarFallback>
           </Avatar>
         </Button>
