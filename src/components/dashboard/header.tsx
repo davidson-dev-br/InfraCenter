@@ -55,7 +55,7 @@ export function Header() {
     { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid },
     { name: "Equipamentos", href: "/dashboard/equipamentos", icon: Server },
     { name: "Conexões", href: "/dashboard/connections", icon: Spline },
-    { name: "Relatórios", href: "#", icon: FileText },
+    { name: "Relatórios", href: "/dashboard/reports", icon: FileText },
   ];
 
   const handleNavClick = (href: string) => {
