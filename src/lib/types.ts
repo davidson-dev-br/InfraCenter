@@ -172,4 +172,5 @@ export interface SystemSettings {
     cableTypes: SelectOption[];
     floorPlanItemTypes: FloorPlanItemType[];
     rolePermissions: Record<UserRole, RolePermissions>;
+    prompts: Record<string, string>;
 }

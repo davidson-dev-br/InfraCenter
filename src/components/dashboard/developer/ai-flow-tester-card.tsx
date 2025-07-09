@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, TestTube2, AlertTriangle, FileImage, Camera, Trash2, Copy } from "lucide-react";
+import { Loader2, TestTube2, AlertTriangle, FileImage, Camera, Trash2, Copy, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { runDynamicFlow } from "@/ai/flows/developer-tools-flow";
 import { Input } from "@/components/ui/input";
+import { useInfra } from "../datacenter-switcher";
 
 type FlowName = 'extractEquipmentDetails' | 'extractConnectionDetails' | 'importFromSpreadsheet';
 
@@ -113,18 +114,20 @@ export function AIFlowTesterCard() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const { toast } = useToast();
+    const { systemSettings, setSystemSettings } = useInfra();
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (selectedFlow) {
-            setCustomPrompt(FLOW_DETAILS[selectedFlow].prompt);
+            const promptFromDb = systemSettings.prompts?.[selectedFlow];
+            setCustomPrompt(promptFromDb || FLOW_DETAILS[selectedFlow].prompt);
             setInputJson(FLOW_DETAILS[selectedFlow].input);
             setOutputJson("");
             setError("");
             setImageDataUri(null);
         }
-    }, [selectedFlow]);
+    }, [selectedFlow, systemSettings.prompts]);
 
     useEffect(() => {
         if (imageDataUri && selectedFlow && FLOW_DETAILS[selectedFlow].hasImage) {
@@ -136,6 +139,7 @@ export function AIFlowTesterCard() {
                 setError("Não foi possível atualizar o JSON de entrada com a nova imagem.");
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [imageDataUri, selectedFlow]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +192,22 @@ export function AIFlowTesterCard() {
         toast({ title: "Prompt copiado para a área de transferência!" });
     };
 
+    const handleSavePrompt = async () => {
+        if (!selectedFlow) return;
+        setIsLoading(true);
+        try {
+            const newPrompts = { ...systemSettings.prompts, [selectedFlow]: customPrompt };
+            await setSystemSettings({ prompts: newPrompts });
+            toast({ title: "Prompt Salvo!", description: "O novo prompt foi salvo no banco de dados." });
+        } catch (err: any) {
+            setError(`Erro ao salvar o prompt: ${err.message}`);
+            toast({ variant: "destructive", title: "Erro ao Salvar" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
     return (
         <Card className="shadow-lg">
             <CardHeader>
@@ -218,7 +238,13 @@ export function AIFlowTesterCard() {
                     <div className="space-y-2">
                         <Label htmlFor="custom-prompt">2. Editar o Prompt</Label>
                         <Textarea id="custom-prompt" value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Seu prompt personalizado aqui..." rows={12} className="font-mono text-xs" disabled={!selectedFlow || isLoading} />
-                        <Button variant="outline" size="sm" onClick={handleCopyPrompt} disabled={!customPrompt}><Copy className="mr-2" /> Copiar Prompt</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={handleCopyPrompt} disabled={!customPrompt}><Copy className="mr-2" /> Copiar Prompt</Button>
+                             <Button size="sm" onClick={handleSavePrompt} disabled={!selectedFlow || isLoading}>
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2" />}
+                                Salvar Prompt no DB
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label>3. Fornecer Dados de Entrada</Label>
@@ -239,7 +265,7 @@ export function AIFlowTesterCard() {
                                 <p className="text-xs text-muted-foreground">A imagem será convertida para Data URI e inserida no JSON abaixo.</p>
                             </div>
                         )}
-                        <Textarea value={inputJson} onChange={(e) => setInputJson(e.target.value)} placeholder="Cole o JSON de entrada aqui..." rows={FLOW_DETAILS[selectedFlow]?.hasImage ? 4 : 12} className="font-mono text-xs" disabled={!selectedFlow || isLoading} />
+                        <Textarea value={inputJson} onChange={(e) => setInputJson(e.target.value)} placeholder="Cole o JSON de entrada aqui..." rows={selectedFlow && FLOW_DETAILS[selectedFlow].hasImage ? 4 : 12} className="font-mono text-xs" disabled={!selectedFlow || isLoading} />
                     </div>
                 </div>
                 

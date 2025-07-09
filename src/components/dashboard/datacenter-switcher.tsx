@@ -140,7 +140,63 @@ const initialSystemSettings: SystemSettings = {
         { id: '3', name: 'QDF', icon: 'Zap', defaultWidth: 0.6, defaultLength: 0.3, color: '#ca8a04' },
         { id: '4', name: 'Patch Panel', icon: 'Cable', defaultWidth: 0.6, defaultLength: 0.3, color: '#65a30d' },
     ],
-    rolePermissions: initialRolePermissions
+    rolePermissions: initialRolePermissions,
+    prompts: {
+        extractEquipmentDetails: `You are an expert IT asset management assistant. Your task is to analyze the provided image of a piece of network or server hardware.
+
+Carefully examine the image for any text, labels, or logos. Identify the equipment type, manufacturer (brand), model name/number, serial number, hostname, and any asset tags.
+
+Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+
+Photo: {{media url=photoDataUri}}`,
+        extractConnectionDetails: `You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label.
+
+The label typically follows a DE/PARA (FROM/TO) format.
+- "DE" refers to the source device and port.
+- "PARA" refers to the destination device and port.
+
+Carefully examine the image for any text. Identify the main label identifier (the most prominent text, often a patch panel ID), the source device hostname and port, and the destination device hostname and port.
+
+Example label text:
+"P-01-A-01
+DE: SW-CORE-01 | Gi1/0/1
+PARA: FW-EDGE-02 | PortA"
+
+For the example above, you would extract:
+- cableLabel: "P-01-A-01"
+- sourceHostname: "SW-CORE-01"
+- sourcePort: "Gi1/0/1"
+- destinationHostname: "FW-EDGE-02"
+- destinationPort: "PortA"
+
+Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+
+Photo: {{media url=photoDataUri}}`,
+        importFromSpreadsheet: `You are an expert data migration assistant for an IT infrastructure management system.
+You will be provided with a JSON representation of a spreadsheet containing inventory data.
+Your task is to analyze this JSON data, intelligently map the columns to the equipment schema, and return a clean list of equipment objects.
+
+Spreadsheet JSON data:
+\`\`\`json
+{{{jsonData}}}
+\`\`\`
+
+Mapping Heuristics:
+- 'hostname': Look for columns named 'Hostname', 'Device Name', 'Asset', 'Name', or similar. This is the primary identifier.
+- 'brand': Look for 'Manufacturer', 'Brand', 'Make', 'Fabricante'.
+- 'model': Look for 'Model', 'Product Name', 'Modelo'.
+- 'serialNumber': Look for 'Serial Number', 'S/N', 'Serial', 'Número de Série'.
+- 'type': Look for 'Type', 'Category', 'Tipo', 'Categoria' (e.g., Switch, Server, Router).
+- 'status': Look for 'Status', 'Condition'.
+- 'positionU': Look for 'U Position', 'Position', 'Posição'.
+- 'sizeU': Look for 'Size (U)', 'Height', 'Tamanho (U)'.
+- 'tag': Look for 'Asset Tag', 'TAG'.
+- 'description': Look for 'Description', 'Notes', 'Descrição'.
+
+For each row in the input JSON, create a corresponding equipment object in the output. If you cannot find a clear mapping for a field, omit it from the object. Do not invent data.
+Focus only on extracting the equipment list.
+`,
+    },
 };
 
 // --- Context for sharing infrastructure state ---

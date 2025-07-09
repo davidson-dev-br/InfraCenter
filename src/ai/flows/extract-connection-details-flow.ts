@@ -12,36 +12,9 @@ import {
     ExtractConnectionOutput,
     ExtractConnectionOutputSchema,
 } from '@/ai/schemas';
-
-
-const prompt = ai.definePrompt({
-  name: 'extractConnectionPrompt',
-  input: {schema: ExtractConnectionInputSchema},
-  output: {schema: ExtractConnectionOutputSchema},
-  prompt: `You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label.
-
-The label typically follows a DE/PARA (FROM/TO) format.
-- "DE" refers to the source device and port.
-- "PARA" refers to the destination device and port.
-
-Carefully examine the image for any text. Identify the main label identifier (the most prominent text, often a patch panel ID), the source device hostname and port, and the destination device hostname and port.
-
-Example label text:
-"P-01-A-01
-DE: SW-CORE-01 | Gi1/0/1
-PARA: FW-EDGE-02 | PortA"
-
-For the example above, you would extract:
-- cableLabel: "P-01-A-01"
-- sourceHostname: "SW-CORE-01"
-- sourcePort: "Gi1/0/1"
-- destinationHostname: "FW-EDGE-02"
-- destinationPort: "PortA"
-
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
-
-Photo: {{media url=photoDataUri}}`,
-});
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import type { SystemSettings } from '@/lib/types';
 
 
 const extractConnectionDetailsFlow = ai.defineFlow(
@@ -51,6 +24,24 @@ const extractConnectionDetailsFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
+    if (!db) {
+      throw new Error("Firebase not configured.");
+    }
+    const settingsDoc = await getDoc(doc(db, 'system', 'settings'));
+    const settings = settingsDoc.data() as SystemSettings;
+    const promptText = settings.prompts?.extractConnectionDetails;
+
+    if (!promptText) {
+        throw new Error("Prompt 'extractConnectionDetails' not found in system settings.");
+    }
+
+    const prompt = ai.definePrompt({
+      name: 'extractConnectionPrompt_dynamic',
+      input: {schema: ExtractConnectionInputSchema},
+      output: {schema: ExtractConnectionOutputSchema},
+      prompt: promptText,
+    });
+    
     const {output} = await prompt(input);
     return output!;
   }
