@@ -22,8 +22,8 @@ const PERMISSION_LABELS: Record<keyof RolePermissions, string> = {
   canManageDatacenters: 'Pode gerenciar Datacenters',
   canCreateDatacenters: 'Pode criar Datacenters',
   canAccessSystemSettings: 'Pode acessar Configurações do Sistema',
-  canAccessDeveloperPage: 'Pode acessar a página de Desenvolvedor',
   canManagePermissions: 'Pode gerenciar Permissões de Cargos',
+  canAccessDeveloperPage: 'Pode acessar a página de Desenvolvedor',
 };
 
 // Helper to capitalize role names for display

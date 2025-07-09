@@ -34,8 +34,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canManageDatacenters: false,
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
-    canAccessDeveloperPage: false,
     canManagePermissions: false,
+    canAccessDeveloperPage: false,
   },
   supervisor: {
     canSwitchDatacenter: true,
@@ -47,8 +47,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canManageDatacenters: false,
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
-    canAccessDeveloperPage: false,
     canManagePermissions: false,
+    canAccessDeveloperPage: false,
   },
   gerente: {
     canSwitchDatacenter: true,
@@ -60,8 +60,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canManageDatacenters: true,
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
-    canAccessDeveloperPage: false,
     canManagePermissions: true,
+    canAccessDeveloperPage: false,
   },
   developer: {
     canSwitchDatacenter: true,
@@ -73,8 +73,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canManageDatacenters: true,
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
-    canAccessDeveloperPage: true,
     canManagePermissions: true,
+    canAccessDeveloperPage: true,
   },
 };
 

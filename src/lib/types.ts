@@ -146,8 +146,8 @@ export interface RolePermissions {
   canManageDatacenters: boolean;
   canCreateDatacenters: boolean;
   canAccessSystemSettings: boolean;
-  canAccessDeveloperPage: boolean;
   canManagePermissions: boolean;
+  canAccessDeveloperPage: boolean;
 }
 
 export interface SystemSettings {
