@@ -74,6 +74,8 @@ export function PrintableReport({
                                 <th className="p-2 border">Nome</th>
                                 <th className="p-2 border">Tipo</th>
                                 <th className="p-2 border">Status</th>
+                                <th className="p-2 border">Fabricante</th>
+                                <th className="p-2 border">Serial</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -82,6 +84,8 @@ export function PrintableReport({
                                     <td className="p-2 border">{item.name}</td>
                                     <td className="p-2 border">{item.type}</td>
                                     <td className="p-2 border">{item.status}</td>
+                                    <td className="p-2 border">{item.brand}</td>
+                                    <td className="p-2 border">{item.serialNumber}</td>
                                 </tr>
                             ))}
                         </tbody>
