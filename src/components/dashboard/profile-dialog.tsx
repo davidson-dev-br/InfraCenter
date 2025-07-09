@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -32,12 +33,14 @@ export function ProfileDialog({ children }: ProfileDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [avatarUrl, setAvatarUrl] = useState<string | null>("");
+    const [signatureUrl, setSignatureUrl] = useState<string | null>("");
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && userData) {
             setName(userData.name);
             setAvatarUrl(userData.avatarUrl || null);
+            setSignatureUrl(userData.signatureUrl || null);
         }
     }, [isOpen, userData]);
 
@@ -61,6 +64,17 @@ export function ProfileDialog({ children }: ProfileDialogProps) {
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSignatureUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSaveChanges = async () => {
         if (!userData) return;
@@ -70,6 +84,7 @@ export function ProfileDialog({ children }: ProfileDialogProps) {
                 ...userData,
                 name: name,
                 avatarUrl: avatarUrl,
+                signatureUrl: signatureUrl,
             });
             toast({ title: "Perfil Atualizado", description: "Suas informações foram salvas com sucesso."});
             setIsOpen(false);
@@ -120,6 +135,20 @@ export function ProfileDialog({ children }: ProfileDialogProps) {
                         <Label htmlFor="role-dialog">Cargo</Label>
                         <Input id="role-dialog" value={formatRoleName(userData?.role || '')} disabled />
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="signature-upload">Assinatura Digital</Label>
+                        <div className="p-4 border rounded-md flex justify-center items-center bg-muted/30 h-32">
+                            {signatureUrl ? (
+                                <img src={signatureUrl} alt="Signature Preview" className="max-h-full object-contain" />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Nenhuma assinatura enviada.</p>
+                            )}
+                        </div>
+                        <Input id="signature-upload" type="file" accept="image/png, image/jpeg, image/svg+xml" onChange={handleSignatureChange} className="mt-2 file:text-primary file:font-medium" />
+                        <p className="text-xs text-muted-foreground">Envie uma imagem da sua assinatura (PNG com fundo transparente é recomendado).</p>
+                    </div>
+
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>

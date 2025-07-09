@@ -94,6 +94,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl?: string | null;
+  signatureUrl?: string | null;
   datacenterId?: string | null;
 }
 
