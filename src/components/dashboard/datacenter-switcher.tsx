@@ -225,35 +225,42 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
         const datacentersColRef = collection(db, 'datacenters');
         const unsubDatacenters = onSnapshot(datacentersColRef, (snapshot) => {
-            if (snapshot.empty) {
+            if (snapshot.empty && (userData.role === 'manager' || userData.role === 'developer')) {
                 seedInitialData();
-                _setSelectedBuildingId(null);
-                setSelectedRoomId(null);
-                localStorage.removeItem('selectedBuildingId');
                 return;
             }
             
             const buildingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuildingType));
             setBuildings(buildingsData);
 
-            const lastSelectedId = localStorage.getItem('selectedBuildingId');
+            let targetBuilding: BuildingType | undefined;
 
-            let targetBuilding = buildingsData.find(b => b.id === lastSelectedId);
-            if (!targetBuilding && buildingsData.length > 0) {
-                targetBuilding = buildingsData[0];
+            if (userData.role === 'technician') {
+                targetBuilding = buildingsData.find(b => b.id === userData.datacenterId);
+            } else {
+                const lastSelectedId = localStorage.getItem('selectedBuildingId');
+                targetBuilding = buildingsData.find(b => b.id === lastSelectedId);
+                if (!targetBuilding && buildingsData.length > 0) {
+                    targetBuilding = buildingsData[0];
+                }
             }
 
             if (targetBuilding) {
                 if (selectedBuildingId !== targetBuilding.id) {
                     _setSelectedBuildingId(targetBuilding.id);
-                } else if (!selectedRoomId && targetBuilding.rooms?.length > 0) {
-                    // This handles the case where building is selected but room is not
-                    setSelectedRoomId(targetBuilding.rooms[0].id);
+                    if (userData.role !== 'technician') {
+                        localStorage.setItem('selectedBuildingId', targetBuilding.id);
+                    }
+                }
+                if (!selectedRoomId || !targetBuilding.rooms?.some(r => r.id === selectedRoomId)) {
+                    setSelectedRoomId(targetBuilding.rooms?.[0]?.id || null);
                 }
             } else {
                 _setSelectedBuildingId(null);
                 setSelectedRoomId(null);
-                localStorage.removeItem('selectedBuildingId');
+                if (userData.role !== 'technician') {
+                    localStorage.removeItem('selectedBuildingId');
+                }
             }
         });
 
@@ -330,6 +337,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     // --- Context Actions ---
 
     const setSelectedBuildingId = (buildingId: string) => {
+        if (userData?.role === 'technician') return;
         _setSelectedBuildingId(buildingId);
         localStorage.setItem('selectedBuildingId', buildingId);
         const building = buildings.find(b => b.id === buildingId);
@@ -608,8 +616,23 @@ export function useInfra() {
 export function DatacenterSwitcher() {
   const [open, setOpen] = React.useState(false);
   const { buildings, selectedBuildingId, setSelectedBuildingId } = useInfra();
+  const { userData } = useAuth();
 
   const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+
+  if (userData?.role === 'technician') {
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        disabled
+        className="justify-between w-[200px]"
+      >
+        <Building className="w-4 h-4 mr-2" />
+        {selectedBuilding ? selectedBuilding.name : "Nenhum Datacenter"}
+      </Button>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

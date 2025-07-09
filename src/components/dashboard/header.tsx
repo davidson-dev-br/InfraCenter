@@ -20,6 +20,7 @@ import {
   Loader2
 } from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
+import { useAuth } from "./auth-provider";
 import { UserNav } from "./user-nav";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -40,6 +41,7 @@ export function Header() {
     itemsByRoom,
     approveItem
   } = useInfra();
+  const { userData } = useAuth();
   
   const [isNavigatingTo, setIsNavigatingTo] = useState<string | null>(null);
 
@@ -71,6 +73,13 @@ export function Header() {
       return <Icon className="w-5 h-5" />;
   }
 
+  const userRole = userData?.role;
+  const canSeeManagementMenu = userRole && ['supervisor', 'manager', 'developer'].includes(userRole);
+  const canManageUsers = userRole && ['manager', 'developer'].includes(userRole);
+  const canManageDatacenters = userRole && ['manager', 'developer'].includes(userRole);
+  const canSeeSystemSettings = userRole && ['manager', 'developer'].includes(userRole);
+  const isDeveloper = userRole === 'developer';
+
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
@@ -90,78 +99,88 @@ export function Header() {
                   <DatacenterSwitcher />
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <SlidersHorizontal className="w-5 h-5" />
-                    {pendingApprovalCount > 0 && (
-                      <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                        <span className="absolute inline-flex w-full h-full bg-red-500 rounded-full opacity-75 animate-ping"></span>
-                        <span className="relative inline-flex w-2.5 h-2.5 bg-red-600 rounded-full"></span>
-                      </span>
-                    )}
-                    <span className="sr-only">Abrir menu de gerenciamento</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel>Gerenciamento</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  
-                    <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
-                        <ClipboardCheck />
-                        <span>Centro de Aprovações</span>
-                        {pendingApprovalCount > 0 && (
-                          <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
-                        )}
+              {canSeeManagementMenu && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative">
+                      <SlidersHorizontal className="w-5 h-5" />
+                      {pendingApprovalCount > 0 && (
+                        <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex w-full h-full bg-red-500 rounded-full opacity-75 animate-ping"></span>
+                          <span className="relative inline-flex w-2.5 h-2.5 bg-red-600 rounded-full"></span>
+                        </span>
+                      )}
+                      <span className="sr-only">Abrir menu de gerenciamento</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel>Gerenciamento</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                      <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                          <ClipboardCheck />
+                          <span>Centro de Aprovações</span>
+                          {pendingApprovalCount > 0 && (
+                            <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
+                          )}
+                        </DropdownMenuItem>
+                      </ApprovalCenterDialog>
+
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
+                        {renderIcon('/dashboard/activity-log', History)}
+                        <span>Log de Atividades</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    {canManageUsers && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/users" onClick={() => handleNavClick('/dashboard/users')}>
+                            {renderIcon('/dashboard/users', Users)}
+                            <span>Gerenciar Usuários</span>
+                        </Link>
                       </DropdownMenuItem>
-                    </ApprovalCenterDialog>
+                    )}
 
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
-                      {renderIcon('/dashboard/activity-log', History)}
-                      <span>Log de Atividades</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                     <Link href="/dashboard/users" onClick={() => handleNavClick('/dashboard/users')}>
-                        {renderIcon('/dashboard/users', Users)}
-                        <span>Gerenciar Usuários</span>
-                    </Link>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
+                          {renderIcon('/dashboard/deletion-log', ClipboardX)}
+                          <span>Log de Exclusões</span>
+                      </Link>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                     <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
-                        {renderIcon('/dashboard/deletion-log', ClipboardX)}
-                        <span>Log de Exclusões</span>
-                    </Link>
-                  </DropdownMenuItem>
+                    {(canManageDatacenters || canSeeSystemSettings || isDeveloper) && <DropdownMenuSeparator />}
 
-                  <DropdownMenuSeparator />
+                    {canManageDatacenters && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/admin" onClick={() => handleNavClick('/dashboard/admin')}>
+                          {renderIcon('/dashboard/admin', Building)}
+                          <span>Gerenciar Datacenters</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/admin" onClick={() => handleNavClick('/dashboard/admin')}>
-                      {renderIcon('/dashboard/admin', Building)}
-                      <span>Gerenciar Datacenters</span>
-                    </Link>
-                  </DropdownMenuItem>
+                    {canSeeSystemSettings && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/settings" onClick={() => handleNavClick('/dashboard/settings')}>
+                          {renderIcon('/dashboard/settings', Settings)}
+                          <span>Configurações do Sistema</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/settings" onClick={() => handleNavClick('/dashboard/settings')}>
-                      {renderIcon('/dashboard/settings', Settings)}
-                      <span>Configurações do Sistema</span>
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
-                      {renderIcon('/dashboard/developer', Code)}
-                      <span>Opções do Desenvolvedor</span>
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {isDeveloper && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
+                          {renderIcon('/dashboard/developer', Code)}
+                          <span>Opções do Desenvolvedor</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <UserNav />
           </div>
         </div>
