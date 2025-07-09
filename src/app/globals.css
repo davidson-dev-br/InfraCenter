@@ -78,15 +78,23 @@ body {
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    background-color: white;
+    color: black;
   }
   .print-hidden {
     display: none;
   }
   .print-visible {
-    display: block;
+    display: block !important;
   }
    @page {
-      size: A2 landscape;
-      margin: 0;
+      size: A4 portrait;
+      margin: 1cm;
     }
+  .page-break-after {
+    page-break-after: always;
+  }
+  .page-break-before {
+    page-break-before: always;
+  }
 }
