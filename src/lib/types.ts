@@ -41,24 +41,24 @@ export interface PlacedItem {
 export interface Equipment {
   id: string;
   hostname: string;
-  type: string;
-  parentItemId: string | null;
-  positionU: string | null;
-  imageUrl?: string | null;
-  brand?: string | null;
-  model?: string | null;
+  model: string | null;
   price?: number | null;
-  serialNumber?: string | null;
-  entryDate?: string | null;
-  tag?: string | null;
-  description?: string | null;
-  sizeU?: string | null;
+  serialNumber: string | null;
+  entryDate: string | null;
+  type: string;
+  brand: string | null;
+  tag: string | null;
+  description: string | null;
+  sizeU: string | null;
   trellisId?: string | null;
+  positionU: string | null;
   ownerEmail?: string | null;
   isTagEligible?: boolean;
   isFrontFacing?: boolean;
-  status?: string | null;
+  status: string | null;
+  parentItemId: string | null;
   dataSheetUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface Connection {
