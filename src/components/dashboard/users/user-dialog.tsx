@@ -28,11 +28,13 @@ import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const USER_ROLES: User['role'][] = ['technician', 'supervisor', 'manager', 'developer'];
+const USER_ROLES: User['role'][] = ['tecnico', 'supervisor', 'gerente', 'developer'];
 
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
+    if (role === 'tecnico') return 'Técnico';
+    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
@@ -51,7 +53,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
         name: '',
         email: '',
         password: '',
-        role: 'technician' as User['role'],
+        role: 'tecnico' as User['role'],
         datacenterId: ''
     });
 
@@ -70,7 +72,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     name: '',
                     email: '',
                     password: '',
-                    role: 'technician' as User['role'],
+                    role: 'tecnico' as User['role'],
                     datacenterId: buildings[0]?.id || ''
                 });
             }
@@ -94,7 +96,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                 ...user,
                 name: formData.name,
                 role: formData.role,
-                datacenterId: formData.role === 'technician' ? (formData.datacenterId || null) : null
+                datacenterId: formData.role === 'tecnico' ? (formData.datacenterId || null) : null
             };
             updateUser(dataToUpdate);
         } else {
@@ -112,7 +114,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     name: formData.name, 
                     email: formData.email, 
                     role: formData.role, 
-                    datacenterId: formData.role === 'technician' ? (formData.datacenterId || null) : null,
+                    datacenterId: formData.role === 'tecnico' ? (formData.datacenterId || null) : null,
                     avatarUrl: null,
                     signatureUrl: null
                 }, authUser.uid);
@@ -171,7 +173,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                                 </SelectContent>
                             </Select>
                         </div>
-                        {formData.role === 'technician' && (
+                        {formData.role === 'tecnico' && (
                             <div className="space-y-2">
                                 <Label htmlFor="datacenterId">Datacenter Atribuído</Label>
                                 <Select value={formData.datacenterId} onValueChange={handleSelectChange('datacenterId')} required>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Building, PlacedItem, Room, Equipment, Connection, User, SystemSettings } from "@/lib/types";
@@ -23,8 +24,8 @@ export function PrintableReport({
 }: PrintableReportProps) {
     
     const { companyName, companyLogo } = systemSettings;
-    const managers = users.filter(u => u.role === 'manager');
-    const supervisors = users.filter(u => u.role === 'supervisor');
+    const gerentes = users.filter(u => u.role === 'gerente');
+    const supervisores = users.filter(u => u.role === 'supervisor');
 
     return (
         <div className="p-8 font-sans bg-white text-black">
@@ -122,7 +123,7 @@ export function PrintableReport({
                     <section className="pt-16">
                         <h3 className="text-xl font-bold mb-8 text-center">Assinaturas</h3>
                         <div className="grid grid-cols-2 gap-x-16 gap-y-12">
-                            {managers.map(user => (
+                            {gerentes.map(user => (
                                 <div key={user.id} className="text-center">
                                     <div className="w-full h-24 mb-2 flex items-center justify-center">
                                         {user.signatureUrl ? <img src={user.signatureUrl} alt={`Assinatura de ${user.name}`} className="max-h-24" /> : <div className="text-gray-400">(Sem Assinatura)</div>}
@@ -133,7 +134,7 @@ export function PrintableReport({
                                     </div>
                                 </div>
                             ))}
-                             {supervisors.map(user => (
+                             {supervisores.map(user => (
                                 <div key={user.id} className="text-center">
                                     <div className="w-full h-24 mb-2 flex items-center justify-center">
                                         {user.signatureUrl ? <img src={user.signatureUrl} alt={`Assinatura de ${user.name}`} className="max-h-24" /> : <div className="text-gray-400">(Sem Assinatura)</div>}

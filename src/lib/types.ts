@@ -96,7 +96,7 @@ export interface DeletionLogEntry {
   itemData: Omit<PlacedItem, 'icon'> & { icon: string }; // Store icon name as string
 }
 
-export type UserRole = 'technician' | 'supervisor' | 'manager' | 'developer';
+export type UserRole = 'tecnico' | 'supervisor' | 'gerente' | 'developer';
 
 export interface User {
   id: string;

@@ -55,9 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const newUserProfile: Omit<User, 'id'> = {
               name: firebaseUser.displayName || firebaseUser.email || 'Novo Usuário',
               email: firebaseUser.email!,
-              // Assign 'developer' role to the seed user, otherwise default to 'technician'
-              role: isSeedUser ? 'developer' : 'technician',
+              // Assign 'developer' role to the seed user, otherwise default to 'tecnico'
+              role: isSeedUser ? 'developer' : 'tecnico',
               avatarUrl: firebaseUser.photoURL || null,
+              signatureUrl: null,
               // datacenterId is left undefined. A manager can assign it later via the UI.
             };
 

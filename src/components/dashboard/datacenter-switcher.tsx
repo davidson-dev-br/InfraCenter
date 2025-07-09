@@ -24,7 +24,7 @@ import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, getDocs, query, where, getDoc, orderBy } from "firebase/firestore";
 
 const initialRolePermissions: Record<UserRole, RolePermissions> = {
-  technician: {
+  tecnico: {
     canSwitchDatacenter: false,
     canSeeManagementMenu: false,
     canAccessApprovalCenter: false,
@@ -48,7 +48,7 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canAccessSystemSettings: false,
     canAccessDeveloperPage: false,
   },
-  manager: {
+  gerente: {
     canSwitchDatacenter: true,
     canSeeManagementMenu: true,
     canAccessApprovalCenter: true,
@@ -237,7 +237,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
         // Listen to users collection - only for roles with permission
         let unsubUsers = () => {};
-        if (userData.role === 'developer' || userData.role === 'manager') {
+        if (userData.role === 'developer' || userData.role === 'gerente') {
             const usersColRef = collection(db, 'users');
             unsubUsers = onSnapshot(usersColRef, (snapshot) => {
                 const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
@@ -279,7 +279,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
         const datacentersColRef = collection(db, 'datacenters');
         const unsubDatacenters = onSnapshot(datacentersColRef, (snapshot) => {
-            if (snapshot.empty && (userData.role === 'manager' || userData.role === 'developer')) {
+            if (snapshot.empty && (userData.role === 'gerente' || userData.role === 'developer')) {
                 seedInitialData();
                 return;
             }

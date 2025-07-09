@@ -5,7 +5,7 @@ import { collection, getDocs, writeBatch, doc, setDoc } from 'firebase/firestore
 import type { Building, Room, PlacedItem, Equipment, Connection, SystemSettings, UserRole, RolePermissions } from '@/lib/types';
 
 const initialRolePermissions: Record<UserRole, RolePermissions> = {
-  technician: {
+  tecnico: {
     canSwitchDatacenter: false,
     canSeeManagementMenu: false,
     canAccessApprovalCenter: false,
@@ -29,7 +29,7 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canAccessSystemSettings: false,
     canAccessDeveloperPage: false,
   },
-  manager: {
+  gerente: {
     canSwitchDatacenter: true,
     canSeeManagementMenu: true,
     canAccessApprovalCenter: true,

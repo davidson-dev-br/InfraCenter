@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -21,6 +22,8 @@ import { UserDialog } from "./user-dialog";
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
+    if (role === 'tecnico') return 'Técnico';
+    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
@@ -34,11 +37,11 @@ export function UsersTable({ data }: UsersTableProps) {
   const getRoleVariant = (role: User['role']): 'default' | 'secondary' | 'outline' => {
       switch (role) {
           case 'developer':
-          case 'manager':
+          case 'gerente':
               return 'default';
           case 'supervisor':
               return 'secondary';
-          case 'technician':
+          case 'tecnico':
               return 'outline';
           default:
               return 'secondary';
@@ -85,7 +88,7 @@ export function UsersTable({ data }: UsersTableProps) {
                                 <Badge variant={getRoleVariant(user.role)}>{formatRoleName(user.role)}</Badge>
                             </TableCell>
                             <TableCell>
-                                {user.role === 'technician' ? getDatacenterName(user.datacenterId) : 'Todos'}
+                                {user.role === 'tecnico' ? getDatacenterName(user.datacenterId) : 'Todos'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>

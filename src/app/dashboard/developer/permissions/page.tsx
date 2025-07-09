@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -27,6 +28,8 @@ const PERMISSION_LABELS: Record<keyof RolePermissions, string> = {
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
     if (!role) return '';
+    if (role === 'tecnico') return 'Técnico';
+    if (role === 'gerente') return 'Gerente';
     return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
@@ -55,7 +58,7 @@ export default function PermissionsPage() {
     // Toast is handled inside setSystemSettings
   };
 
-  const roles: UserRole[] = ['technician', 'supervisor', 'manager', 'developer'];
+  const roles: UserRole[] = ['tecnico', 'supervisor', 'gerente', 'developer'];
 
   return (
     <div className="container p-4 mx-auto my-8 sm:p-8">
