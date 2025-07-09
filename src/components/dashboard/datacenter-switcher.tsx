@@ -35,6 +35,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
     canManagePermissions: false,
+    canRequestDeletion: false,
+    canApproveDeletion: false,
     canAccessDeveloperPage: false,
   },
   supervisor: {
@@ -48,6 +50,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
     canManagePermissions: false,
+    canRequestDeletion: true,
+    canApproveDeletion: false,
     canAccessDeveloperPage: false,
   },
   gerente: {
@@ -61,6 +65,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
     canManagePermissions: true,
+    canRequestDeletion: false,
+    canApproveDeletion: true,
     canAccessDeveloperPage: false,
   },
   developer: {
@@ -74,6 +80,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
     canManagePermissions: true,
+    canRequestDeletion: true,
+    canApproveDeletion: true,
     canAccessDeveloperPage: true,
   },
 };
@@ -162,6 +170,8 @@ interface InfraContextType {
     approveItem: (itemId: string) => Promise<void>;
     deleteItem: (itemToDelete: PlacedItem, reason: string) => Promise<void>;
     restoreItem: (logId: string) => Promise<void>;
+    approveDeletion: (itemToApprove: PlacedItem) => Promise<void>;
+    rejectDeletion: (itemToReject: PlacedItem) => Promise<void>;
     
     addRoom: (buildingId: string, roomData: Omit<Room, 'id'>) => Promise<void>;
     updateRoom: (buildingId: string, updatedRoom: Room) => Promise<void>;
@@ -522,30 +532,70 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     };
     
     const deleteItem = async (itemToDelete: PlacedItem, reason: string) => {
-      if (!selectedBuildingId || !db) return;
+      if (!selectedBuildingId || !db || !userData) return;
       
-      const newLogEntry: Omit<DeletionLogEntry, 'id'> = {
-          itemId: itemToDelete.id,
-          itemName: itemToDelete.name,
-          itemType: itemToDelete.type,
-          deletedBy: userData?.name || 'unknown',
-          deletedAt: new Date().toISOString(),
-          reason: reason,
-          roomId: itemToDelete.roomId,
-          itemData: { ...itemToDelete, icon: itemToDelete.icon || '' },
-      };
+      const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
+      if (!permissions) return;
+      
+      const isApproved = !itemToDelete.awaitingApproval;
+      const canRequest = permissions.canRequestDeletion;
+      const canApprove = permissions.canApproveDeletion;
+      
+      // Direct Deletion Path (Gerente on approved item, or Tecnico on unapproved item)
+      if ((isApproved && canApprove) || !isApproved) {
+        const childEquipment = equipment.filter(eq => eq.parentItemId === itemToDelete.id);
+        if (childEquipment.length > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Exclusão Bloqueada',
+                description: `Este item não pode ser excluído pois contém ${childEquipment.length} equipamento(s). Remova ou realoque-os primeiro.`
+            });
+            return;
+        }
 
-      try {
-          const batch = writeBatch(db);
-          batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
-          batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToDelete.id));
-          await batch.commit();
-          logActivity('delete', 'Item', `Excluído item da planta baixa: ${itemToDelete.name}`);
-          toast({ variant: 'destructive', title: 'Item Excluído', description: `O item "${itemToDelete.name}" foi movido para o log.` });
-      } catch (error) {
-          console.error(error);
-          toast({ variant: 'destructive', title: 'Erro ao excluir item.' });
+        const newLogEntry: Omit<DeletionLogEntry, 'id'> = {
+            itemId: itemToDelete.id,
+            itemName: itemToDelete.name,
+            itemType: itemToDelete.type,
+            deletedBy: userData?.name || 'unknown',
+            deletedAt: new Date().toISOString(),
+            reason: reason,
+            roomId: itemToDelete.roomId,
+            itemData: { ...itemToDelete, icon: itemToDelete.icon || '' },
+        };
+  
+        try {
+            const batch = writeBatch(db);
+            batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
+            batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToDelete.id));
+            await batch.commit();
+            logActivity('delete', 'Item', `Excluído item da planta baixa: ${itemToDelete.name}`);
+            toast({ variant: 'destructive', title: 'Item Excluído', description: `O item "${itemToDelete.name}" foi movido para o log.` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Erro ao excluir item.' });
+        }
+        return;
       }
+      
+      // Request Deletion Path (Supervisor on approved item)
+      if (isApproved && canRequest) {
+        try {
+            await updateDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemToDelete.id), {
+                awaitingDeletionApproval: true,
+                deletionReason: reason,
+                deletionRequestedBy: userData?.name || 'unknown'
+            });
+            logActivity('update', 'Item', `Solicitada exclusão para item: ${itemToDelete.name}`);
+            toast({ title: 'Solicitação de Exclusão Enviada', description: 'Um gerente precisa aprovar a solicitação.' });
+        } catch (error) {
+            console.error("Error requesting deletion:", error);
+            toast({ variant: "destructive", title: "Erro ao solicitar exclusão." });
+        }
+        return;
+      }
+
+      toast({ variant: 'destructive', title: 'Ação não permitida.' });
     };
     
     const restoreItem = async (logId: string) => {
@@ -563,6 +613,59 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Erro ao restaurar item.' });
       }
+    };
+
+    const approveDeletion = async (itemToApprove: PlacedItem) => {
+        if (!selectedBuildingId || !db) return;
+
+        const childEquipment = equipment.filter(eq => eq.parentItemId === itemToApprove.id);
+        if (childEquipment.length > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Aprovação Bloqueada',
+                description: `Este item não pode ser excluído pois contém ${childEquipment.length} equipamento(s). Peça para o supervisor remover ou realocar os equipamentos primeiro.`
+            });
+            return;
+        }
+
+        const newLogEntry: Omit<DeletionLogEntry, 'id'> = {
+            itemId: itemToApprove.id,
+            itemName: itemToApprove.name,
+            itemType: itemToApprove.type,
+            deletedBy: itemToApprove.deletionRequestedBy || 'unknown',
+            deletedAt: new Date().toISOString(),
+            reason: itemToApprove.deletionReason || 'Aprovado pelo gerente',
+            roomId: itemToApprove.roomId,
+            itemData: { ...itemToApprove, icon: itemToApprove.icon || '' },
+        };
+
+        try {
+            const batch = writeBatch(db);
+            batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
+            batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToApprove.id));
+            await batch.commit();
+            logActivity('approve', 'Deletion', `Aprovada exclusão do item: ${itemToApprove.name}`);
+            toast({ variant: 'destructive', title: 'Item Excluído' });
+        } catch (error) {
+            console.error("Error approving deletion:", error);
+            toast({ variant: 'destructive', title: 'Erro ao aprovar exclusão.' });
+        }
+    };
+
+    const rejectDeletion = async (itemToReject: PlacedItem) => {
+        if (!selectedBuildingId || !db) return;
+        try {
+            await updateDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemToReject.id), {
+                awaitingDeletionApproval: false,
+                deletionReason: null,
+                deletionRequestedBy: null
+            });
+            logActivity('update', 'Deletion', `Rejeitada exclusão do item: ${itemToReject.name}`);
+            toast({ title: 'Solicitação de Exclusão Rejeitada' });
+        } catch (error) {
+            console.error("Error rejecting deletion:", error);
+            toast({ variant: 'destructive', title: 'Erro ao rejeitar exclusão.' });
+        }
     };
 
     const addRoom = async (buildingId: string, roomData: Omit<Room, 'id'>) => {
@@ -690,7 +793,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             selectedBuildingId, selectedRoomId,
             setSelectedBuildingId, setSelectedRoomId,
             setSystemSettings, addBuilding, updateBuilding, deleteBuilding,
-            updateItemsForRoom, approveItem, deleteItem, restoreItem,
+            updateItemsForRoom, approveItem, deleteItem, restoreItem, approveDeletion, rejectDeletion,
             addRoom, updateRoom, deleteRoom, reorderRooms,
             addEquipment, updateEquipment, deleteEquipment,
             addConnection, updateConnection, deleteConnection,
