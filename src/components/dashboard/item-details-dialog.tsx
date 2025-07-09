@@ -140,7 +140,8 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
                             className="p-1 h-10 w-14"
                         />
                          <Input
-                            id="color"
+                            id="color-text"
+                            name="color"
                             type="text"
                             value={formData.color || '#334155'}
                             onChange={handleChange}

@@ -155,12 +155,18 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             }
         });
 
-        // Listen to users collection
-        const usersColRef = collection(db, 'users');
-        const unsubUsers = onSnapshot(usersColRef, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-            setUsers(usersData);
-        });
+        // Listen to users collection - only for roles with permission
+        let unsubUsers = () => {};
+        if (userData.role === 'developer' || userData.role === 'manager') {
+            const usersColRef = collection(db, 'users');
+            unsubUsers = onSnapshot(usersColRef, (snapshot) => {
+                const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+                setUsers(usersData);
+            });
+        } else {
+            // Other roles don't have permission to list all users, so we clear local state.
+            setUsers([]);
+        }
 
         const seedInitialData = async () => {
             if (!db) return;
@@ -230,11 +236,11 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubUsers();
             unsubDatacenters();
         };
-    }, [userData, selectedBuildingId]);
+    }, [userData]);
     
     // Listeners for data within the selected datacenter
     React.useEffect(() => {
-        if (!selectedBuildingId || !isFirebaseConfigured || !db) {
+        if (!selectedBuildingId || !isFirebaseConfigured || !db || !userData) {
             setItemsByRoom({});
             setEquipment([]);
             setConnections([]);
@@ -265,9 +271,15 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setConnections(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Connection)));
         });
 
-        const unsubDeletionLog = onSnapshot(collection(buildingRef, 'deletion_log'), (snapshot) => {
-            setDeletionLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DeletionLogEntry)));
-        });
+        // Listen to deletion log - only for roles with permission
+        let unsubDeletionLog = () => {};
+        if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
+            unsubDeletionLog = onSnapshot(collection(buildingRef, 'deletion_log'), (snapshot) => {
+                setDeletionLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DeletionLogEntry)));
+            });
+        } else {
+            setDeletionLog([]);
+        }
 
         return () => {
             unsubItems();
@@ -276,7 +288,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubDeletionLog();
         };
 
-    }, [selectedBuildingId]);
+    }, [selectedBuildingId, userData]);
 
 
     // --- Context Actions ---
@@ -378,7 +390,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
           deletedAt: new Date().toISOString(),
           reason: reason,
           roomId: itemToDelete.roomId,
-          itemData: { ...itemToDelete, icon: '' }, // Can't store function in Firestore
+          itemData: { ...itemToDelete, icon: itemToDelete.icon || '' }, // Ensure icon is string
       };
 
       try {
