@@ -25,7 +25,7 @@ import { useInfra } from "./datacenter-switcher";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ProfileDialog } from "./profile-dialog";
-import type { UserRole } from "@/lib/types";
+import type { UserRole, ImpersonationState } from "@/lib/types";
 
 // Helper to capitalize role names for display
 const formatRoleName = (role: string) => {
@@ -36,8 +36,8 @@ const formatRoleName = (role: string) => {
 
 export function UserNav() {
   const router = useRouter();
-  const { userData, realUserData, impersonatedRole, setImpersonatedRole } = useAuth();
-  const { systemSettings } = useInfra();
+  const { userData, realUserData, impersonation, setImpersonation } = useAuth();
+  const { systemSettings, buildings } = useInfra();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -60,6 +60,27 @@ export function UserNav() {
       .substring(0, 2)
       .toUpperCase();
   }
+  
+  const handleImpersonate = (role: UserRole | null) => {
+      if (!role) {
+          setImpersonation(null);
+          return;
+      }
+      const state: ImpersonationState = { role };
+      if (role === 'tecnico') {
+          const firstBuildingId = buildings[0]?.id;
+          if (!firstBuildingId) {
+              toast({
+                  variant: 'destructive',
+                  title: "Nenhum datacenter encontrado",
+                  description: "Não é possível simular o técnico sem um datacenter existente.",
+              });
+              return;
+          }
+          state.datacenterId = firstBuildingId;
+      }
+      setImpersonation(state);
+  }
 
   const isDeveloper = realUserData?.role === 'developer';
   const availableRoles = systemSettings.userRoles.filter(r => r.name !== 'developer').map(r => r.name as UserRole);
@@ -81,9 +102,9 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {userData?.email || ''}
             </p>
-             {impersonatedRole && (
+             {impersonation?.role && (
                 <p className="text-xs leading-none text-yellow-600 font-semibold pt-1">
-                  (Visualizando como {formatRoleName(impersonatedRole)})
+                  (Visualizando como {formatRoleName(impersonation.role)})
                 </p>
             )}
           </div>
@@ -115,12 +136,12 @@ export function UserNav() {
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
                   {availableRoles.map(role => (
-                     <DropdownMenuItem key={role} onSelect={() => setImpersonatedRole(role)} className="cursor-pointer">
+                     <DropdownMenuItem key={role} onSelect={() => handleImpersonate(role)} className="cursor-pointer">
                         <span>{formatRoleName(role)}</span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
-                   <DropdownMenuItem onSelect={() => setImpersonatedRole(null)} disabled={!impersonatedRole} className="cursor-pointer">
+                   <DropdownMenuItem onSelect={() => handleImpersonate(null)} disabled={!impersonation} className="cursor-pointer">
                       <EyeOff className="w-4 h-4 mr-2" />
                       <span>Restaurar Visão</span>
                   </DropdownMenuItem>

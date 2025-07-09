@@ -49,9 +49,11 @@ export function Header() {
   const { 
     itemsByRoom,
     approveItem,
-    systemSettings
+    systemSettings,
+    approveDeletion,
+    rejectDeletion,
   } = useInfra();
-  const { userData, realUserData, impersonatedRole } = useAuth();
+  const { userData, realUserData, impersonation } = useAuth();
   
   const [isNavigatingTo, setIsNavigatingTo] = useState<string | null>(null);
 
@@ -62,6 +64,7 @@ export function Header() {
 
   const allItems = Object.values(itemsByRoom).flat();
   const pendingApprovalCount = allItems.filter(item => item.awaitingApproval).length;
+  const pendingDeletionCount = allItems.filter(item => item.awaitingDeletionApproval).length;
   
   const navItems = [
     { name: "Planta Baixa", href: "/dashboard", icon: LayoutGrid },
@@ -88,10 +91,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
-      {isDeveloper && impersonatedRole && (
+      {isDeveloper && impersonation?.role && (
           <div className="flex items-center justify-center w-full gap-4 py-1 text-sm font-semibold text-center text-black bg-yellow-400">
               <EyeOff className="w-4 h-4" />
-              Visualizando como: {formatRoleName(impersonatedRole)}
+              Visualizando como: {formatRoleName(impersonation.role)}
           </div>
       )}
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
@@ -116,7 +119,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
                       <SlidersHorizontal className="w-5 h-5" />
-                      {pendingApprovalCount > 0 && (
+                      {(pendingApprovalCount + pendingDeletionCount) > 0 && (
                         <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
                           <span className="absolute inline-flex w-full h-full bg-red-500 rounded-full opacity-75 animate-ping"></span>
                           <span className="relative inline-flex w-2.5 h-2.5 bg-red-600 rounded-full"></span>
@@ -130,12 +133,17 @@ export function Header() {
                     <DropdownMenuSeparator />
                     
                       {(isDeveloper || permissions.canAccessApprovalCenter) && (
-                        <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+                        <ApprovalCenterDialog 
+                          items={allItems} 
+                          onApproveItem={approveItem}
+                          onApproveDeletion={approveDeletion}
+                          onRejectDeletion={rejectDeletion}
+                        >
                           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
                             <ClipboardCheck />
                             <span>Centro de Aprovações</span>
-                            {pendingApprovalCount > 0 && (
-                              <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
+                            {(pendingApprovalCount + pendingDeletionCount) > 0 && (
+                              <Badge variant="default" className="ml-auto">{pendingApprovalCount + pendingDeletionCount}</Badge>
                             )}
                           </DropdownMenuItem>
                         </ApprovalCenterDialog>

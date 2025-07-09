@@ -5,7 +5,7 @@ export interface ActivityLogEntry {
   timestamp: string; // ISO 8601 format
   user: string;
   action: 'create' | 'update' | 'delete' | 'move' | 'approve' | 'login' | 'logout';
-  category: 'Datacenter' | 'Room' | 'Item' | 'Equipment' | 'Connection' | 'User' | 'System';
+  category: 'Datacenter' | 'Room' | 'Item' | 'Equipment' | 'Connection' | 'User' | 'System' | 'Deletion';
   details: string;
 }
 
@@ -46,6 +46,10 @@ export interface PlacedItem {
   isTagEligible?: boolean;
   dataSheetUrl?: string | null;
   imageUrl?: string | null;
+  // Deletion flow fields
+  awaitingDeletionApproval?: boolean;
+  deletionReason?: string | null;
+  deletionRequestedBy?: string | null;
 }
 
 export interface Equipment {
@@ -98,6 +102,11 @@ export interface DeletionLogEntry {
 
 export type UserRole = string;
 
+export interface ImpersonationState {
+  role: UserRole | null;
+  datacenterId?: string | null;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -147,6 +156,8 @@ export interface RolePermissions {
   canCreateDatacenters: boolean;
   canAccessSystemSettings: boolean;
   canManagePermissions: boolean;
+  canRequestDeletion: boolean;
+  canApproveDeletion: boolean;
   canAccessDeveloperPage: boolean;
 }
 

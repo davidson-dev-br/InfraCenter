@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
-import type { User, UserRole } from '@/lib/types';
+import type { User, UserRole, ImpersonationState } from '@/lib/types';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -14,8 +14,8 @@ interface AuthContextType {
   userData: User | null;
   realUserData: User | null;
   loading: boolean;
-  impersonatedRole: UserRole | null;
-  setImpersonatedRole: (role: UserRole | null) => void;
+  impersonation: ImpersonationState | null;
+  setImpersonation: (state: ImpersonationState | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [realUserData, setRealUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [impersonatedRole, setImpersonatedRole] = useState<UserRole | null>(null);
+  const [impersonation, setImpersonation] = useState<ImpersonationState | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -95,11 +95,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router, pathname]);
 
   const effectiveUserData = useMemo(() => {
-    if (realUserData?.role === 'developer' && impersonatedRole) {
-        return { ...realUserData, role: impersonatedRole };
+    if (realUserData?.role === 'developer' && impersonation?.role) {
+        const impersonatedData: User = { ...realUserData, role: impersonation.role };
+
+        if (impersonation.role === 'tecnico') {
+            impersonatedData.datacenterId = impersonation.datacenterId || null;
+        } else {
+            impersonatedData.datacenterId = null;
+        }
+        
+        return impersonatedData;
     }
     return realUserData;
-  }, [realUserData, impersonatedRole]);
+  }, [realUserData, impersonation]);
 
   if (loading) {
     return (
@@ -119,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userData: effectiveUserData, realUserData, loading, impersonatedRole, setImpersonatedRole }}>
+    <AuthContext.Provider value={{ user, userData: effectiveUserData, realUserData, loading, impersonation, setImpersonation }}>
       {children}
     </AuthContext.Provider>
   );
