@@ -27,6 +27,13 @@ export function PrintableReport({
     const gerentes = users.filter(u => u.role === 'gerente');
     const supervisores = users.filter(u => u.role === 'supervisor');
 
+    const formatRoleName = (role: string) => {
+        if (!role) return '';
+        if (role === 'gerente') return 'Gerente de Projetos';
+        if (role === 'supervisor') return 'Supervisor';
+        return role.charAt(0).toUpperCase() + role.slice(1);
+    };
+
     return (
         <div className="p-8 font-sans bg-white text-black">
             <header className="flex justify-between items-center mb-8 pb-4 border-b-2 border-black">
@@ -130,7 +137,7 @@ export function PrintableReport({
                                     </div>
                                     <div className="border-t-2 border-black pt-2">
                                         <p className="font-bold">{user.name}</p>
-                                        <p className="text-sm capitalize">Gerente de Projetos</p>
+                                        <p className="text-sm capitalize">{formatRoleName(user.role)}</p>
                                     </div>
                                 </div>
                             ))}
@@ -141,7 +148,7 @@ export function PrintableReport({
                                     </div>
                                     <div className="border-t-2 border-black pt-2">
                                         <p className="font-bold">{user.name}</p>
-                                        <p className="text-sm capitalize">Supervisor</p>
+                                        <p className="text-sm capitalize">{formatRoleName(user.role)}</p>
                                     </div>
                                 </div>
                             ))}
