@@ -227,9 +227,9 @@ export function AIFlowTesterCard() {
                             <SelectValue placeholder="Escolha um fluxo..." />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="extractEquipmentDetails">extractEquipmentDetails (com imagem)</SelectItem>
-                            <SelectItem value="extractConnectionDetails">extractConnectionDetails (com imagem)</SelectItem>
-                            <SelectItem value="importFromSpreadsheet">importFromSpreadsheet (com JSON)</SelectItem>
+                            <SelectItem value="extractEquipmentDetails">Extrair Detalhes de Equipamento (com imagem)</SelectItem>
+                            <SelectItem value="extractConnectionDetails">Extrair Detalhes de Conexão (com imagem)</SelectItem>
+                            <SelectItem value="importFromSpreadsheet">Importar de Planilha (com JSON)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
