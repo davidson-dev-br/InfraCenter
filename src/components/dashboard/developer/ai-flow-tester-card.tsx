@@ -70,7 +70,9 @@ export function AIFlowTesterCard() {
                     Testador de Fluxos de IA
                 </CardTitle>
                 <CardDescription>
-                    Selecione um fluxo, forneça um JSON de entrada e veja a saída da IA. Ótimo para depurar prompts.
+                    Esta ferramenta permite executar um fluxo de IA diretamente, sem usar a interface principal.
+                    <strong className="block mt-2">Como funciona:</strong>
+                    1. Selecione um fluxo. 2. Forneça os dados de entrada como um texto JSON (em vez de, por exemplo, fazer upload de uma foto). 3. Clique em executar para ver a resposta JSON exata da IA. É ideal para testar e depurar seus prompts rapidamente.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
