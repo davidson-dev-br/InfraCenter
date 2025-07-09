@@ -9,10 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DatacentersTable } from "@/components/dashboard/admin/datacenters-table";
 
 export default function AdminPage() {
-  const { buildings } = useInfra();
+  const { buildings, systemSettings } = useInfra();
   const { userData } = useAuth();
 
-  const canCreate = userData?.role === 'manager' || userData?.role === 'developer';
+  const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
+  const canCreate = permissions?.canCreateDatacenters;
 
   return (
     <div className="container p-4 mx-auto my-8 sm:p-8">

@@ -39,7 +39,8 @@ export function Header() {
   const pathname = usePathname();
   const { 
     itemsByRoom,
-    approveItem
+    approveItem,
+    systemSettings
   } = useInfra();
   const { userData } = useAuth();
   
@@ -73,12 +74,7 @@ export function Header() {
       return <Icon className="w-5 h-5" />;
   }
 
-  const userRole = userData?.role;
-  const canSeeManagementMenu = userRole && ['supervisor', 'manager', 'developer'].includes(userRole);
-  const canManageUsers = userRole && ['manager', 'developer'].includes(userRole);
-  const canManageDatacenters = userRole && ['manager', 'developer'].includes(userRole);
-  const canSeeSystemSettings = userRole && ['manager', 'developer'].includes(userRole);
-  const isDeveloper = userRole === 'developer';
+  const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
@@ -99,7 +95,7 @@ export function Header() {
                   <DatacenterSwitcher />
               </div>
 
-              {canSeeManagementMenu && (
+              {permissions?.canSeeManagementMenu && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
@@ -117,24 +113,28 @@ export function Header() {
                     <DropdownMenuLabel>Gerenciamento</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     
-                      <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
-                          <ClipboardCheck />
-                          <span>Centro de Aprovações</span>
-                          {pendingApprovalCount > 0 && (
-                            <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
-                          )}
-                        </DropdownMenuItem>
-                      </ApprovalCenterDialog>
+                      {permissions.canAccessApprovalCenter && (
+                        <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                            <ClipboardCheck />
+                            <span>Centro de Aprovações</span>
+                            {pendingApprovalCount > 0 && (
+                              <Badge variant="default" className="ml-auto">{pendingApprovalCount}</Badge>
+                            )}
+                          </DropdownMenuItem>
+                        </ApprovalCenterDialog>
+                      )}
 
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
-                        {renderIcon('/dashboard/activity-log', History)}
-                        <span>Log de Atividades</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    {permissions.canAccessActivityLog && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
+                          {renderIcon('/dashboard/activity-log', History)}
+                          <span>Log de Atividades</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     
-                    {canManageUsers && (
+                    {permissions.canManageUsers && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/users" onClick={() => handleNavClick('/dashboard/users')}>
                             {renderIcon('/dashboard/users', Users)}
@@ -143,16 +143,18 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
-                          {renderIcon('/dashboard/deletion-log', ClipboardX)}
-                          <span>Log de Exclusões</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    {permissions.canAccessDeletionLog && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
+                            {renderIcon('/dashboard/deletion-log', ClipboardX)}
+                            <span>Log de Exclusões</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
-                    {(canManageDatacenters || canSeeSystemSettings || isDeveloper) && <DropdownMenuSeparator />}
+                    {(permissions.canManageDatacenters || permissions.canAccessSystemSettings || permissions.canAccessDeveloperPage) && <DropdownMenuSeparator />}
 
-                    {canManageDatacenters && (
+                    {permissions.canManageDatacenters && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/admin" onClick={() => handleNavClick('/dashboard/admin')}>
                           {renderIcon('/dashboard/admin', Building)}
@@ -161,7 +163,7 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {canSeeSystemSettings && (
+                    {permissions.canAccessSystemSettings && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/settings" onClick={() => handleNavClick('/dashboard/settings')}>
                           {renderIcon('/dashboard/settings', Settings)}
@@ -170,7 +172,7 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {isDeveloper && (
+                    {permissions.canAccessDeveloperPage && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
                           {renderIcon('/dashboard/developer', Code)}

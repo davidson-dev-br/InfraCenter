@@ -136,6 +136,19 @@ export interface SelectOption {
     name: string;
 }
 
+export interface RolePermissions {
+  canSwitchDatacenter: boolean;
+  canSeeManagementMenu: boolean;
+  canAccessApprovalCenter: boolean;
+  canAccessActivityLog: boolean;
+  canAccessDeletionLog: boolean;
+  canManageUsers: boolean;
+  canManageDatacenters: boolean;
+  canCreateDatacenters: boolean;
+  canAccessSystemSettings: boolean;
+  canAccessDeveloperPage: boolean;
+}
+
 export interface SystemSettings {
     companyName: string;
     companyLogo: string | null;
@@ -145,4 +158,5 @@ export interface SystemSettings {
     equipmentStatuses: SelectOption[];
     cableTypes: SelectOption[];
     floorPlanItemTypes: FloorPlanItemType[];
+    rolePermissions: Record<UserRole, RolePermissions>;
 }

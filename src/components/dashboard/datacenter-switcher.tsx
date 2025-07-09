@@ -17,11 +17,63 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings, ActivityLogEntry } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings, RolePermissions, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "./auth-provider";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, getDocs, query, where, getDoc, orderBy } from "firebase/firestore";
+
+const initialRolePermissions: Record<UserRole, RolePermissions> = {
+  technician: {
+    canSwitchDatacenter: false,
+    canSeeManagementMenu: false,
+    canAccessApprovalCenter: false,
+    canAccessActivityLog: false,
+    canAccessDeletionLog: false,
+    canManageUsers: false,
+    canManageDatacenters: false,
+    canCreateDatacenters: false,
+    canAccessSystemSettings: false,
+    canAccessDeveloperPage: false,
+  },
+  supervisor: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: false,
+    canManageDatacenters: false,
+    canCreateDatacenters: false,
+    canAccessSystemSettings: false,
+    canAccessDeveloperPage: false,
+  },
+  manager: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: true,
+    canManageDatacenters: true,
+    canCreateDatacenters: true,
+    canAccessSystemSettings: true,
+    canAccessDeveloperPage: false,
+  },
+  developer: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: true,
+    canManageDatacenters: true,
+    canCreateDatacenters: true,
+    canAccessSystemSettings: true,
+    canAccessDeveloperPage: true,
+  },
+};
+
 
 const initialSystemSettings: SystemSettings = {
     companyName: "InfraCenter Manager",
@@ -70,6 +122,7 @@ const initialSystemSettings: SystemSettings = {
         { id: '3', name: 'QDF', icon: 'Zap', defaultWidth: 0.6, defaultLength: 0.3, color: '#ca8a04' },
         { id: '4', name: 'Patch Panel', icon: 'Cable', defaultWidth: 0.6, defaultLength: 0.3, color: '#65a30d' },
     ],
+    rolePermissions: initialRolePermissions
 };
 
 // --- Context for sharing infrastructure state ---
@@ -175,7 +228,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const settingsDocRef = doc(db, 'system', 'settings');
         const unsubSettings = onSnapshot(settingsDocRef, (doc) => {
             if (doc.exists()) {
-                setSystemSettingsState(doc.data() as SystemSettings);
+                const loadedSettings = doc.data() as Partial<SystemSettings>;
+                setSystemSettingsState({ ...initialSystemSettings, ...loadedSettings });
             } else {
                 setDoc(settingsDocRef, initialSystemSettings);
             }
@@ -234,8 +288,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setBuildings(buildingsData);
 
             let targetBuilding: BuildingType | undefined;
+            const permissions = systemSettings.rolePermissions?.[userData.role];
 
-            if (userData.role === 'technician') {
+            if (permissions && !permissions.canSwitchDatacenter) {
                 targetBuilding = buildingsData.find(b => b.id === userData.datacenterId);
             } else {
                 const lastSelectedId = localStorage.getItem('selectedBuildingId');
@@ -248,7 +303,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             if (targetBuilding) {
                 if (selectedBuildingId !== targetBuilding.id) {
                     _setSelectedBuildingId(targetBuilding.id);
-                    if (userData.role !== 'technician') {
+                    if (permissions?.canSwitchDatacenter) {
                         localStorage.setItem('selectedBuildingId', targetBuilding.id);
                     }
                 }
@@ -258,7 +313,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             } else {
                 _setSelectedBuildingId(null);
                 setSelectedRoomId(null);
-                if (userData.role !== 'technician') {
+                if (permissions?.canSwitchDatacenter) {
                     localStorage.removeItem('selectedBuildingId');
                 }
             }
@@ -269,7 +324,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubUsers();
             unsubDatacenters();
         };
-    }, [userData, selectedBuildingId, selectedRoomId]);
+    }, [userData, selectedBuildingId, selectedRoomId, systemSettings.rolePermissions]);
     
     // Listeners for data within the selected datacenter
     React.useEffect(() => {
@@ -306,7 +361,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         });
 
         let unsubDeletionLog = () => {};
-        if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
+        const permissions = systemSettings.rolePermissions?.[userData.role];
+        if (permissions?.canAccessDeletionLog) {
             unsubDeletionLog = onSnapshot(query(collection(buildingRef, 'deletion_log'), orderBy('deletedAt', 'desc')), (snapshot) => {
                 setDeletionLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DeletionLogEntry)));
             });
@@ -315,7 +371,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         }
 
         let unsubActivityLog = () => {};
-        if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
+        if (permissions?.canAccessActivityLog) {
             unsubActivityLog = onSnapshot(query(collection(buildingRef, 'activity_log'), orderBy('timestamp', 'desc')), (snapshot) => {
                 setActivityLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLogEntry)));
             });
@@ -331,13 +387,13 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubActivityLog();
         };
 
-    }, [selectedBuildingId, userData]);
+    }, [selectedBuildingId, userData, systemSettings.rolePermissions]);
 
 
     // --- Context Actions ---
 
     const setSelectedBuildingId = (buildingId: string) => {
-        if (userData?.role === 'technician') return;
+        if (!userData?.role || !systemSettings.rolePermissions[userData.role].canSwitchDatacenter) return;
         _setSelectedBuildingId(buildingId);
         localStorage.setItem('selectedBuildingId', buildingId);
         const building = buildings.find(b => b.id === buildingId);
@@ -615,12 +671,13 @@ export function useInfra() {
 
 export function DatacenterSwitcher() {
   const [open, setOpen] = React.useState(false);
-  const { buildings, selectedBuildingId, setSelectedBuildingId } = useInfra();
+  const { buildings, selectedBuildingId, setSelectedBuildingId, systemSettings } = useInfra();
   const { userData } = useAuth();
 
   const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+  const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
 
-  if (userData?.role === 'technician') {
+  if (!permissions?.canSwitchDatacenter) {
     return (
       <Button
         variant="outline"

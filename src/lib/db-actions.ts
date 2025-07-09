@@ -2,7 +2,58 @@
 
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { collection, getDocs, writeBatch, doc, setDoc } from 'firebase/firestore';
-import type { Building, Room, PlacedItem, Equipment, Connection, SystemSettings } from '@/lib/types';
+import type { Building, Room, PlacedItem, Equipment, Connection, SystemSettings, UserRole, RolePermissions } from '@/lib/types';
+
+const initialRolePermissions: Record<UserRole, RolePermissions> = {
+  technician: {
+    canSwitchDatacenter: false,
+    canSeeManagementMenu: false,
+    canAccessApprovalCenter: false,
+    canAccessActivityLog: false,
+    canAccessDeletionLog: false,
+    canManageUsers: false,
+    canManageDatacenters: false,
+    canCreateDatacenters: false,
+    canAccessSystemSettings: false,
+    canAccessDeveloperPage: false,
+  },
+  supervisor: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: false,
+    canManageDatacenters: false,
+    canCreateDatacenters: false,
+    canAccessSystemSettings: false,
+    canAccessDeveloperPage: false,
+  },
+  manager: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: true,
+    canManageDatacenters: true,
+    canCreateDatacenters: true,
+    canAccessSystemSettings: true,
+    canAccessDeveloperPage: false,
+  },
+  developer: {
+    canSwitchDatacenter: true,
+    canSeeManagementMenu: true,
+    canAccessApprovalCenter: true,
+    canAccessActivityLog: true,
+    canAccessDeletionLog: true,
+    canManageUsers: true,
+    canManageDatacenters: true,
+    canCreateDatacenters: true,
+    canAccessSystemSettings: true,
+    canAccessDeveloperPage: true,
+  },
+};
 
 // This is the structure from datacenter-switcher.
 const initialSystemSettings: SystemSettings = {
@@ -52,6 +103,7 @@ const initialSystemSettings: SystemSettings = {
         { id: '3', name: 'QDF', icon: 'Zap', defaultWidth: 0.6, defaultLength: 0.3, color: '#ca8a04' },
         { id: '4', name: 'Patch Panel', icon: 'Cable', defaultWidth: 0.6, defaultLength: 0.3, color: '#65a30d' },
     ],
+    rolePermissions: initialRolePermissions,
 };
 
 
