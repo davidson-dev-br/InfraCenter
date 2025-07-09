@@ -2,3 +2,4 @@
 import "./flows/extract-equipment-details-flow";
 import "./flows/extract-connection-details-flow";
 import "./flows/import-spreadsheet-flow";
+import "./flows/developer-tools-flow";
