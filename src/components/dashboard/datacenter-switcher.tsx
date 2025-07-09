@@ -164,7 +164,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
                 setUsers(usersData);
             });
         } else {
-            // Other roles don't have permission to list all users, so we clear local state.
             setUsers([]);
         }
 
@@ -174,7 +173,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         
             const batch = writeBatch(db);
         
-            // 1. Seed Datacenter
             const buildingData: Omit<BuildingType, 'id'> = { 
                 name: 'Datacenter Principal', 
                 location: 'Localização Principal', 
@@ -199,11 +197,13 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             });
         };
 
-        // Listen to datacenters (buildings) collection
         const datacentersColRef = collection(db, 'datacenters');
         const unsubDatacenters = onSnapshot(datacentersColRef, (snapshot) => {
             if (snapshot.empty) {
                 seedInitialData();
+                _setSelectedBuildingId(null);
+                setSelectedRoomId(null);
+                localStorage.removeItem('selectedBuildingId');
                 return;
             }
             
@@ -212,22 +212,21 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
             const lastSelectedId = localStorage.getItem('selectedBuildingId');
 
-            if (lastSelectedId && buildingsData.some(b => b.id === lastSelectedId)) {
-                if (selectedBuildingId !== lastSelectedId) {
-                    _setSelectedBuildingId(lastSelectedId);
+            let targetBuilding = buildingsData.find(b => b.id === lastSelectedId);
+            if (!targetBuilding && buildingsData.length > 0) {
+                targetBuilding = buildingsData[0];
+            }
+
+            if (targetBuilding) {
+                if (selectedBuildingId !== targetBuilding.id) {
+                    _setSelectedBuildingId(targetBuilding.id);
+                    localStorage.setItem('selectedBuildingId', targetBuilding.id);
+                    setSelectedRoomId(targetBuilding.rooms?.[0]?.id || null);
                 }
-            } else if (selectedBuildingId && !buildingsData.some(b => b.id === selectedBuildingId)) {
-                const firstId = buildingsData[0]?.id || null;
-                _setSelectedBuildingId(firstId);
-                if (firstId) {
-                    localStorage.setItem('selectedBuildingId', firstId);
-                } else {
-                    localStorage.removeItem('selectedBuildingId');
-                }
-            } else if (!selectedBuildingId && buildingsData.length > 0) {
-                const firstId = buildingsData[0].id;
-                _setSelectedBuildingId(firstId);
-                localStorage.setItem('selectedBuildingId', firstId);
+            } else {
+                _setSelectedBuildingId(null);
+                setSelectedRoomId(null);
+                localStorage.removeItem('selectedBuildingId');
             }
         });
 
@@ -236,7 +235,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubUsers();
             unsubDatacenters();
         };
-    }, [userData]);
+    }, [userData, selectedBuildingId]);
     
     // Listeners for data within the selected datacenter
     React.useEffect(() => {
@@ -271,7 +270,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setConnections(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Connection)));
         });
 
-        // Listen to deletion log - only for roles with permission
         let unsubDeletionLog = () => {};
         if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
             unsubDeletionLog = onSnapshot(collection(buildingRef, 'deletion_log'), (snapshot) => {
@@ -339,7 +337,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!db) return;
         const buildingToDelete = buildings.find(b => b.id === buildingId);
         try {
-            // This is a simple delete. A real app might want to delete all subcollections too.
             await deleteDoc(doc(db, 'datacenters', buildingId));
             toast({ variant: "destructive", title: "Datacenter Excluído", description: `O datacenter "${buildingToDelete?.name}" foi excluído.` });
         } catch (error) {
@@ -368,7 +365,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         }
     };
     
-    // --- More Complex Actions ---
     const approveItem = async (itemId: string) => {
       if (!selectedBuildingId || !db) return;
       try {
@@ -390,7 +386,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
           deletedAt: new Date().toISOString(),
           reason: reason,
           roomId: itemToDelete.roomId,
-          itemData: { ...itemToDelete, icon: itemToDelete.icon || '' }, // Ensure icon is string
+          itemData: { ...itemToDelete, icon: itemToDelete.icon || '' },
       };
 
       try {
