@@ -17,11 +17,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings, ActivityLogEntry } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "./auth-provider";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, getDocs, query, where } from "firebase/firestore";
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, getDocs, query, where, getDoc, orderBy } from "firebase/firestore";
 
 const initialSystemSettings: SystemSettings = {
     companyName: "InfraCenter Manager",
@@ -80,6 +80,7 @@ interface InfraContextType {
     connections: Connection[];
     users: User[];
     deletionLog: DeletionLogEntry[];
+    activityLog: ActivityLogEntry[];
     systemSettings: SystemSettings;
     
     selectedBuildingId: string | null;
@@ -133,10 +134,35 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const [equipment, setEquipment] = React.useState<Equipment[]>([]);
     const [connections, setConnections] = React.useState<Connection[]>([]);
     const [deletionLog, setDeletionLog] = React.useState<DeletionLogEntry[]>([]);
+    const [activityLog, setActivityLog] = React.useState<ActivityLogEntry[]>([]);
     
     // Selection state
     const [selectedBuildingId, _setSelectedBuildingId] = React.useState<string | null>(null);
     const [selectedRoomId, setSelectedRoomId] = React.useState<string | null>(null);
+
+
+    // --- Activity Logger ---
+    const logActivity = React.useCallback(async (
+        action: ActivityLogEntry['action'],
+        category: ActivityLogEntry['category'],
+        details: string
+    ) => {
+        if (!selectedBuildingId || !db || !userData) return;
+
+        const newLogEntry: Omit<ActivityLogEntry, 'id'> = {
+            timestamp: new Date().toISOString(),
+            user: userData.name || userData.email || 'System',
+            action,
+            category,
+            details
+        };
+
+        try {
+            await addDoc(collection(db, 'datacenters', selectedBuildingId, 'activity_log'), newLogEntry);
+        } catch (error) {
+            console.error("Failed to log activity:", error);
+        }
+    }, [selectedBuildingId, userData]);
 
 
     // --- Firebase Listeners ---
@@ -220,8 +246,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             if (targetBuilding) {
                 if (selectedBuildingId !== targetBuilding.id) {
                     _setSelectedBuildingId(targetBuilding.id);
-                    localStorage.setItem('selectedBuildingId', targetBuilding.id);
-                    setSelectedRoomId(targetBuilding.rooms?.[0]?.id || null);
+                } else if (!selectedRoomId && targetBuilding.rooms?.length > 0) {
+                    // This handles the case where building is selected but room is not
+                    setSelectedRoomId(targetBuilding.rooms[0].id);
                 }
             } else {
                 _setSelectedBuildingId(null);
@@ -235,7 +262,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubUsers();
             unsubDatacenters();
         };
-    }, [userData, selectedBuildingId]);
+    }, [userData, selectedBuildingId, selectedRoomId]);
     
     // Listeners for data within the selected datacenter
     React.useEffect(() => {
@@ -244,6 +271,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setEquipment([]);
             setConnections([]);
             setDeletionLog([]);
+            setActivityLog([]);
             return;
         };
 
@@ -272,11 +300,20 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
         let unsubDeletionLog = () => {};
         if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
-            unsubDeletionLog = onSnapshot(collection(buildingRef, 'deletion_log'), (snapshot) => {
+            unsubDeletionLog = onSnapshot(query(collection(buildingRef, 'deletion_log'), orderBy('deletedAt', 'desc')), (snapshot) => {
                 setDeletionLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DeletionLogEntry)));
             });
         } else {
             setDeletionLog([]);
+        }
+
+        let unsubActivityLog = () => {};
+        if (['developer', 'manager', 'supervisor'].includes(userData.role)) {
+            unsubActivityLog = onSnapshot(query(collection(buildingRef, 'activity_log'), orderBy('timestamp', 'desc')), (snapshot) => {
+                setActivityLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLogEntry)));
+            });
+        } else {
+            setActivityLog([]);
         }
 
         return () => {
@@ -284,6 +321,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             unsubEquipment();
             unsubConnections();
             unsubDeletionLog();
+            unsubActivityLog();
         };
 
     }, [selectedBuildingId, userData]);
@@ -368,7 +406,10 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const approveItem = async (itemId: string) => {
       if (!selectedBuildingId || !db) return;
       try {
-        await updateDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemId), { awaitingApproval: false });
+        const itemRef = doc(db, 'datacenters', selectedBuildingId, 'items', itemId);
+        const itemDoc = await getDoc(itemRef);
+        await updateDoc(itemRef, { awaitingApproval: false });
+        logActivity('approve', 'Item', `Aprovado item: ${itemDoc.data()?.name || itemId}`);
         toast({ title: "Item Aprovado!" });
       } catch (error) {
         toast({ variant: "destructive", title: "Erro ao aprovar item." });
@@ -394,6 +435,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
           batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
           batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToDelete.id));
           await batch.commit();
+          logActivity('delete', 'Item', `Excluído item da planta baixa: ${itemToDelete.name}`);
           toast({ variant: 'destructive', title: 'Item Excluído', description: `O item "${itemToDelete.name}" foi movido para o log.` });
       } catch (error) {
           console.error(error);
@@ -410,6 +452,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const { itemData } = logEntry;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemData.id), itemData);
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'deletion_log', logId));
+        logActivity('create', 'Item', `Restaurado item da planta baixa: ${itemData.name}`);
         toast({ title: 'Item Restaurado!' });
       } catch (error) {
         console.error(error);
@@ -469,34 +512,43 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
     const addEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
       if(!selectedBuildingId || !db) return;
       await addDoc(collection(db, 'datacenters', selectedBuildingId, 'equipment'), equipmentData);
+      logActivity('create', 'Equipment', `Adicionado equipamento: ${equipmentData.hostname}`);
       toast({ title: 'Equipamento Adicionado!' });
     };
     const updateEquipment = async (updatedEquipment: Equipment) => {
         if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedEquipment;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'equipment', id), data);
+        logActivity('update', 'Equipment', `Atualizado equipamento: ${updatedEquipment.hostname}`);
         toast({ title: 'Equipamento Atualizado!' });
     };
     const deleteEquipment = async (equipmentId: string) => {
         if(!selectedBuildingId || !db) return;
-        await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'equipment', equipmentId));
+        const equipRef = doc(db, 'datacenters', selectedBuildingId, 'equipment', equipmentId);
+        const equipDoc = await getDoc(equipRef);
+        const hostname = equipDoc.data()?.hostname || equipmentId;
+        await deleteDoc(equipRef);
+        logActivity('delete', 'Equipment', `Excluído equipamento: ${hostname}`);
         toast({ variant: 'destructive', title: 'Equipamento Excluído!' });
     };
     
     const addConnection = async (connectionData: Omit<Connection, 'id'>) => {
         if(!selectedBuildingId || !db) return;
-        await addDoc(collection(db, 'datacenters', selectedBuildingId, 'connections'), connectionData);
+        const newDocRef = await addDoc(collection(db, 'datacenters', selectedBuildingId, 'connections'), connectionData);
+        logActivity('create', 'Connection', `Adicionada nova conexão: ${newDocRef.id}`);
         toast({ title: 'Conexão Adicionada!' });
     };
     const updateConnection = async (updatedConnection: Connection) => {
         if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedConnection;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', id), data);
+        logActivity('update', 'Connection', `Atualizada conexão: ${id}`);
         toast({ title: 'Conexão Atualizada!' });
     };
     const deleteConnection = async (connectionId: string) => {
         if(!selectedBuildingId || !db) return;
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', connectionId));
+        logActivity('delete', 'Connection', `Excluída conexão: ${connectionId}`);
         toast({ variant: 'destructive', title: 'Conexão Excluída!' });
     };
 
@@ -529,7 +581,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <InfraContext.Provider value={{
-            buildings, itemsByRoom, equipment, connections, users, deletionLog, systemSettings,
+            buildings, itemsByRoom, equipment, connections, users, deletionLog, activityLog, systemSettings,
             selectedBuildingId, selectedRoomId,
             setSelectedBuildingId, setSelectedRoomId,
             setSystemSettings, addBuilding, updateBuilding, deleteBuilding,

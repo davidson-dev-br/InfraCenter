@@ -117,9 +117,11 @@ export function Header() {
                       </DropdownMenuItem>
                     </ApprovalCenterDialog>
 
-                  <DropdownMenuItem className="cursor-pointer">
-                    <History />
-                    <span>Log de Atividades</span>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
+                      {renderIcon('/dashboard/activity-log', History)}
+                      <span>Log de Atividades</span>
+                    </Link>
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem asChild className="cursor-pointer">

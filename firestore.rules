@@ -41,19 +41,27 @@ service cloud.firestore {
       allow get, list: if request.auth.uid != null;
       allow write: if hasOneOfRoles(['manager']);
 
-      // Regras explícitas para cada sub-coleção
-      match /items/{docId} {
+      match /items/{itemId} {
         allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
       }
-      match /equipment/{docId} {
+      match /equipment/{equipmentId} {
         allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
       }
-      match /connections/{docId} {
+      match /connections/{connectionId} {
         allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
       }
-      match /deletion_log/{docId} {
-          allow read: if hasOneOfRoles(['manager', 'supervisor']);
-          allow write: if false; // Ninguém deve escrever diretamente aqui.
+      
+      match /deletion_log/{logId} {
+        allow read: if hasOneOfRoles(['manager', 'supervisor']);
+        allow write: if false; 
+      }
+
+      match /activity_log/{logId} {
+        allow read: if hasOneOfRoles(['manager', 'supervisor']);
+        // Permite que qualquer usuário autenticado crie entradas de log (registre suas próprias ações)
+        allow create: if request.auth.uid != null;
+        // Ninguém pode alterar ou excluir logs para manter a integridade
+        allow update, delete: if false;
       }
     }
 

@@ -1,5 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 
+export interface ActivityLogEntry {
+  id: string;
+  timestamp: string; // ISO 8601 format
+  user: string;
+  action: 'create' | 'update' | 'delete' | 'move' | 'approve' | 'login' | 'logout';
+  category: 'Datacenter' | 'Room' | 'Item' | 'Equipment' | 'Connection' | 'User' | 'System';
+  details: string;
+}
+
 export interface FloorPlanItemType {
   id: string;
   name: string;
@@ -20,7 +29,7 @@ export interface PlacedItem {
   status: 'Ativo' | 'Inativo' | 'Manutenção';
   width: number;
   length: number;
-  sizeU?: number;
+  sizeU?: number | null;
   row?: string | null;
   observations?: string | null;
   awaitingApproval?: boolean;
@@ -38,7 +47,7 @@ export interface Equipment {
   imageUrl?: string | null;
   brand?: string | null;
   model?: string | null;
-  price?: number;
+  price?: number | null;
   serialNumber?: string | null;
   entryDate?: string | null;
   tag?: string | null;
