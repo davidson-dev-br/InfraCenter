@@ -21,7 +21,8 @@ type AddItemDialogProps = {
 };
 
 export function AddItemDialog({ isOpen, onOpenChange, onSelectItem, container }: AddItemDialogProps) {
-  const { floorPlanItemTypes } = useInfra();
+  const { systemSettings } = useInfra();
+  const { floorPlanItemTypes } = systemSettings;
 
   const handleSelect = (itemType: FloorPlanItemType) => {
     onSelectItem(itemType);

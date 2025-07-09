@@ -36,9 +36,9 @@ export function FloorPlan() {
         selectedRoomId,
         itemsByRoom,
         updateItemsForRoom,
-        companyName,
-        companyLogo
+        systemSettings,
     } = useInfra();
+    const { companyName, companyLogo } = systemSettings;
     const { toast } = useToast();
     
     const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
@@ -63,10 +63,10 @@ export function FloorPlan() {
     };
 
     const checkCollision = useCallback((testItem: PlacedItem, allItems: PlacedItem[]) => {
-        const testItemWidthInCells = testItem.width / tileWidthM;
-        const testItemLengthInCells = testItem.length / tileLengthM;
+        const itemWidthInCells = testItem.width / tileWidthM;
+        const itemLengthInCells = testItem.length / tileLengthM;
 
-        if (testItem.x < 0 || testItem.y < 0 || testItem.x + testItemWidthInCells > GRID_COLS || testItem.y + testItemLengthInCells > GRID_ROWS) {
+        if (testItem.x < 0 || testItem.y < 0 || testItem.x + itemWidthInCells > GRID_COLS || testItem.y + itemLengthInCells > GRID_ROWS) {
             return true;
         }
 
@@ -78,9 +78,9 @@ export function FloorPlan() {
             
             if (
                 testItem.x < existingItem.x + existingItemWidthInCells &&
-                testItem.x + testItemWidthInCells > existingItem.x &&
+                testItem.x + itemWidthInCells > existingItem.x &&
                 testItem.y < existingItem.y + existingItemLengthInCells &&
-                testItem.y + testItemLengthInCells > existingItem.y
+                testItem.y + itemLengthInCells > existingItem.y
             ) {
                 return true;
             }
