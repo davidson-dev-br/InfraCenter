@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +17,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 export function UserNav() {
   const router = useRouter();
@@ -66,13 +66,17 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="cursor-pointer">
-            <User className="w-4 h-4 mr-2" />
-            <span>Perfil</span>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/dashboard/settings">
+              <User className="w-4 h-4 mr-2" />
+              <span>Perfil</span>
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
-            <Settings className="w-4 h-4 mr-2" />
-            <span>Configurações</span>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/dashboard/settings">
+              <Settings className="w-4 h-4 mr-2" />
+              <span>Configurações</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
