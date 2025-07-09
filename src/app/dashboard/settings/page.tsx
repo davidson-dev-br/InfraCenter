@@ -16,12 +16,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SystemSettingsPage() {
-    const { userData } = useAuth();
+    const { userData, realUserData } = useAuth();
     const { systemSettings, setSystemSettings } = useInfra();
     const { companyName, companyLogo, floorPlanItemTypes } = systemSettings;
     const { toast } = useToast();
     
     const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
+    const isDeveloper = realUserData?.role === 'developer';
 
     const [localCompanyName, setLocalCompanyName] = useState(companyName);
     const [localCompanyLogo, setLocalCompanyLogo] = useState<string | null>(companyLogo);
@@ -126,7 +127,7 @@ export default function SystemSettingsPage() {
                     </CardContent>
                 </Card>
 
-                {permissions?.canManagePermissions && (
+                {(isDeveloper || permissions?.canManagePermissions) && (
                     <Card className="shadow-lg md:col-span-2">
                         <CardHeader>
                             <CardTitle className="text-xl font-headline">Gerenciamento de Permissões</CardTitle>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,7 +18,8 @@ import {
   Building,
   Settings,
   Code,
-  Loader2
+  Loader2,
+  EyeOff
 } from "lucide-react";
 import { DatacenterSwitcher, useInfra } from "./datacenter-switcher";
 import { useAuth } from "./auth-provider";
@@ -35,6 +37,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+// Helper to capitalize role names for display
+const formatRoleName = (role: string) => {
+    if (!role) return '';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
+
 export function Header() {
   const pathname = usePathname();
   const { 
@@ -42,7 +51,7 @@ export function Header() {
     approveItem,
     systemSettings
   } = useInfra();
-  const { userData } = useAuth();
+  const { userData, realUserData, impersonatedRole } = useAuth();
   
   const [isNavigatingTo, setIsNavigatingTo] = useState<string | null>(null);
 
@@ -75,9 +84,16 @@ export function Header() {
   }
 
   const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
+  const isDeveloper = realUserData?.role === 'developer';
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
+      {isDeveloper && impersonatedRole && (
+          <div className="flex items-center justify-center w-full gap-4 py-1 text-sm font-semibold text-center text-black bg-yellow-400">
+              <EyeOff className="w-4 h-4" />
+              Visualizando como: {formatRoleName(impersonatedRole)}
+          </div>
+      )}
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
         {/* Top row */}
         <div className="flex items-center h-16">
@@ -95,7 +111,7 @@ export function Header() {
                   <DatacenterSwitcher />
               </div>
 
-              {permissions?.canSeeManagementMenu && (
+              {(isDeveloper || permissions?.canSeeManagementMenu) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
@@ -113,7 +129,7 @@ export function Header() {
                     <DropdownMenuLabel>Gerenciamento</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     
-                      {permissions.canAccessApprovalCenter && (
+                      {(isDeveloper || permissions.canAccessApprovalCenter) && (
                         <ApprovalCenterDialog items={allItems} onApproveItem={approveItem}>
                           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
                             <ClipboardCheck />
@@ -125,7 +141,7 @@ export function Header() {
                         </ApprovalCenterDialog>
                       )}
 
-                    {permissions.canAccessActivityLog && (
+                    {(isDeveloper || permissions.canAccessActivityLog) && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/activity-log" onClick={() => handleNavClick('/dashboard/activity-log')}>
                           {renderIcon('/dashboard/activity-log', History)}
@@ -134,7 +150,7 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
                     
-                    {permissions.canManageUsers && (
+                    {(isDeveloper || permissions.canManageUsers) && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/users" onClick={() => handleNavClick('/dashboard/users')}>
                             {renderIcon('/dashboard/users', Users)}
@@ -143,7 +159,7 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {permissions.canAccessDeletionLog && (
+                    {(isDeveloper || permissions.canAccessDeletionLog) && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/deletion-log" onClick={() => handleNavClick('/dashboard/deletion-log')}>
                             {renderIcon('/dashboard/deletion-log', ClipboardX)}
@@ -152,9 +168,9 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {(permissions.canManageDatacenters || permissions.canAccessSystemSettings || permissions.canAccessDeveloperPage) && <DropdownMenuSeparator />}
+                    {(isDeveloper || permissions.canManageDatacenters || permissions.canAccessSystemSettings) && <DropdownMenuSeparator />}
 
-                    {permissions.canManageDatacenters && (
+                    {(isDeveloper || permissions.canManageDatacenters) && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/admin" onClick={() => handleNavClick('/dashboard/admin')}>
                           {renderIcon('/dashboard/admin', Building)}
@@ -163,7 +179,7 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {permissions.canAccessSystemSettings && (
+                    {(isDeveloper || permissions.canAccessSystemSettings) && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/settings" onClick={() => handleNavClick('/dashboard/settings')}>
                           {renderIcon('/dashboard/settings', Settings)}
@@ -172,13 +188,16 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
 
-                    {permissions.canAccessDeveloperPage && (
+                    {isDeveloper && (
+                      <>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/dashboard/developer" onClick={() => handleNavClick('/dashboard/developer')}>
                           {renderIcon('/dashboard/developer', Code)}
                           <span>Opções do Desenvolvedor</span>
                         </Link>
                       </DropdownMenuItem>
+                      </>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useInfra } from "@/components/dashboard/datacenter-switcher";
@@ -10,10 +11,11 @@ import { DatacentersTable } from "@/components/dashboard/admin/datacenters-table
 
 export default function AdminPage() {
   const { buildings, systemSettings } = useInfra();
-  const { userData } = useAuth();
+  const { userData, realUserData } = useAuth();
 
   const permissions = userData?.role ? systemSettings.rolePermissions[userData.role] : null;
-  const canCreate = permissions?.canCreateDatacenters;
+  const isDeveloper = realUserData?.role === 'developer';
+  const canCreate = isDeveloper || permissions?.canCreateDatacenters;
 
   return (
     <div className="container p-4 mx-auto my-8 sm:p-8">

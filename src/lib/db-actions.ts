@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db, isFirebaseConfigured } from '@/lib/firebase';
@@ -16,6 +17,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
     canManagePermissions: false,
+    canRequestDeletion: false,
+    canApproveDeletion: false,
     canAccessDeveloperPage: false,
   },
   supervisor: {
@@ -29,6 +32,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: false,
     canAccessSystemSettings: false,
     canManagePermissions: false,
+    canRequestDeletion: true,
+    canApproveDeletion: false,
     canAccessDeveloperPage: false,
   },
   gerente: {
@@ -42,6 +47,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
     canManagePermissions: true,
+    canRequestDeletion: false,
+    canApproveDeletion: true,
     canAccessDeveloperPage: false,
   },
   developer: {
@@ -55,6 +62,8 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
     canCreateDatacenters: true,
     canAccessSystemSettings: true,
     canManagePermissions: true,
+    canRequestDeletion: true,
+    canApproveDeletion: true,
     canAccessDeveloperPage: true,
   },
 };
@@ -63,6 +72,12 @@ const initialRolePermissions: Record<UserRole, RolePermissions> = {
 const initialSystemSettings: SystemSettings = {
     companyName: "InfraCenter Manager",
     companyLogo: null,
+    userRoles: [
+        { id: 'tecnico', name: 'tecnico' },
+        { id: 'supervisor', name: 'supervisor' },
+        { id: 'gerente', name: 'gerente' },
+        { id: 'developer', name: 'developer' },
+    ],
     equipmentTypes: [
         { id: '1', name: 'Servidor' },
         { id: '2', name: 'Switch' },
@@ -134,6 +149,7 @@ export async function clearDatabase() {
             await deleteCollection(`datacenters/${dcId}/equipment`, batch);
             await deleteCollection(`datacenters/${dcId}/connections`, batch);
             await deleteCollection(`datacenters/${dcId}/deletion_log`, batch);
+            await deleteCollection(`datacenters/${dcId}/activity_log`, batch);
             
             // Delete the datacenter doc itself
             batch.delete(dcDoc.ref);
@@ -141,9 +157,12 @@ export async function clearDatabase() {
 
         // To be safe, also delete the system settings so seed can recreate it.
         batch.delete(doc(db, 'system', 'settings'));
+        
+        // NOTE: This function intentionally DOES NOT clear the 'users' collection
+        // to prevent accidental deletion of user accounts.
 
         await batch.commit();
-        return { success: true, message: "Infraestrutura do banco de dados limpa com sucesso." };
+        return { success: true, message: "Infraestrutura do banco de dados (exceto usuários) limpa com sucesso." };
     } catch (error) {
         console.error("Erro ao limpar o banco de dados:", error);
         return { success: false, error: (error as Error).message };

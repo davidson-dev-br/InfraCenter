@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,19 +11,33 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Eye, EyeOff } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "./auth-provider";
+import { useInfra } from "./datacenter-switcher";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ProfileDialog } from "./profile-dialog";
+import type { UserRole } from "@/lib/types";
+
+// Helper to capitalize role names for display
+const formatRoleName = (role: string) => {
+    if (!role) return '';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
 
 export function UserNav() {
   const router = useRouter();
-  const { userData } = useAuth();
+  const { userData, realUserData, impersonatedRole, setImpersonatedRole } = useAuth();
+  const { systemSettings } = useInfra();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -46,6 +61,9 @@ export function UserNav() {
       .toUpperCase();
   }
 
+  const isDeveloper = realUserData?.role === 'developer';
+  const availableRoles = systemSettings.userRoles.filter(r => r.name !== 'developer').map(r => r.name as UserRole);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -63,6 +81,11 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {userData?.email || ''}
             </p>
+             {impersonatedRole && (
+                <p className="text-xs leading-none text-yellow-600 font-semibold pt-1">
+                  (Visualizando como {formatRoleName(impersonatedRole)})
+                </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -80,6 +103,33 @@ export function UserNav() {
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        
+        {isDeveloper && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Eye className="w-4 h-4 mr-2" />
+                <span>Ver como...</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  {availableRoles.map(role => (
+                     <DropdownMenuItem key={role} onSelect={() => setImpersonatedRole(role)} className="cursor-pointer">
+                        <span>{formatRoleName(role)}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                   <DropdownMenuItem onSelect={() => setImpersonatedRole(null)} disabled={!impersonatedRole} className="cursor-pointer">
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      <span>Restaurar Visão</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
           <LogOut className="w-4 h-4 mr-2" />

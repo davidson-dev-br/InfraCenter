@@ -1,26 +1,30 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
-import type { User } from '@/lib/types';
+import type { User, UserRole } from '@/lib/types';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   user: FirebaseUser | null;
   userData: User | null;
+  realUserData: User | null;
   loading: boolean;
+  impersonatedRole: UserRole | null;
+  setImpersonatedRole: (role: UserRole | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [userData, setUserData] = useState<User | null>(null);
+  const [realUserData, setRealUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [impersonatedRole, setImpersonatedRole] = useState<UserRole | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -42,7 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const unsubUser = onSnapshot(userDocRef, async (docSnapshot) => {
           if (docSnapshot.exists()) {
-            setUserData({ id: docSnapshot.id, ...docSnapshot.data() } as User);
+            const userDataFromDb = { id: docSnapshot.id, ...docSnapshot.data() } as User;
+            setRealUserData(userDataFromDb);
             setLoading(false);
           } else {
             // User is authenticated but doesn't have a document in Firestore.
@@ -69,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log(`User document for ${firebaseUser.uid} created successfully.`);
             } catch (error) {
               console.error("Error creating user document in Firestore:", error);
-              setUserData(null); // Explicitly set to null on error
+              setRealUserData(null); // Explicitly set to null on error
               setLoading(false); // Ensure loading completes even on error
             }
           }
@@ -78,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => unsubUser();
       } else {
         setUser(null);
-        setUserData(null);
+        setRealUserData(null);
         setLoading(false);
         if (pathname.startsWith('/dashboard')) {
           router.push('/');
@@ -88,6 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, [router, pathname]);
+
+  const effectiveUserData = useMemo(() => {
+    if (realUserData?.role === 'developer' && impersonatedRole) {
+        return { ...realUserData, role: impersonatedRole };
+    }
+    return realUserData;
+  }, [realUserData, impersonatedRole]);
 
   if (loading) {
     return (
@@ -106,7 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <AuthContext.Provider value={{ user, userData, loading }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, userData: effectiveUserData, realUserData, loading, impersonatedRole, setImpersonatedRole }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
