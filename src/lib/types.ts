@@ -21,40 +21,40 @@ export interface PlacedItem {
   width: number;
   length: number;
   sizeU?: number;
-  row?: string;
-  observations?: string;
+  row?: string | null;
+  observations?: string | null;
   awaitingApproval?: boolean;
-  createdBy?: string;
-  createdAt?: string;
-  color?: string;
+  createdBy?: string | null;
+  createdAt?: string | null;
+  color?: string | null;
 }
 
 export interface Equipment {
   id: string;
   hostname: string;
   type: string;
-  parentItemId: string; // Cabinet ID
-  positionU: string;
-  imageUrl?: string;
-  brand?: string;
-  model?: string;
+  parentItemId: string | null;
+  positionU: string | null;
+  imageUrl?: string | null;
+  brand?: string | null;
+  model?: string | null;
   price?: number;
-  serialNumber?: string;
-  entryDate?: string;
-  tag?: string;
-  description?: string;
-  sizeU?: string;
-  trellisId?: string;
-  ownerEmail?: string;
+  serialNumber?: string | null;
+  entryDate?: string | null;
+  tag?: string | null;
+  description?: string | null;
+  sizeU?: string | null;
+  trellisId?: string | null;
+  ownerEmail?: string | null;
   isTagEligible?: boolean;
   isFrontFacing?: boolean;
-  status?: string;
-  dataSheetUrl?: string;
+  status?: string | null;
+  dataSheetUrl?: string | null;
 }
 
 export interface Connection {
   id: string;
-  cableLabel?: string;
+  cableLabel?: string | null;
   sourceEquipmentId: string;
   sourcePort: string;
   destinationEquipmentId: string;
@@ -62,7 +62,7 @@ export interface Connection {
   cableType: string;
   status: 'Conectado' | 'Desconectado' | 'Planejado';
   isActive: boolean;
-  notes?: string;
+  notes?: string | null;
 }
 
 export interface DeletionLogEntry {
@@ -84,8 +84,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatarUrl?: string;
-  datacenterId?: string; // ID of the datacenter for technicians
+  avatarUrl?: string | null;
+  datacenterId?: string | null;
 }
 
 export interface Room {

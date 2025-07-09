@@ -89,7 +89,13 @@ export function UserDialog({ children, user }: UserDialogProps) {
         e.preventDefault();
         
         if (isEditMode && user) {
-            updateUser({ ...user, ...formData });
+            const dataToUpdate = {
+                ...user,
+                name: formData.name,
+                role: formData.role,
+                datacenterId: formData.role === 'technician' ? (formData.datacenterId || null) : null
+            };
+            updateUser(dataToUpdate);
         } else {
             if (!formData.password || !auth) {
                 toast({ variant: 'destructive', title: 'Senha é obrigatória para novos usuários.' });
@@ -105,7 +111,7 @@ export function UserDialog({ children, user }: UserDialogProps) {
                     name: formData.name, 
                     email: formData.email, 
                     role: formData.role, 
-                    datacenterId: formData.datacenterId,
+                    datacenterId: formData.role === 'technician' ? (formData.datacenterId || null) : null,
                     avatarUrl: `https://placehold.co/40x40.png` 
                 }, authUser.uid);
                 

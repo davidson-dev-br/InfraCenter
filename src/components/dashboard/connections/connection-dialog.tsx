@@ -94,10 +94,17 @@ export function ConnectionDialog({ children, connection, initialData, open: open
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const dataToSave = {
+        ...formData,
+        cableLabel: formData.cableLabel || null,
+        notes: formData.notes || null
+    };
+
     if (isEditMode && connection) {
-      updateConnection({ ...connection, ...formData });
+      updateConnection({ ...connection, ...dataToSave });
     } else {
-      addConnection(formData as Omit<Connection, 'id'>);
+      addConnection(dataToSave as Omit<Connection, 'id'>);
     }
     setIsOpen(false);
   };

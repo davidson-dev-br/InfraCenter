@@ -175,10 +175,29 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const dataToSave = {
+      ...formData,
+      imageUrl: formData.imageUrl || null,
+      brand: formData.brand || null,
+      model: formData.model || null,
+      serialNumber: formData.serialNumber || null,
+      entryDate: formData.entryDate || null,
+      tag: formData.tag || null,
+      description: formData.description || null,
+      sizeU: formData.sizeU || null,
+      trellisId: formData.trellisId || null,
+      positionU: formData.positionU || null,
+      ownerEmail: formData.ownerEmail || null,
+      status: formData.status || null,
+      parentItemId: formData.parentItemId || null,
+      dataSheetUrl: formData.dataSheetUrl || null,
+    };
+
     if (isEditMode && equipamento) {
-      updateEquipment({ ...equipamento, ...formData });
+      updateEquipment({ ...equipamento, ...dataToSave });
     } else {
-      addEquipment(formData);
+      addEquipment(dataToSave);
     }
     setIsOpen(false);
     onSaveSuccess?.();
@@ -282,7 +301,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="model">Modelo</Label>
-                <Input id="model" value={formData.model} onChange={handleChange} />
+                <Input id="model" value={formData.model || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Preço</Label>
@@ -290,11 +309,11 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="serialNumber">Serial</Label>
-                <Input id="serialNumber" value={formData.serialNumber} onChange={handleChange} />
+                <Input id="serialNumber" value={formData.serialNumber || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="entryDate">Data de Entrada</Label>
-                <Input id="entryDate" type="date" value={formData.entryDate} onChange={handleChange} />
+                <Input id="entryDate" type="date" value={formData.entryDate || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Tipo</Label>
@@ -309,31 +328,31 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="brand">Fabricante</Label>
-                <Input id="brand" value={formData.brand} onChange={handleChange} />
+                <Input id="brand" value={formData.brand || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tag">TAG</Label>
-                <Input id="tag" value={formData.tag} onChange={handleChange} />
+                <Input id="tag" value={formData.tag || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="description">Descrição</Label>
-                <Textarea id="description" value={formData.description} onChange={handleChange} rows={3} />
+                <Textarea id="description" value={formData.description || ''} onChange={handleChange} rows={3} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sizeU">Tamanho (U)</Label>
-                <Input id="sizeU" value={formData.sizeU} onChange={handleChange} placeholder="Ex: 1" />
+                <Input id="sizeU" value={formData.sizeU || ''} onChange={handleChange} placeholder="Ex: 1" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="trellisId">Trellis ID</Label>
-                <Input id="trellisId" value={formData.trellisId} onChange={handleChange} />
+                <Input id="trellisId" value={formData.trellisId || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="positionU">Posição (U)</Label>
-                <Input id="positionU" value={formData.positionU} onChange={handleChange} placeholder="Ex: 39 ou 20-29" />
+                <Input id="positionU" value={formData.positionU || ''} onChange={handleChange} placeholder="Ex: 39 ou 20-29" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="ownerEmail">Owner (Email)</Label>
-                <Input id="ownerEmail" type="email" value={formData.ownerEmail} onChange={handleChange} />
+                <Input id="ownerEmail" type="email" value={formData.ownerEmail || ''} onChange={handleChange} />
               </div>
               <div className="flex items-center space-x-2 pt-6">
                 <Switch id="isTagEligible" checked={formData.isTagEligible} onCheckedChange={handleSwitchChange('isTagEligible')} />
@@ -345,7 +364,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={handleSelectChange('status')}>
+                <Select value={formData.status || ''} onValueChange={handleSelectChange('status')}>
                   <SelectTrigger id="status"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     {equipmentStatuses.map(s => (
@@ -356,7 +375,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="parentItemId">Cabinet</Label>
-                <Select value={formData.parentItemId} onValueChange={handleSelectChange('parentItemId')}>
+                <Select value={formData.parentItemId || ''} onValueChange={handleSelectChange('parentItemId')}>
                   <SelectTrigger id="parentItemId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     {parentItems.map(item => (
@@ -371,7 +390,7 @@ export function EquipamentoDialog({ children, equipamento, initialData, open: op
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dataSheetUrl">Data Sheet</Label>
-                <Input id="dataSheetUrl" value={formData.dataSheetUrl} onChange={handleChange} placeholder="https://..." />
+                <Input id="dataSheetUrl" value={formData.dataSheetUrl || ''} onChange={handleChange} placeholder="https://..." />
               </div>
 
               <div className="space-y-2 md:col-span-2">

@@ -55,15 +55,26 @@ export function ItemDetailsDialog({ item, isOpen, onOpenChange, onSave, containe
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     if (item) {
-        // The collision check is now handled by the parent component (FloorPlan)
-        onSave({ ...item, ...formData } as PlacedItem);
+        const sanitizedData = {
+            ...formData,
+            row: formData.row || null,
+            observations: formData.observations || null,
+            color: formData.color || null,
+        };
+        onSave({ ...item, ...sanitizedData } as PlacedItem);
     }
-    // The parent will decide whether to close the dialog or show an error
   };
 
   const handleApprove = () => {
     if (item) {
-      onSave({ ...item, ...formData, awaitingApproval: false } as PlacedItem);
+      const sanitizedData = {
+          ...formData,
+          awaitingApproval: false,
+          row: formData.row || null,
+          observations: formData.observations || null,
+          color: formData.color || null,
+      };
+      onSave({ ...item, ...sanitizedData } as PlacedItem);
     }
   }
 
