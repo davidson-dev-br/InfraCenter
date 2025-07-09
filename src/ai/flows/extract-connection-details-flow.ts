@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const ExtractConnectionInputSchema = z.object({
+export const ExtractConnectionInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
@@ -19,7 +19,7 @@ const ExtractConnectionInputSchema = z.object({
 });
 export type ExtractConnectionInput = z.infer<typeof ExtractConnectionInputSchema>;
 
-const ExtractConnectionOutputSchema = z.object({
+export const ExtractConnectionOutputSchema = z.object({
     cableLabel: z.string().optional().describe("The primary identifier or name on the cable label."),
     sourceHostname: z.string().optional().describe("The hostname of the source (DE) device."),
     sourcePort: z.string().optional().describe("The port of the source (DE) device."),

@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const ImportFromSpreadsheetInputSchema = z.object({
+export const ImportFromSpreadsheetInputSchema = z.object({
   jsonData: z.string().describe("A JSON string representation of the spreadsheet data."),
 });
 export type ImportFromSpreadsheetInput = z.infer<typeof ImportFromSpreadsheetInputSchema>;
@@ -31,7 +31,7 @@ const ImportedEquipmentSchema = z.object({
 });
 
 
-const ImportFromSpreadsheetOutputSchema = z.object({
+export const ImportFromSpreadsheetOutputSchema = z.object({
   equipment: z.array(ImportedEquipmentSchema).describe("The list of equipment extracted and mapped from the spreadsheet data."),
 });
 export type ImportFromSpreadsheetOutput = z.infer<typeof ImportFromSpreadsheetOutputSchema>;
