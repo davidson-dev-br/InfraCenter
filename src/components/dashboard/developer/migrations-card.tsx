@@ -34,7 +34,7 @@ export function MigrationsCard() {
             <CardHeader>
                 <CardTitle className="text-xl font-headline">Executor de Migrações</CardTitle>
                  <CardDescription>
-                    Execute scripts para atualizar a estrutura de dados existente. Use com cuidado.
+                    Execute scripts para atualizar a estrutura de dados. O script atual garante que todos os equipamentos tenham o campo 'isFrontFacing'. Use com cuidado.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-start gap-4">
@@ -44,7 +44,7 @@ export function MigrationsCard() {
                     ) : (
                         <DatabaseZap className="mr-2" />
                     )}
-                    {isMigrating ? 'Executando...' : "Adicionar 'isFrontFacing' aos Equip."}
+                    {isMigrating ? 'Executando...' : "Executar Migração"}
                 </Button>
             </CardContent>
         </Card>
