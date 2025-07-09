@@ -1,0 +1,91 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Funções Auxiliares ---
+    // Verifica se o usuário autenticado tem a função 'developer'. É a verificação principal.
+    function isDeveloper() {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) &&
+              'role' in get(userDocPath).data &&
+              get(userDocPath).data.role == 'developer';
+    }
+
+    // Verifica se o usuário tem uma das funções específicas (exceto developer).
+    function hasOneOfRoles(roles) {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) &&
+              'role' in get(userDocPath).data &&
+              get(userDocPath).data.role in roles;
+    }
+
+    // Verifica se o usuário é um técnico atribuído ao datacenter.
+    function isAssignedTechnician(datacenterId) {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) &&
+              'role' in get(userDocPath).data && get(userDocPath).data.role == 'technician' &&
+              'datacenterId' in get(userDocPath).data && get(userDocPath).data.datacenterId == datacenterId;
+    }
+
+
+    // --- REGRA MESTRA PARA DESENVOLVEDOR ---
+    // Concede ao 'developer' acesso total de leitura e escrita a TODOS os documentos.
+    // Se a condição `isDeveloper()` for verdadeira, o acesso é permitido e as outras
+    // regras mais específicas abaixo não precisam ser avaliadas como verdadeiras.
+    match /{document=**} {
+      allow read, write: if isDeveloper();
+    }
+
+
+    // --- Regras Granulares para Outros Usuários ---
+
+    // Regras para Perfis de Usuário
+    match /users/{userId} {
+      // Leitura: Permitida para qualquer usuário autenticado ver perfis.
+      allow get, list: if request.auth.uid != null;
+      
+      // Criação: Um usuário pode criar seu próprio perfil (essencial no primeiro login).
+      // Um gerente também pode criar usuários.
+      allow create: if request.auth.uid == userId || hasOneOfRoles(['manager']);
+      
+      // Atualização: Um usuário pode atualizar seu próprio perfil, ou um gerente pode atualizar qualquer um.
+      allow update: if request.auth.uid == userId || hasOneOfRoles(['manager']);
+      
+      // Exclusão: Apenas gerentes podem excluir usuários.
+      allow delete: if hasOneOfRoles(['manager']);
+    }
+
+    // Regras para Datacenters e Subcoleções
+    match /datacenters/{datacenterId} {
+      // Leitura (documento principal): Todos os usuários autenticados podem ler para popular a UI.
+      allow get, list: if request.auth.uid != null;
+      // Escrita (documento principal): Apenas gerentes podem criar/editar datacenters.
+      allow write: if hasOneOfRoles(['manager']);
+
+      // Regra para coleções de dados GERAIS (items, equipment, connections)
+      match /{collectionName}/{docId} 
+        where collectionName in ['items', 'equipment', 'connections'] {
+          // Gerentes e supervisores têm acesso total. Técnicos só têm acesso se estiverem atribuídos.
+          allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
+      }
+      
+      // Regra ESPECÍFICA para o log de exclusão
+      match /deletion_log/{logId} {
+          // Apenas gerentes e supervisores podem ler o log.
+          allow read: if hasOneOfRoles(['manager', 'supervisor']);
+          // Ninguém pode escrever diretamente no log.
+          allow write: if false;
+      }
+    }
+
+    // Regras para Configurações do Sistema
+    match /system/{docId} {
+       // Qualquer usuário autenticado pode ler as configurações.
+       allow read: if request.auth.uid != null;
+       // Apenas gerentes podem alterar as configurações do sistema.
+       allow write: if hasOneOfRoles(['manager']);
+    }
+  }
+}
