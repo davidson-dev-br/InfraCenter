@@ -63,7 +63,7 @@ export function AIFlowTesterCard() {
     };
 
     return (
-        <Card className="shadow-lg lg:col-span-2">
+        <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-headline">
                     <TestTube2 className="w-6 h-6 text-primary" />

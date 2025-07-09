@@ -4,6 +4,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DbActionsCard } from "@/components/dashboard/developer/db-actions-card";
 import { AIFlowTesterCard } from "@/components/dashboard/developer/ai-flow-tester-card";
+import { MigrationsCard } from "@/components/dashboard/developer/migrations-card";
 
 export default function DeveloperSettingsPage() {
 
@@ -16,8 +17,13 @@ export default function DeveloperSettingsPage() {
                 </CardHeader>
             </Card>
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                <AIFlowTesterCard />
-                <DbActionsCard />
+                <div className="lg:col-span-2">
+                  <AIFlowTesterCard />
+                </div>
+                <div className="space-y-8">
+                  <DbActionsCard />
+                  <MigrationsCard />
+                </div>
             </div>
         </div>
     );
