@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings, RolePermissions, UserRole } from "@/lib/types";
+import type { PlacedItem, Building as BuildingType, Room, FloorPlanItemType, StatusOption, DeletionLogEntry, Equipment, Connection, User, SystemSettings, RolePermissions, UserRole, ActivityLogEntry } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "./auth-provider";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
@@ -142,59 +143,59 @@ const initialSystemSettings: SystemSettings = {
     ],
     rolePermissions: initialRolePermissions,
     prompts: {
-        extractEquipmentDetails: `You are an expert IT asset management assistant. Your task is to analyze the provided image of a piece of network or server hardware.
+        extractEquipmentDetails: `Você é um assistente especialista em gerenciamento de ativos de TI. Sua tarefa é analisar a imagem fornecida de um equipamento de rede ou servidor.
 
-Carefully examine the image for any text, labels, or logos. Identify the equipment type, manufacturer (brand), model name/number, serial number, hostname, and any asset tags.
+Examine cuidadosamente a imagem em busca de textos, etiquetas ou logotipos. Identifique o tipo de equipamento, fabricante (marca), nome/número do modelo, número de série, hostname e quaisquer etiquetas de patrimônio.
 
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
 
-Photo: {{media url=photoDataUri}}`,
-        extractConnectionDetails: `You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label.
+Foto: {{media url=photoDataUri}}`,
+        extractConnectionDetails: `Você é um assistente especialista em infraestrutura de TI, especializado em ler etiquetas de cabos. Sua tarefa é analisar a imagem fornecida de uma etiqueta de cabo.
 
-The label typically follows a DE/PARA (FROM/TO) format.
-- "DE" refers to the source device and port.
-- "PARA" refers to the destination device and port.
+A etiqueta geralmente segue o formato DE/PARA (FROM/TO).
+- "DE" refere-se ao dispositivo e porta de origem.
+- "PARA" refere-se ao dispositivo e porta de destino.
 
-Carefully examine the image for any text. Identify the main label identifier (the most prominent text, often a patch panel ID), the source device hostname and port, and the destination device hostname and port.
+Examine cuidadosamente a imagem em busca de qualquer texto. Identifique o identificador principal da etiqueta (o texto mais proeminente, muitas vezes um ID de patch panel), o hostname e a porta do dispositivo de origem, e o hostname e a porta do dispositivo de destino.
 
-Example label text:
+Exemplo de texto da etiqueta:
 "P-01-A-01
 DE: SW-CORE-01 | Gi1/0/1
 PARA: FW-EDGE-02 | PortA"
 
-For the example above, you would extract:
+Para o exemplo acima, você extrairia:
 - cableLabel: "P-01-A-01"
 - sourceHostname: "SW-CORE-01"
 - sourcePort: "Gi1/0/1"
 - destinationHostname: "FW-EDGE-02"
 - destinationPort: "PortA"
 
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
 
-Photo: {{media url=photoDataUri}}`,
-        importFromSpreadsheet: `You are an expert data migration assistant for an IT infrastructure management system.
-You will be provided with a JSON representation of a spreadsheet containing inventory data.
-Your task is to analyze this JSON data, intelligently map the columns to the equipment schema, and return a clean list of equipment objects.
+Foto: {{media url=photoDataUri}}`,
+        importFromSpreadsheet: `Você é um assistente especialista em migração de dados para um sistema de gerenciamento de infraestrutura de TI.
+Você receberá uma representação JSON de uma planilha contendo dados de inventário.
+Sua tarefa é analisar esses dados JSON, mapear inteligentemente as colunas para o esquema de equipamento e retornar uma lista limpa de objetos de equipamento.
 
-Spreadsheet JSON data:
+Dados JSON da planilha:
 \`\`\`json
 {{{jsonData}}}
 \`\`\`
 
-Mapping Heuristics:
-- 'hostname': Look for columns named 'Hostname', 'Device Name', 'Asset', 'Name', or similar. This is the primary identifier.
-- 'brand': Look for 'Manufacturer', 'Brand', 'Make', 'Fabricante'.
-- 'model': Look for 'Model', 'Product Name', 'Modelo'.
-- 'serialNumber': Look for 'Serial Number', 'S/N', 'Serial', 'Número de Série'.
-- 'type': Look for 'Type', 'Category', 'Tipo', 'Categoria' (e.g., Switch, Server, Router).
-- 'status': Look for 'Status', 'Condition'.
-- 'positionU': Look for 'U Position', 'Position', 'Posição'.
-- 'sizeU': Look for 'Size (U)', 'Height', 'Tamanho (U)'.
-- 'tag': Look for 'Asset Tag', 'TAG'.
-- 'description': Look for 'Description', 'Notes', 'Descrição'.
+Heurísticas de Mapeamento:
+- 'hostname': Procure por colunas nomeadas 'Hostname', 'Device Name', 'Asset', 'Name', 'Nome do Dispositivo', 'Ativo' ou similar. Este é o identificador primário.
+- 'brand': Procure por 'Manufacturer', 'Brand', 'Make', 'Fabricante', 'Marca'.
+- 'model': Procure por 'Model', 'Product Name', 'Modelo'.
+- 'serialNumber': Procure por 'Serial Number', 'S/N', 'Serial', 'Número de Série'.
+- 'type': Procure por 'Type', 'Category', 'Tipo', 'Categoria' (ex: Switch, Server, Roteador).
+- 'status': Procure por 'Status', 'Condition', 'Condição'.
+- 'positionU': Procure por 'U Position', 'Position', 'Posição U', 'Posição'.
+- 'sizeU': Procure por 'Size (U)', 'Height', 'Tamanho (U)', 'Altura'.
+- 'tag': Procure por 'Asset Tag', 'TAG', 'Etiqueta de Patrimônio'.
+- 'description': Procure por 'Description', 'Notes', 'Descrição', 'Observações'.
 
-For each row in the input JSON, create a corresponding equipment object in the output. If you cannot find a clear mapping for a field, omit it from the object. Do not invent data.
-Focus only on extracting the equipment list.
+Para cada linha no JSON de entrada, crie um objeto de equipamento correspondente na saída. Se você não conseguir encontrar um mapeamento claro para um campo, omita-o do objeto. Não invente dados.
+Foque apenas em extrair a lista de equipamentos.
 `,
     },
 };
@@ -311,16 +312,22 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             }
         });
 
-        // Listen to users collection - only for roles with permission
+        // Listen to users collection
         let unsubUsers = () => {};
-        if (userData.role === 'developer' || userData.role === 'gerente') {
+        const permissions = userData.role ? systemSettings.rolePermissions[userData.role] : null;
+
+        if (permissions?.canManageUsers) {
+            // Manager and Developer can see all users
             const usersColRef = collection(db, 'users');
             unsubUsers = onSnapshot(usersColRef, (snapshot) => {
                 const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
                 setUsers(usersData);
             });
         } else {
-            setUsers([]);
+            // Other roles (Technician, Supervisor) can only see their own profile data.
+            // This prevents permission errors and follows the principle of least privilege.
+            // We set the `users` array to contain only the current user.
+            setUsers(userData ? [userData] : []);
         }
 
         const seedInitialData = async () => {
@@ -364,9 +371,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setBuildings(buildingsData);
 
             let targetBuilding: BuildingType | undefined;
-            const permissions = systemSettings.rolePermissions?.[userData.role];
+            const currentPermissions = systemSettings.rolePermissions?.[userData.role];
 
-            if (permissions && !permissions.canSwitchDatacenter) {
+            if (currentPermissions && !currentPermissions.canSwitchDatacenter) {
                 targetBuilding = buildingsData.find(b => b.id === userData.datacenterId);
             } else {
                 const lastSelectedId = localStorage.getItem('selectedBuildingId');
@@ -379,7 +386,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             if (targetBuilding) {
                 if (selectedBuildingId !== targetBuilding.id) {
                     _setSelectedBuildingId(targetBuilding.id);
-                    if (permissions?.canSwitchDatacenter) {
+                    if (currentPermissions?.canSwitchDatacenter) {
                         localStorage.setItem('selectedBuildingId', targetBuilding.id);
                     }
                 }
@@ -389,7 +396,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             } else {
                 _setSelectedBuildingId(null);
                 setSelectedRoomId(null);
-                if (permissions?.canSwitchDatacenter) {
+                if (currentPermissions?.canSwitchDatacenter) {
                     localStorage.removeItem('selectedBuildingId');
                 }
             }
