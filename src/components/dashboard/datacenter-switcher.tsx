@@ -277,7 +277,10 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         category: ActivityLogEntry['category'],
         details: string
     ) => {
-        if (!selectedBuildingId || !db || !userData) return;
+        if (!selectedBuildingId || !db || !userData) {
+            console.warn("LogActivity called without required context. Aborting.", { selectedBuildingId, db: !!db, userData: !!userData });
+            return;
+        }
 
         const newLogEntry: Omit<ActivityLogEntry, 'id'> = {
             timestamp: new Date().toISOString(),
@@ -531,7 +534,13 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         try {
             const newBuilding = { ...buildingData, rooms: [] };
             const newDoc = await addDoc(collection(db, 'datacenters'), newBuilding);
-            logActivity('create', 'Datacenter', `Criado datacenter: ${newBuilding.name}`);
+            // This is a special case; we log to the new DC after it's created.
+            // Temporarily set the selectedBuildingId to log to the new location.
+            const originalBuildingId = selectedBuildingId;
+            _setSelectedBuildingId(newDoc.id);
+            await logActivity('create', 'Datacenter', `Criado datacenter: ${newBuilding.name}`);
+            _setSelectedBuildingId(originalBuildingId); // Revert to original selection
+
             toast({ title: "Datacenter Criado", description: `O datacenter "${newBuilding.name}" foi criado com sucesso.` });
         } catch (error) {
             console.error(error);
@@ -544,7 +553,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         try {
             const { id, ...data } = updatedBuilding;
             await updateDoc(doc(db, 'datacenters', id), data);
-            logActivity('update', 'Datacenter', `Atualizado datacenter: ${updatedBuilding.name}`);
+            await logActivity('update', 'Datacenter', `Atualizado datacenter: ${updatedBuilding.name}`);
             toast({ title: "Datacenter Atualizado", description: `O datacenter "${updatedBuilding.name}" foi salvo com sucesso.` });
         } catch (error) {
             console.error(error);
@@ -580,7 +589,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             try {
                 const { id, ...data } = updatedItem;
                 await setDoc(doc(db, 'datacenters', selectedBuildingId, 'items', id), data);
-                logActivity('update', 'Item', `Atualizado item da planta baixa: ${updatedItem.name}`);
+                await logActivity('update', 'Item', `Atualizado item da planta baixa: ${updatedItem.name}`);
             } catch(error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Erro ao mover item.' });
@@ -594,7 +603,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const itemRef = doc(db, 'datacenters', selectedBuildingId, 'items', itemId);
         const itemDoc = await getDoc(itemRef);
         await updateDoc(itemRef, { awaitingApproval: false });
-        logActivity('approve', 'Item', `Aprovado item: ${itemDoc.data()?.name || itemId}`);
+        await logActivity('approve', 'Item', `Aprovado item: ${itemDoc.data()?.name || itemId}`);
         toast({ title: "Item Aprovado!" });
       } catch (error) {
         toast({ variant: "destructive", title: "Erro ao aprovar item." });
@@ -639,7 +648,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
             batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToDelete.id));
             await batch.commit();
-            logActivity('delete', 'Item', `Excluído item da planta baixa: ${itemToDelete.name}`);
+            await logActivity('delete', 'Item', `Excluído item da planta baixa: ${itemToDelete.name}`);
             toast({ variant: 'destructive', title: 'Item Excluído', description: `O item "${itemToDelete.name}" foi movido para o log.` });
         } catch (error) {
             console.error(error);
@@ -656,7 +665,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
                 deletionReason: reason,
                 deletionRequestedBy: userData?.name || 'unknown'
             });
-            logActivity('update', 'Item', `Solicitada exclusão para item: ${itemToDelete.name}`);
+            await logActivity('update', 'Item', `Solicitada exclusão para item: ${itemToDelete.name}`);
             toast({ title: 'Solicitação de Exclusão Enviada', description: 'Um gerente precisa aprovar a solicitação.' });
         } catch (error) {
             console.error("Error requesting deletion:", error);
@@ -677,7 +686,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const { itemData } = logEntry;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'items', itemData.id), itemData);
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'deletion_log', logId));
-        logActivity('create', 'Item', `Restaurado item da planta baixa: ${itemData.name}`);
+        await logActivity('create', 'Item', `Restaurado item da planta baixa: ${itemData.name}`);
         toast({ title: 'Item Restaurado!' });
       } catch (error) {
         console.error(error);
@@ -714,7 +723,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             batch.set(doc(collection(db, 'datacenters', selectedBuildingId, 'deletion_log')), newLogEntry);
             batch.delete(doc(db, 'datacenters', selectedBuildingId, 'items', itemToApprove.id));
             await batch.commit();
-            logActivity('approve', 'Deletion', `Aprovada exclusão do item: ${itemToApprove.name}`);
+            await logActivity('approve', 'Deletion', `Aprovada exclusão do item: ${itemToApprove.name}`);
             toast({ variant: 'destructive', title: 'Item Excluído' });
         } catch (error) {
             console.error("Error approving deletion:", error);
@@ -730,7 +739,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
                 deletionReason: null,
                 deletionRequestedBy: null
             });
-            logActivity('update', 'Deletion', `Rejeitada exclusão do item: ${itemToReject.name}`);
+            await logActivity('update', 'Deletion', `Rejeitada exclusão do item: ${itemToReject.name}`);
             toast({ title: 'Solicitação de Exclusão Rejeitada' });
         } catch (error) {
             console.error("Error rejecting deletion:", error);
@@ -745,7 +754,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const newRoom = { ...roomData, id: `r-${Date.now()}` };
         const updatedRooms = [...(building.rooms || []), newRoom];
         await updateBuilding({ ...building, rooms: updatedRooms });
-        logActivity('create', 'Room', `Adicionada sala: ${newRoom.name}`);
+        await logActivity('create', 'Room', `Adicionada sala: ${newRoom.name}`);
         toast({ title: "Sala Adicionada" });
     };
 
@@ -755,7 +764,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!building) return;
         const updatedRooms = (building.rooms || []).map(r => r.id === updatedRoom.id ? updatedRoom : r);
         await updateBuilding({ ...building, rooms: updatedRooms });
-        logActivity('update', 'Room', `Atualizada sala: ${updatedRoom.name}`);
+        await logActivity('update', 'Room', `Atualizada sala: ${updatedRoom.name}`);
         toast({ title: "Sala Atualizada" });
     };
 
@@ -770,7 +779,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         itemsToDelete.forEach(doc => batch.delete(doc.ref));
         batch.update(doc(db, 'datacenters', buildingId), { rooms: updatedRooms });
         await batch.commit();
-        logActivity('delete', 'Room', `Excluída sala: ${roomToDelete?.name}`);
+        await logActivity('delete', 'Room', `Excluída sala: ${roomToDelete?.name}`);
         toast({ variant: 'destructive', title: "Sala Excluída" });
     };
 
@@ -789,20 +798,20 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             [newRooms[index], newRooms[index + 1]] = [newRooms[index + 1], newRooms[index]];
         }
         await updateBuilding({ ...building, rooms: newRooms });
-        logActivity('update', 'Room', `Reordenada a sala: ${newRooms[index].name}`);
+        await logActivity('update', 'Room', `Reordenada a sala: ${newRooms[index].name}`);
     };
 
     const addEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
       if(!selectedBuildingId || !db) return;
       await addDoc(collection(db, 'datacenters', selectedBuildingId, 'equipment'), equipmentData);
-      logActivity('create', 'Equipment', `Adicionado equipamento: ${equipmentData.hostname}`);
+      await logActivity('create', 'Equipment', `Adicionado equipamento: ${equipmentData.hostname}`);
       toast({ title: 'Equipamento Adicionado!' });
     };
     const updateEquipment = async (updatedEquipment: Equipment) => {
         if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedEquipment;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'equipment', id), data);
-        logActivity('update', 'Equipment', `Atualizado equipamento: ${updatedEquipment.hostname}`);
+        await logActivity('update', 'Equipment', `Atualizado equipamento: ${updatedEquipment.hostname}`);
         toast({ title: 'Equipamento Atualizado!' });
     };
     const deleteEquipment = async (equipmentId: string) => {
@@ -811,39 +820,39 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const equipDoc = await getDoc(equipRef);
         const hostname = equipDoc.data()?.hostname || equipmentId;
         await deleteDoc(equipRef);
-        logActivity('delete', 'Equipment', `Excluído equipamento: ${hostname}`);
+        await logActivity('delete', 'Equipment', `Excluído equipamento: ${hostname}`);
         toast({ variant: 'destructive', title: 'Equipamento Excluído!' });
     };
     
     const addConnection = async (connectionData: Omit<Connection, 'id'>) => {
         if(!selectedBuildingId || !db) return;
         const newDocRef = await addDoc(collection(db, 'datacenters', selectedBuildingId, 'connections'), connectionData);
-        logActivity('create', 'Connection', `Adicionada nova conexão: ${newDocRef.id}`);
+        await logActivity('create', 'Connection', `Adicionada nova conexão: ${newDocRef.id}`);
         toast({ title: 'Conexão Adicionada!' });
     };
     const updateConnection = async (updatedConnection: Connection) => {
         if(!selectedBuildingId || !db) return;
         const { id, ...data } = updatedConnection;
         await setDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', id), data);
-        logActivity('update', 'Connection', `Atualizada conexão: ${id}`);
+        await logActivity('update', 'Connection', `Atualizada conexão: ${id}`);
         toast({ title: 'Conexão Atualizada!' });
     };
     const deleteConnection = async (connectionId: string) => {
         if(!selectedBuildingId || !db) return;
         await deleteDoc(doc(db, 'datacenters', selectedBuildingId, 'connections', connectionId));
-        logActivity('delete', 'Connection', `Excluída conexão: ${connectionId}`);
+        await logActivity('delete', 'Connection', `Excluída conexão: ${connectionId}`);
         toast({ variant: 'destructive', title: 'Conexão Excluída!' });
     };
 
     const addUser = async (userData: Omit<User, 'id'>, userId?: string) => {
-        if (!db) return;
+        if (!db || !selectedBuildingId) return;
         try {
             if (userId) {
                 await setDoc(doc(db, 'users', userId), userData);
             } else {
                 await addDoc(collection(db, 'users'), userData);
             }
-            logActivity('create', 'User', `Adicionado/Atualizado usuário: ${userData.email}`);
+            await logActivity('create', 'User', `Adicionado/Atualizado usuário: ${userData.email}`);
             toast({ title: 'Usuário Salvo!' });
         } catch(error) {
             console.error("Error adding/updating user:", error);
@@ -851,19 +860,19 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         }
     };
     const updateUser = async (updatedUser: User) => {
-        if (!db) return;
+        if (!db || !selectedBuildingId) return;
         const { id, ...data } = updatedUser;
         await setDoc(doc(db, 'users', id), data);
-        logActivity('update', 'User', `Atualizado usuário: ${updatedUser.email}`);
+        await logActivity('update', 'User', `Atualizado usuário: ${updatedUser.email}`);
         toast({ title: 'Usuário Atualizado!' });
     };
     const deleteUser = async (userId: string) => {
-        if (!db) return;
+        if (!db || !selectedBuildingId) return;
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
         const email = userDoc.data()?.email || userId;
         await deleteDoc(userRef);
-        logActivity('delete', 'User', `Excluído usuário: ${email}`);
+        await logActivity('delete', 'User', `Excluído usuário: ${email}`);
         toast({ variant: 'destructive', title: 'Usuário Excluído!' });
     };
 
