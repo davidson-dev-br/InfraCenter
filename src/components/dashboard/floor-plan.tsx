@@ -26,6 +26,7 @@ export function FloorPlan() {
     const [viewTransform, setViewTransform] = useState({ x: 20, y: 20, scale: 1 });
     const [isPanning, setIsPanning] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0 });
+    const pinchDistanceRef = useRef(0);
 
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
@@ -122,11 +123,9 @@ export function FloorPlan() {
     }, [handleWheel]);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget) {
-            e.preventDefault();
-            panStartRef.current = { x: e.clientX - viewTransform.x, y: e.clientY - viewTransform.y };
-            setIsPanning(true);
-        }
+        e.preventDefault();
+        panStartRef.current = { x: e.clientX - viewTransform.x, y: e.clientY - viewTransform.y };
+        setIsPanning(true);
     };
 
     const handleMouseUp = () => setIsPanning(false);
@@ -138,6 +137,55 @@ export function FloorPlan() {
         const newY = e.clientY - panStartRef.current.y;
         setViewTransform(prev => ({ ...prev, x: newX, y: newY }));
     };
+
+    const getTouchDistance = (touches: React.TouchList) => {
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        return Math.sqrt(Math.pow(touch2.clientX - touch1.clientX, 2) + Math.pow(touch2.clientY - touch1.clientY, 2));
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (e.touches.length === 1) { // Pan
+            panStartRef.current = { x: e.touches[0].clientX - viewTransform.x, y: e.touches[0].clientY - viewTransform.y };
+            setIsPanning(true);
+        } else if (e.touches.length === 2) { // Zoom
+            pinchDistanceRef.current = getTouchDistance(e.touches);
+            setIsPanning(false);
+        }
+    };
+    
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        const floorPlanElement = floorPlanRef.current;
+        if (!floorPlanElement) return;
+
+        if (e.touches.length === 1 && isPanning) { // Pan
+            const newX = e.touches[0].clientX - panStartRef.current.x;
+            const newY = e.touches[0].clientY - panStartRef.current.y;
+            setViewTransform(prev => ({ ...prev, x: newX, y: newY }));
+        } else if (e.touches.length === 2) { // Zoom
+            const newPinchDistance = getTouchDistance(e.touches);
+            const scaleChange = newPinchDistance / pinchDistanceRef.current;
+            const newScale = Math.max(0.2, Math.min(2.5, viewTransform.scale * scaleChange));
+            
+            const rect = floorPlanElement.getBoundingClientRect();
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+            const centerY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+
+            const newX = centerX - (centerX - viewTransform.x) * (newScale / viewTransform.scale);
+            const newY = centerY - (centerY - viewTransform.y) * (newScale / viewTransform.scale);
+
+            setViewTransform({ x: newX, y: newY, scale: newScale });
+            pinchDistanceRef.current = newPinchDistance;
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsPanning(false);
+        pinchDistanceRef.current = 0;
+    };
+
 
     const handleCellDrop = (x: number, y: number) => {
         if (!draggingItemId) return;
@@ -334,13 +382,16 @@ export function FloorPlan() {
 
             <div 
                 ref={floorPlanRef} 
-                className="flex-grow overflow-hidden border rounded-lg bg-card cursor-grab"
-                data-panning={isPanning}
+                className="flex-grow overflow-hidden border rounded-lg bg-card touch-none"
+                style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
                 onClick={() => setSelectedItemId(null)}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
             >
                 <div className="relative" style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left', width: `${(GRID_COLS * CELL_SIZE) + 40}px`, height: `${(GRID_ROWS * CELL_SIZE) + 30}px` }}>
                     <div
@@ -460,5 +511,7 @@ export function FloorPlan() {
         </>
     );
 }
+
+    
 
     
