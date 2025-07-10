@@ -10,8 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { ExtractConnectionOutput, ExtractConnectionOutputSchema } from '@/ai/schemas';
-import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, addDoc, query, orderBy, limit, getDocs, getFirestore } from 'firebase/firestore';
 import type { LabelCorrection } from '@/lib/types';
 
 
@@ -35,6 +34,7 @@ export type AnalyzeImageInput = z.infer<typeof AnalyzeImageInputSchema>;
  * @param input The image and the corrected data.
  */
 export async function saveLabelCorrection(input: SaveCorrectionInput): Promise<{ success: boolean }> {
+    const db = getFirestore();
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -54,6 +54,7 @@ const analyzeCableLabelFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
+    const db = getFirestore();
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -92,14 +93,57 @@ Extract this information accurately. If a specific piece of information is not v
 New image to analyze: {{media url=photoDataUri}}
 `;
 
-    const prompt = ai.definePrompt({
-      name: 'learningCableLabelPrompt',
-      input: { schema: AnalyzeImageInputSchema },
-      output: { schema: ExtractConnectionOutputSchema },
-      prompt: fewShotPrompt,
+    // Because the prompt is now dynamic (contains media URLs from Firestore),
+    // we cannot use the standard prompt definition which expects a static string.
+    // Instead, we call ai.generate directly with the constructed prompt parts.
+    
+    // We need to build an array of "Parts" for the prompt.
+    const promptParts: ( {text: string} | {media: {url: string}} )[] = [];
+
+    // The base instructions
+    promptParts.push({ text: `
+You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label and extract the connection details.
+
+Here are some examples of previous labels that have been manually corrected and verified by a user. Use them to understand the expected format and improve your accuracy.
+    `});
+
+    // Add the examples
+    for (const [index, ex] of examples.entries()) {
+        promptParts.push({ text: `
+---
+Example ${index + 1}:
+Based on this image: 
+`});
+        promptParts.push({ media: { url: ex.imageDataUri } });
+        promptParts.push({ text: `
+The correct, verified output is:
+\`\`\`json
+${JSON.stringify(ex.correctedData, null, 2)}
+\`\`\`
+---
+`});
+    }
+
+    // Add the final instructions and the new image
+    promptParts.push({ text: `
+Now, analyze the following new image. The label typically follows a DE/PARA (FROM/TO) format.
+- "DE" refers to the source device and port.
+- "PARA" refers to the destination device and port.
+
+Carefully examine the image for any text. Identify the main label identifier (the most prominent text), the source device hostname and port, and the destination device hostname and port.
+
+Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
+
+New image to analyze: 
+`});
+    promptParts.push({ media: { url: input.photoDataUri } });
+    
+    const { output } = await ai.generate({
+        prompt: promptParts,
+        output: { schema: ExtractConnectionOutputSchema },
+        model: 'googleai/gemini-2.0-flash'
     });
     
-    const { output } = await prompt(input);
     return output!;
   }
 );

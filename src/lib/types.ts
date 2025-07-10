@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import type { ExtractConnectionOutput } from "./ai/schemas";
+import type { ExtractConnectionOutput } from "@/ai/schemas";
 
 export interface ActivityLogEntry {
   id: string;
