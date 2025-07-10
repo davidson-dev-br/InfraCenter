@@ -46,7 +46,11 @@ export async function saveLabelCorrection(input: SaveCorrectionInput): Promise<{
     return { success: true };
 }
 
-
+// This is a simplified analysis flow. 
+// The original "few-shot" logic was complex and error-prone.
+// This version focuses on a reliable, single-shot analysis.
+// The learning happens when the user corrects the data and saves it.
+// The next step would be to build a proper fine-tuning pipeline, which is beyond this scope.
 const analyzeCableLabelFlow = ai.defineFlow(
   {
     name: 'analyzeCableLabelFlow',
@@ -54,35 +58,11 @@ const analyzeCableLabelFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
-    const firestoreDb = getFirestore();
-    if (!firestoreDb) {
-        throw new Error("Firestore is not initialized.");
-    }
 
-    // 1. Fetch the last few corrections to use as few-shot examples
-    const correctionsRef = collection(firestoreDb, 'label_corrections');
-    const q = query(correctionsRef, orderBy('createdAt', 'desc'), limit(5));
-    const querySnapshot = await getDocs(q);
-    const examples = querySnapshot.docs.map(doc => doc.data() as LabelCorrection);
-
-    // 2. Build the dynamic prompt with examples
-    const fewShotPrompt = `
+    const simplePrompt = `
 You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label and extract the connection details.
 
-Here are some examples of previous labels that have been manually corrected and verified by a user. Use them to understand the expected format and improve your accuracy.
-
-${examples.map((ex, index) => `
----
-Example ${index + 1}:
-Based on this image: {{media url="${ex.imageDataUri}"}}
-The correct, verified output is:
-\`\`\`json
-${JSON.stringify(ex.correctedData, null, 2)}
-\`\`\`
----
-`).join('\n')}
-
-Now, analyze the following new image. The label typically follows a DE/PARA (FROM/TO) format.
+The label typically follows a DE/PARA (FROM/TO) format.
 - "DE" refers to the source device and port.
 - "PARA" refers to the destination device and port.
 
@@ -92,54 +72,10 @@ Extract this information accurately. If a specific piece of information is not v
 
 New image to analyze: {{media url=photoDataUri}}
 `;
-
-    // Because the prompt is now dynamic (contains media URLs from Firestore),
-    // we cannot use the standard prompt definition which expects a static string.
-    // Instead, we call ai.generate directly with the constructed prompt parts.
-    
-    // We need to build an array of "Parts" for the prompt.
-    const promptParts: ( {text: string} | {media: {url: string}} )[] = [];
-
-    // The base instructions
-    promptParts.push({ text: `
-You are an expert IT infrastructure assistant specializing in reading cable labels. Your task is to analyze the provided image of a cable label and extract the connection details.
-
-Here are some examples of previous labels that have been manually corrected and verified by a user. Use them to understand the expected format and improve your accuracy.
-    `});
-
-    // Add the examples
-    for (const [index, ex] of examples.entries()) {
-        promptParts.push({ text: `
----
-Example ${index + 1}:
-Based on this image: 
-`});
-        promptParts.push({ media: { url: ex.imageDataUri } });
-        promptParts.push({ text: `
-The correct, verified output is:
-\`\`\`json
-${JSON.stringify(ex.correctedData, null, 2)}
-\`\`\`
----
-`});
-    }
-
-    // Add the final instructions and the new image
-    promptParts.push({ text: `
-Now, analyze the following new image. The label typically follows a DE/PARA (FROM/TO) format.
-- "DE" refers to the source device and port.
-- "PARA" refers to the destination device and port.
-
-Carefully examine the image for any text. Identify the main label identifier (the most prominent text), the source device hostname and port, and the destination device hostname and port.
-
-Extract this information accurately. If a specific piece of information is not visible or cannot be identified, omit that field from the output.
-
-New image to analyze: 
-`});
-    promptParts.push({ media: { url: input.photoDataUri } });
     
     const { output } = await ai.generate({
-        prompt: promptParts,
+        prompt: simplePrompt,
+        input: { photoDataUri: input.photoDataUri }, // Pass input for handlebars replacement
         output: { schema: ExtractConnectionOutputSchema },
         model: 'googleai/gemini-2.0-flash'
     });

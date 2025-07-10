@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, Pause, XCircle } from "lucide-react";
+import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, XCircle, List, Edit } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCableLabelImage, saveLabelCorrection } from '@/ai/flows/learning-machine-flow';
 import type { ExtractConnectionOutput } from '@/ai/schemas';
@@ -20,6 +20,14 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface DiscoveredLabel {
+    id: string; // Will use the main label text as a unique ID
+    fullText: string; // The full text read from the label
+    analysis: ExtractConnectionOutput;
+    count: number;
+}
 
 const MAX_IMAGE_DIMENSION = 1024;
 const resizeImage = (imageSrc: string): Promise<string> => {
@@ -45,18 +53,24 @@ const resizeImage = (imageSrc: string): Promise<string> => {
 export default function LearningMachinePage() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoStreamRef = useRef<MediaStream | null>(null);
+    const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
 
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-    const [isStreaming, setIsStreaming] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [analysisResult, setAnalysisResult] = useState<ExtractConnectionOutput | null>(null);
+    
+    const [discoveredLabels, setDiscoveredLabels] = useState<Record<string, DiscoveredLabel>>({});
+    const [capturedImageForCorrection, setCapturedImageForCorrection] = useState<string | null>(null);
+    const [labelForCorrection, setLabelForCorrection] = useState<DiscoveredLabel | null>(null);
     const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [correctedData, setCorrectedData] = useState<ExtractConnectionOutput | null>(null);
 
     const cleanupCamera = useCallback(() => {
+        if (analysisIntervalRef.current) {
+            clearInterval(analysisIntervalRef.current);
+            analysisIntervalRef.current = null;
+        }
         if (videoStreamRef.current) {
             videoStreamRef.current.getTracks().forEach(track => track.stop());
             videoStreamRef.current = null;
@@ -87,64 +101,95 @@ export default function LearningMachinePage() {
         return () => cleanupCamera();
     }, [toast, cleanupCamera]);
 
-    const handleCaptureFrame = async () => {
-        if (!videoRef.current) return;
-        
-        const video = videoRef.current;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            toast({ variant: "destructive", title: "Erro de Captura" });
-            return;
-        }
-        
-        ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const capturedUri = canvas.toDataURL('image/jpeg');
+    const startAnalysisLoop = () => {
+        if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current);
+        setIsAnalyzing(true);
 
-        try {
-            const resizedUri = await resizeImage(capturedUri);
-            setCapturedImage(resizedUri);
-            setAnalysisResult(null); // Clear previous analysis
-            toast({ title: "Frame Capturado!", description: "Agora clique em 'Analisar Imagem' para processar." });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erro ao Capturar", description: "Não foi possível processar a imagem." });
-        }
+        analysisIntervalRef.current = setInterval(async () => {
+            if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
+            
+            const video = videoRef.current;
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const capturedUri = canvas.toDataURL('image/jpeg');
+
+            try {
+                const resizedUri = await resizeImage(capturedUri);
+                const result = await analyzeCableLabelImage({ photoDataUri: resizedUri });
+
+                const id = result.cableLabel || result.sourceHostname || result.destinationHostname;
+                if(id) {
+                     const fullText = [result.cableLabel, result.sourceHostname, result.sourcePort, result.destinationHostname, result.destinationPort].filter(Boolean).join(' ');
+                     setDiscoveredLabels(prev => {
+                         const existing = prev[id];
+                         return {
+                             ...prev,
+                             [id]: {
+                                 id,
+                                 fullText: fullText,
+                                 analysis: result,
+                                 count: existing ? existing.count + 1 : 1
+                             }
+                         }
+                     })
+                }
+
+            } catch (error) {
+                console.warn("Analysis loop error:", error);
+            }
+        }, 2000); // Analyze every 2 seconds
     };
 
-    const handleAnalyzeImage = async () => {
-        if (!capturedImage) return;
-        setIsAnalyzing(true);
-        try {
-            const result = await analyzeCableLabelImage({ photoDataUri: capturedImage });
-            setAnalysisResult(result);
-            setCorrectedData(result);
-            setIsCorrectionModalOpen(true);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erro na Análise", description: "Não foi possível analisar a imagem." });
-        } finally {
-            setIsAnalyzing(false);
+    const stopAnalysisLoop = () => {
+        if (analysisIntervalRef.current) {
+            clearInterval(analysisIntervalRef.current);
+            analysisIntervalRef.current = null;
         }
-    }
+        setIsAnalyzing(false);
+    };
+
+    const handleOpenCorrectionModal = (label: DiscoveredLabel) => {
+        setLabelForCorrection(label);
+        setCorrectedData(label.analysis);
+        // We need a static image for the modal, so we capture one last frame.
+        if (videoRef.current) {
+            const video = videoRef.current;
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+                setCapturedImageForCorrection(canvas.toDataURL('image/jpeg'));
+            }
+        }
+        setIsCorrectionModalOpen(true);
+    };
 
     const handleSaveCorrection = async () => {
-        if (!capturedImage || !correctedData) return;
+        if (!capturedImageForCorrection || !correctedData || !labelForCorrection) return;
         setIsSaving(true);
         try {
             await saveLabelCorrection({
-                imageDataUri: capturedImage,
+                imageDataUri: capturedImageForCorrection,
                 correctedData: correctedData,
             });
             toast({
                 title: "Correção Salva!",
                 description: "A IA usará este exemplo para aprender e melhorar."
             });
+            // Remove the corrected label from the discovered list
+            setDiscoveredLabels(prev => {
+                const newLabels = { ...prev };
+                delete newLabels[labelForCorrection.id];
+                return newLabels;
+            });
             setIsCorrectionModalOpen(false);
-            setAnalysisResult(null);
-            setCapturedImage(null);
         } catch (error) {
             console.error(error);
             toast({ variant: "destructive", title: "Erro ao Salvar", description: "Não foi possível salvar a correção." });
@@ -164,17 +209,6 @@ export default function LearningMachinePage() {
         navigator.clipboard.writeText(JSON.stringify(correctedData, null, 2));
         toast({ title: "Resultado copiado para a área de transferência!" });
     };
-    
-    const togglePlayPause = () => {
-        if (videoRef.current) {
-            if (isStreaming) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play();
-            }
-            setIsStreaming(!isStreaming);
-        }
-    };
 
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
@@ -184,7 +218,7 @@ export default function LearningMachinePage() {
                         <BrainCircuit className="w-10 h-10 text-primary" />
                         <div>
                             <CardTitle className="text-2xl font-headline">Laboratório de Treinamento de IA</CardTitle>
-                            <CardDescription>Aponte a câmera, pause, capture o melhor frame, analise, corrija e salve. Cada correção melhora a precisão da IA.</CardDescription>
+                            <CardDescription>Inicie a análise para a IA ler etiquetas em tempo real. Clique em uma etiqueta descoberta para corrigir e ensinar o modelo.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -193,6 +227,12 @@ export default function LearningMachinePage() {
                     <div className="space-y-4">
                         <div className="relative w-full bg-black rounded-lg aspect-video">
                             <video ref={videoRef} className="w-full h-full rounded-lg" autoPlay playsInline muted />
+                             {isAnalyzing && (
+                                <div className="absolute top-2 left-2 flex items-center gap-2 p-2 text-white bg-black/50 rounded-lg">
+                                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                    <span>Analisando...</span>
+                                </div>
+                            )}
                             {hasCameraPermission === null && (
                                 <div className="absolute inset-0 flex items-center justify-center text-white bg-black/50">
                                     <Loader2 className="w-8 h-8 mr-2 animate-spin" />
@@ -209,46 +249,51 @@ export default function LearningMachinePage() {
                             )}
                         </div>
                         <div className="flex justify-center gap-4">
-                            <Button onClick={togglePlayPause} variant="outline" size="lg" disabled={!hasCameraPermission}>
-                                {isStreaming ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
-                                {isStreaming ? 'Pausar' : 'Continuar'}
-                            </Button>
-                             <Button onClick={handleCaptureFrame} size="lg" disabled={!hasCameraPermission}>
-                                <Camera className="w-5 h-5 mr-2" />
-                                Capturar Frame
-                            </Button>
+                           <Button onClick={isAnalyzing ? stopAnalysisLoop : startAnalysisLoop} size="lg" disabled={!hasCameraPermission} className={isAnalyzing ? 'bg-destructive hover:bg-destructive/90' : ''}>
+                               {isAnalyzing ? (
+                                   <>
+                                    <XCircle className="w-5 h-5 mr-2" /> Parar Análise
+                                   </>
+                               ) : (
+                                   <>
+                                     <Play className="w-5 h-5 mr-2" /> Iniciar Análise
+                                   </>
+                               )}
+                           </Button>
                         </div>
                     </div>
                      {/* Coluna da Captura/Análise */}
                      <div className="space-y-4">
-                        <div className="relative w-full bg-muted/30 rounded-lg aspect-video flex items-center justify-center p-2 border-2 border-dashed">
-                             {capturedImage ? (
-                                <>
-                                    <img src={capturedImage} alt="Captured label" className="object-contain h-full max-w-full rounded-md" />
-                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 rounded-full w-7 h-7" onClick={() => setCapturedImage(null)}>
-                                        <XCircle className="w-5 h-5" />
-                                    </Button>
-                                </>
-                             ) : (
-                                <div className="text-center text-muted-foreground">
-                                    <Camera className="w-12 h-12 mx-auto mb-2" />
-                                    <p>A imagem capturada aparecerá aqui.</p>
-                                </div>
-                             )}
-                        </div>
-                         <Button
-                            className="w-full"
-                            size="lg"
-                            onClick={handleAnalyzeImage}
-                            disabled={!capturedImage || isAnalyzing}
-                        >
-                            {isAnalyzing ? (
-                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            ) : (
-                                <Sparkles className="w-5 h-5 mr-2" />
-                            )}
-                            {isAnalyzing ? 'Analisando...' : 'Analisar Imagem com IA'}
-                        </Button>
+                        <Card>
+                            <CardHeader className='pb-2'>
+                                <CardTitle className="flex items-center gap-2"><List /> Etiquetas Descobertas</CardTitle>
+                                <CardDescription>A lista será preenchida conforme a IA identifica etiquetas.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ScrollArea className="h-64">
+                                   <div className="space-y-2">
+                                    {Object.keys(discoveredLabels).length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+                                            <Bot className="w-12 h-12 mx-auto mb-2" />
+                                            <p>Aguardando detecção de etiquetas...</p>
+                                        </div>
+                                    ) : (
+                                       Object.values(discoveredLabels).map(label => (
+                                           <div key={label.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/30 hover:bg-muted/50">
+                                               <div className='truncate'>
+                                                    <p className='font-mono text-sm font-semibold truncate' title={label.fullText}>{label.fullText}</p>
+                                                    <p className='text-xs text-muted-foreground'>Visto {label.count}x</p>
+                                               </div>
+                                                <Button size="sm" variant="outline" onClick={() => handleOpenCorrectionModal(label)}>
+                                                    <Edit className="w-4 h-4 mr-2" /> Corrigir
+                                                </Button>
+                                           </div>
+                                       ))
+                                    )}
+                                    </div>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
                     </div>
                 </CardContent>
             </Card>
@@ -265,9 +310,9 @@ export default function LearningMachinePage() {
                     </DialogHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                         <div className="space-y-4">
-                            <Label>Imagem Analisada</Label>
+                            <Label>Imagem de Referência</Label>
                             <div className="p-2 border rounded-md bg-muted/30">
-                                {capturedImage && <img src={capturedImage} alt="Captured label" className="rounded-md" />}
+                                {capturedImageForCorrection && <img src={capturedImageForCorrection} alt="Captured label" className="rounded-md" />}
                             </div>
                         </div>
                         <div className="space-y-4">
