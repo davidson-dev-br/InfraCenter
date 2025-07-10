@@ -3,7 +3,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock, Expand } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Settings, Plus, Printer, Server, Clock, Expand, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useInfra } from '@/components/dashboard/datacenter-switcher';
 import type { PlacedItem, FloorPlanItemType } from '@/lib/types';
@@ -15,10 +15,14 @@ import { PrintableLayout } from '@/components/dashboard/printable-layout';
 import { Slider } from '@/components/ui/slider';
 import { AddItemDialog } from '@/components/dashboard/add-item-dialog';
 import { getIconByName } from '@/lib/icon-map';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-const CELL_SIZE = 80; // Visual size of a grid cell in pixels
 
 export function FloorPlan() {
+    const isMobile = useIsMobile();
+    const CELL_SIZE = isMobile ? 50 : 80;
+
     const [viewTransform, setViewTransform] = useState({ x: 20, y: 20, scale: 1 });
     const [isPanning, setIsPanning] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0 });
@@ -284,25 +288,47 @@ export function FloorPlan() {
         }
     };
 
+    const DesktopControls = () => (
+        <div className="flex items-center gap-2">
+            <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar Item</Button>
+            <Button variant="outline" onClick={handlePrint}><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
+            <Button variant="outline" onClick={handleFullscreen}><Expand className="mr-2" /> Tela Cheia</Button>
+        </div>
+    );
+
+    const MobileControls = () => (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg">
+                    <MoreVertical />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="end">
+                <div className="flex flex-col gap-2">
+                     <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar</Button>
+                     <Button variant="outline" onClick={handlePrint}><Printer className="mr-2"/> Exportar</Button>
+                     <Button variant="outline" onClick={handleFullscreen}><Expand className="mr-2" /> Tela Cheia</Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+
     const InteractiveFloorPlan = (
-        <div className="flex flex-col h-full gap-4 p-4 sm:p-8">
-            <p className="text-sm text-muted-foreground">Visualize e organize a disposição física do seu datacenter.</p>
+        <div className="relative flex flex-col h-full gap-4 p-2 sm:p-4">
             
-            <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-t">
+            <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 py-4 border-t">
                 <div className="flex items-center gap-2">
                     <RoomSwitcher />
                     <ManageRoomsDialog><Button variant="outline" size="icon"><Settings /></Button></ManageRoomsDialog>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.max(0.2, v.scale - 0.2)}))}><ZoomOut /></Button>
-                        <Slider value={[viewTransform.scale]} onValueChange={([val]) => setViewTransform(v => ({...v, scale: val}))} max={2.5} min={0.2} step={0.1} className="w-32" />
-                        <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.min(2.5, v.scale + 0.2)}))}><ZoomIn /></Button>
-                        <Button variant="outline" size="icon" onClick={resetView}><Maximize /></Button>
-                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => setIsAddItemDialogOpen(true)}><Plus className="mr-2" /> Adicionar Item</Button>
-                    <Button variant="outline" onClick={handlePrint}><Printer className="mr-2"/> Exportar Planta (PDF)</Button>
-                    <Button variant="outline" onClick={handleFullscreen}><Expand className="mr-2" /> Tela Cheia</Button>
+                <div className="hidden sm:flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.max(0.2, v.scale - 0.2)}))}><ZoomOut /></Button>
+                    <Slider value={[viewTransform.scale]} onValueChange={([val]) => setViewTransform(v => ({...v, scale: val}))} max={2.5} min={0.2} step={0.1} className="w-32" />
+                    <Button variant="outline" size="icon" onClick={() => setViewTransform(v => ({...v, scale: Math.min(2.5, v.scale + 0.2)}))}><ZoomIn /></Button>
+                    <Button variant="outline" size="icon" onClick={resetView}><Maximize /></Button>
+                </div>
+                 <div className="hidden md:flex">
+                     <DesktopControls />
                 </div>
             </div>
 
@@ -374,8 +400,8 @@ export function FloorPlan() {
                                             draggingItemId === item.id && "opacity-50"
                                         )}
                                     >
-                                        <ItemIcon className="w-6 h-6 mb-1"/>
-                                        <p className="text-xs font-bold text-center break-words">{item.name}</p>
+                                        <ItemIcon className="w-4 h-4 sm:w-6 sm:h-6 mb-1"/>
+                                        <p className="text-[8px] sm:text-xs font-bold text-center break-words">{item.name}</p>
                                         {item.awaitingApproval && <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2" style={{ borderColor: item.color || '#334155' }}><Clock className="w-3 h-3"/></div>}
                                     </div>
                                 </div>
@@ -385,8 +411,7 @@ export function FloorPlan() {
                      <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-grid" style={{ backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`, backgroundPosition: '40px 30px' }}></div>
                 </div>
             </div>
-            
-            <p className="text-sm text-center text-muted-foreground">Use Ctrl + Scroll para zoom. Clique e arraste para mover. Duplo clique para editar. Pressione 'Delete' para remover.</p>
+            { isMobile ? <MobileControls /> : null }
         </div>
     );
 
