@@ -1,11 +1,11 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy } from "lucide-react";
+import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, Pause, XCircle } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCableLabelImage, saveLabelCorrection } from '@/ai/flows/learning-machine-flow';
 import type { ExtractConnectionOutput } from '@/ai/schemas';
@@ -48,6 +48,7 @@ export default function LearningMachinePage() {
     const { toast } = useToast();
 
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const [isStreaming, setIsStreaming] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<ExtractConnectionOutput | null>(null);
@@ -55,12 +56,12 @@ export default function LearningMachinePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [correctedData, setCorrectedData] = useState<ExtractConnectionOutput | null>(null);
 
-    const cleanupCamera = () => {
+    const cleanupCamera = useCallback(() => {
         if (videoStreamRef.current) {
             videoStreamRef.current.getTracks().forEach(track => track.stop());
             videoStreamRef.current = null;
         }
-    };
+    }, []);
     
     useEffect(() => {
         const getCameraPermission = async () => {
@@ -84,13 +85,11 @@ export default function LearningMachinePage() {
         };
         getCameraPermission();
         return () => cleanupCamera();
-    }, [toast]);
+    }, [toast, cleanupCamera]);
 
-    const handleAnalyzeFrame = async () => {
+    const handleCaptureFrame = async () => {
         if (!videoRef.current) return;
-        setIsAnalyzing(true);
-        setAnalysisResult(null);
-
+        
         const video = videoRef.current;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
@@ -98,7 +97,6 @@ export default function LearningMachinePage() {
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             toast({ variant: "destructive", title: "Erro de Captura" });
-            setIsAnalyzing(false);
             return;
         }
         
@@ -108,7 +106,19 @@ export default function LearningMachinePage() {
         try {
             const resizedUri = await resizeImage(capturedUri);
             setCapturedImage(resizedUri);
-            const result = await analyzeCableLabelImage({ photoDataUri: resizedUri });
+            setAnalysisResult(null); // Clear previous analysis
+            toast({ title: "Frame Capturado!", description: "Agora clique em 'Analisar Imagem' para processar." });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Erro ao Capturar", description: "Não foi possível processar a imagem." });
+        }
+    };
+
+    const handleAnalyzeImage = async () => {
+        if (!capturedImage) return;
+        setIsAnalyzing(true);
+        try {
+            const result = await analyzeCableLabelImage({ photoDataUri: capturedImage });
             setAnalysisResult(result);
             setCorrectedData(result);
             setIsCorrectionModalOpen(true);
@@ -118,7 +128,7 @@ export default function LearningMachinePage() {
         } finally {
             setIsAnalyzing(false);
         }
-    };
+    }
 
     const handleSaveCorrection = async () => {
         if (!capturedImage || !correctedData) return;
@@ -154,6 +164,17 @@ export default function LearningMachinePage() {
         navigator.clipboard.writeText(JSON.stringify(correctedData, null, 2));
         toast({ title: "Resultado copiado para a área de transferência!" });
     };
+    
+    const togglePlayPause = () => {
+        if (videoRef.current) {
+            if (isStreaming) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+            setIsStreaming(!isStreaming);
+        }
+    };
 
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
@@ -163,45 +184,73 @@ export default function LearningMachinePage() {
                         <BrainCircuit className="w-10 h-10 text-primary" />
                         <div>
                             <CardTitle className="text-2xl font-headline">Laboratório de Treinamento de IA</CardTitle>
-                            <CardDescription>Treine a máquina para ler etiquetas de cabos. Aponte a câmera, analise, corrija e salve. Cada correção melhora a precisão da IA.</CardDescription>
+                            <CardDescription>Aponte a câmera, pause, capture o melhor frame, analise, corrija e salve. Cada correção melhora a precisão da IA.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="relative w-full bg-black rounded-lg aspect-video">
-                        <video ref={videoRef} className="w-full h-full rounded-lg" autoPlay playsInline muted />
-                        {hasCameraPermission === null && (
-                            <div className="absolute inset-0 flex items-center justify-center text-white bg-black/50">
-                                <Loader2 className="w-8 h-8 mr-2 animate-spin" />
-                                Acessando câmera...
-                            </div>
-                        )}
-                        {hasCameraPermission === false && (
-                            <div className="absolute inset-0 flex items-center justify-center text-white bg-black/50">
-                                <Alert variant="destructive" className="max-w-md">
-                                    <AlertTitle>Câmera Indisponível</AlertTitle>
-                                    <AlertDescription>Não foi possível acessar a câmera. Verifique as permissões do seu navegador.</AlertDescription>
-                                </Alert>
-                            </div>
-                        )}
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Coluna da Câmera */}
+                    <div className="space-y-4">
+                        <div className="relative w-full bg-black rounded-lg aspect-video">
+                            <video ref={videoRef} className="w-full h-full rounded-lg" autoPlay playsInline muted />
+                            {hasCameraPermission === null && (
+                                <div className="absolute inset-0 flex items-center justify-center text-white bg-black/50">
+                                    <Loader2 className="w-8 h-8 mr-2 animate-spin" />
+                                    Acessando câmera...
+                                </div>
+                            )}
+                            {hasCameraPermission === false && (
+                                <div className="absolute inset-0 flex items-center justify-center text-white bg-black/50">
+                                    <Alert variant="destructive" className="max-w-md">
+                                        <AlertTitle>Câmera Indisponível</AlertTitle>
+                                        <AlertDescription>Não foi possível acessar a câmera. Verifique as permissões.</AlertDescription>
+                                    </Alert>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex justify-center gap-4">
+                            <Button onClick={togglePlayPause} variant="outline" size="lg" disabled={!hasCameraPermission}>
+                                {isStreaming ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
+                                {isStreaming ? 'Pausar' : 'Continuar'}
+                            </Button>
+                             <Button onClick={handleCaptureFrame} size="lg" disabled={!hasCameraPermission}>
+                                <Camera className="w-5 h-5 mr-2" />
+                                Capturar Frame
+                            </Button>
+                        </div>
+                    </div>
+                     {/* Coluna da Captura/Análise */}
+                     <div className="space-y-4">
+                        <div className="relative w-full bg-muted/30 rounded-lg aspect-video flex items-center justify-center p-2 border-2 border-dashed">
+                             {capturedImage ? (
+                                <>
+                                    <img src={capturedImage} alt="Captured label" className="object-contain h-full max-w-full rounded-md" />
+                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 rounded-full w-7 h-7" onClick={() => setCapturedImage(null)}>
+                                        <XCircle className="w-5 h-5" />
+                                    </Button>
+                                </>
+                             ) : (
+                                <div className="text-center text-muted-foreground">
+                                    <Camera className="w-12 h-12 mx-auto mb-2" />
+                                    <p>A imagem capturada aparecerá aqui.</p>
+                                </div>
+                             )}
+                        </div>
+                         <Button
+                            className="w-full"
+                            size="lg"
+                            onClick={handleAnalyzeImage}
+                            disabled={!capturedImage || isAnalyzing}
+                        >
+                            {isAnalyzing ? (
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            ) : (
+                                <Sparkles className="w-5 h-5 mr-2" />
+                            )}
+                            {isAnalyzing ? 'Analisando...' : 'Analisar Imagem com IA'}
+                        </Button>
                     </div>
                 </CardContent>
-                <CardFooter className="flex-col gap-4">
-                    <Button 
-                        size="lg" 
-                        className="w-full" 
-                        onClick={handleAnalyzeFrame}
-                        disabled={!hasCameraPermission || isAnalyzing}
-                    >
-                        {isAnalyzing ? (
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        ) : (
-                            <Sparkles className="w-5 h-5 mr-2" />
-                        )}
-                        {isAnalyzing ? 'Analisando...' : 'Analisar Frame do Vídeo'}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">Clique para capturar um quadro do vídeo e deixar a IA analisá-lo.</p>
-                </CardFooter>
             </Card>
 
             <Dialog open={isCorrectionModalOpen} onOpenChange={setIsCorrectionModalOpen}>
@@ -216,7 +265,7 @@ export default function LearningMachinePage() {
                     </DialogHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                         <div className="space-y-4">
-                            <Label>Imagem Capturada</Label>
+                            <Label>Imagem Analisada</Label>
                             <div className="p-2 border rounded-md bg-muted/30">
                                 {capturedImage && <img src={capturedImage} alt="Captured label" className="rounded-md" />}
                             </div>
