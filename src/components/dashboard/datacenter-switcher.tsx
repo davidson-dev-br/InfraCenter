@@ -529,7 +529,8 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!db) return;
         try {
             const newBuilding = { ...buildingData, rooms: [] };
-            await addDoc(collection(db, 'datacenters'), newBuilding);
+            const newDoc = await addDoc(collection(db, 'datacenters'), newBuilding);
+            logActivity('create', 'Datacenter', `Criado datacenter: ${newBuilding.name}`);
             toast({ title: "Datacenter Criado", description: `O datacenter "${newBuilding.name}" foi criado com sucesso.` });
         } catch (error) {
             console.error(error);
@@ -542,6 +543,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         try {
             const { id, ...data } = updatedBuilding;
             await updateDoc(doc(db, 'datacenters', id), data);
+            logActivity('update', 'Datacenter', `Atualizado datacenter: ${updatedBuilding.name}`);
             toast({ title: "Datacenter Atualizado", description: `O datacenter "${updatedBuilding.name}" foi salvo com sucesso.` });
         } catch (error) {
             console.error(error);
@@ -554,6 +556,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const buildingToDelete = buildings.find(b => b.id === buildingId);
         try {
             await deleteDoc(doc(db, 'datacenters', buildingId));
+            // Note: logging before deletion might be better in a real-world scenario with pre-delete hooks.
+            // For simplicity, we log with the info we have. This log won't appear in the deleted DC's log.
+            console.log(`Datacenter ${buildingToDelete?.name} excluído.`);
             toast({ variant: "destructive", title: "Datacenter Excluído", description: `O datacenter "${buildingToDelete?.name}" foi excluído.` });
         } catch (error) {
             console.error(error);
@@ -574,6 +579,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             try {
                 const { id, ...data } = updatedItem;
                 await setDoc(doc(db, 'datacenters', selectedBuildingId, 'items', id), data);
+                logActivity('update', 'Item', `Atualizado item da planta baixa: ${updatedItem.name}`);
             } catch(error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Erro ao mover item.' });
@@ -738,6 +744,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         const newRoom = { ...roomData, id: `r-${Date.now()}` };
         const updatedRooms = [...(building.rooms || []), newRoom];
         await updateBuilding({ ...building, rooms: updatedRooms });
+        logActivity('create', 'Room', `Adicionada sala: ${newRoom.name}`);
         toast({ title: "Sala Adicionada" });
     };
 
@@ -747,6 +754,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!building) return;
         const updatedRooms = (building.rooms || []).map(r => r.id === updatedRoom.id ? updatedRoom : r);
         await updateBuilding({ ...building, rooms: updatedRooms });
+        logActivity('update', 'Room', `Atualizada sala: ${updatedRoom.name}`);
         toast({ title: "Sala Atualizada" });
     };
 
@@ -754,12 +762,14 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!db) return;
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return;
+        const roomToDelete = building.rooms.find(r => r.id === roomId);
         const updatedRooms = (building.rooms || []).filter(r => r.id !== roomId);
         const itemsToDelete = await getDocs(query(collection(db, 'datacenters', buildingId, 'items'), where('roomId', '==', roomId)));
         const batch = writeBatch(db);
         itemsToDelete.forEach(doc => batch.delete(doc.ref));
         batch.update(doc(db, 'datacenters', buildingId), { rooms: updatedRooms });
         await batch.commit();
+        logActivity('delete', 'Room', `Excluída sala: ${roomToDelete?.name}`);
         toast({ variant: 'destructive', title: "Sala Excluída" });
     };
 
@@ -778,6 +788,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             [newRooms[index], newRooms[index + 1]] = [newRooms[index + 1], newRooms[index]];
         }
         await updateBuilding({ ...building, rooms: newRooms });
+        logActivity('update', 'Room', `Reordenada a sala: ${newRooms[index].name}`);
     };
 
     const addEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
@@ -831,6 +842,7 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             } else {
                 await addDoc(collection(db, 'users'), userData);
             }
+            logActivity('create', 'User', `Adicionado/Atualizado usuário: ${userData.email}`);
             toast({ title: 'Usuário Salvo!' });
         } catch(error) {
             console.error("Error adding/updating user:", error);
@@ -841,11 +853,16 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         if (!db) return;
         const { id, ...data } = updatedUser;
         await setDoc(doc(db, 'users', id), data);
+        logActivity('update', 'User', `Atualizado usuário: ${updatedUser.email}`);
         toast({ title: 'Usuário Atualizado!' });
     };
     const deleteUser = async (userId: string) => {
         if (!db) return;
-        await deleteDoc(doc(db, 'users', userId));
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+        const email = userDoc.data()?.email || userId;
+        await deleteDoc(userRef);
+        logActivity('delete', 'User', `Excluído usuário: ${email}`);
         toast({ variant: 'destructive', title: 'Usuário Excluído!' });
     };
 
