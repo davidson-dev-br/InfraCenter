@@ -444,7 +444,9 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
         });
 
         let unsubDeletionLog = () => {};
+        let unsubActivityLog = () => {};
         const permissions = systemSettings.rolePermissions?.[userData.role];
+
         if (permissions?.canAccessDeletionLog) {
             unsubDeletionLog = onSnapshot(query(collection(buildingRef, 'deletion_log'), orderBy('deletedAt', 'desc')), (snapshot) => {
                 setDeletionLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DeletionLogEntry)));
@@ -453,7 +455,6 @@ export function InfraProvider({ children }: { children: React.ReactNode }) {
             setDeletionLog([]);
         }
 
-        let unsubActivityLog = () => {};
         if (permissions?.canAccessActivityLog) {
             unsubActivityLog = onSnapshot(query(collection(buildingRef, 'activity_log'), orderBy('timestamp', 'desc')), (snapshot) => {
                 setActivityLog(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLogEntry)));

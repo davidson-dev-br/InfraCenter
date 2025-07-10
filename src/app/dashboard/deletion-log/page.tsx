@@ -12,7 +12,7 @@ export default function DeletionLogPage() {
        <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Log de Exclusões</CardTitle>
-          <CardDescription>Visualize o histórico de todos os itens que foram removidos da planta baixa.</CardDescription>
+          <CardDescription>Visualize o histórico de todos os itens que foram removidos da planta baixa para o datacenter selecionado.</CardDescription>
         </CardHeader>
         <CardContent>
           <DeletionLogTable data={deletionLog} />
