@@ -17,7 +17,7 @@ import {
   DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { LogOut, Settings, User, Eye, EyeOff } from "lucide-react";
+import { LogOut, Settings, User, Eye, EyeOff, HelpCircle } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "./auth-provider";
@@ -117,6 +117,12 @@ export function UserNav() {
               <span>Perfil</span>
             </DropdownMenuItem>
           </ProfileDialog>
+           <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/dashboard/help">
+              <HelpCircle className="w-4 h-4 mr-2" />
+              <span>Ajuda e Documentação</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link href="/dashboard/settings">
               <Settings className="w-4 h-4 mr-2" />
