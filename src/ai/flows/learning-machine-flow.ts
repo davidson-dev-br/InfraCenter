@@ -10,9 +10,9 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { ExtractConnectionOutput, ExtractConnectionOutputSchema } from '@/ai/schemas';
-import { db } from '@/lib/firebase';
 import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { LabelCorrection } from '@/lib/types';
+import {getFirestore} from 'firebase-admin/firestore';
 
 // Define the input for saving a correction
 const SaveCorrectionInputSchema = z.object({
@@ -34,9 +34,7 @@ export type AnalyzeImageInput = z.infer<typeof AnalyzeImageInputSchema>;
  * @param input The image and the corrected data.
  */
 export async function saveLabelCorrection(input: SaveCorrectionInput): Promise<{ success: boolean }> {
-    if (!db) {
-      throw new Error("Firebase not configured.");
-    }
+    const db = getFirestore();
     const correctionsRef = collection(db, 'label_corrections');
     await addDoc(correctionsRef, {
         ...input,
@@ -53,9 +51,7 @@ const analyzeCableLabelFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
-    if (!db) {
-      throw new Error("Firebase not configured.");
-    }
+    const db = getFirestore();
 
     // 1. Fetch the last few corrections to use as few-shot examples
     const correctionsRef = collection(db, 'label_corrections');
