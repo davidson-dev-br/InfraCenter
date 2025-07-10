@@ -34,6 +34,7 @@ export function FloorPlan() {
     const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
     const floorPlanRef = useRef<HTMLDivElement>(null);
     const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null);
+    const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const { 
         buildings,
@@ -128,7 +129,13 @@ export function FloorPlan() {
         setIsPanning(true);
     };
 
-    const handleMouseUp = () => setIsPanning(false);
+    const handleMouseUp = () => {
+        setIsPanning(false);
+        if (autoScrollIntervalRef.current) {
+            clearInterval(autoScrollIntervalRef.current);
+            autoScrollIntervalRef.current = null;
+        }
+    };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isPanning) return;
@@ -286,7 +293,6 @@ export function FloorPlan() {
             entryDate: null,
             brand: null,
             tag: null,
-            description: '',
             trellisId: null,
             ownerEmail: null,
             isTagEligible: false,
@@ -335,6 +341,47 @@ export function FloorPlan() {
             }
         }
     };
+    
+    const handleDragLeave = () => {
+        if (autoScrollIntervalRef.current) {
+            clearInterval(autoScrollIntervalRef.current);
+            autoScrollIntervalRef.current = null;
+        }
+    };
+
+    const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        if (!draggingItemId || !floorPlanRef.current) return;
+        e.preventDefault();
+
+        if (autoScrollIntervalRef.current) {
+            clearInterval(autoScrollIntervalRef.current);
+            autoScrollIntervalRef.current = null;
+        }
+
+        const rect = floorPlanRef.current.getBoundingClientRect();
+        const { clientX, clientY } = e;
+        const scrollSpeed = 15;
+        const edgeThreshold = 60; // 60px from the edge
+
+        let dx = 0;
+        let dy = 0;
+
+        if (clientX < rect.left + edgeThreshold) dx = scrollSpeed;
+        if (clientX > rect.right - edgeThreshold) dx = -scrollSpeed;
+        if (clientY < rect.top + edgeThreshold) dy = scrollSpeed;
+        if (clientY > rect.bottom - edgeThreshold) dy = -scrollSpeed;
+
+        if (dx !== 0 || dy !== 0) {
+            autoScrollIntervalRef.current = setInterval(() => {
+                setViewTransform(prev => ({
+                    ...prev,
+                    x: prev.x + dx,
+                    y: prev.y + dy,
+                }));
+            }, 30);
+        }
+    };
+
 
     const DesktopControls = () => (
         <div className="flex items-center gap-2">
@@ -392,6 +439,8 @@ export function FloorPlan() {
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
+                onDragOver={handleContainerDragOver}
+                onDragLeave={handleDragLeave}
             >
                 <div className="relative" style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left', width: `${(GRID_COLS * CELL_SIZE) + 40}px`, height: `${(GRID_ROWS * CELL_SIZE) + 30}px` }}>
                     <div
@@ -430,6 +479,7 @@ export function FloorPlan() {
                                     onClick={(e) => handleItemClick(e, item.id)}
                                     onDoubleClick={() => handleItemDoubleClick(item)}
                                     onDragStart={(e) => handleDragStart(e, item)}
+                                    onDragEnd={handleDragLeave}
                                     style={{
                                         gridColumnStart: item.x + 2,
                                         gridRowStart: item.y + 2,
@@ -511,7 +561,3 @@ export function FloorPlan() {
         </>
     );
 }
-
-    
-
-    
