@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Connection } from "@/lib/types";
@@ -14,13 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useInfra } from "../datacenter-switcher";
-import { ConnectionDialog } from "./connection-dialog";
 
 type ConnectionsTableProps = {
   data: Connection[];
+  onEdit: (connection: Connection) => void;
 };
 
-export function ConnectionsTable({ data }: ConnectionsTableProps) {
+export function ConnectionsTable({ data, onEdit }: ConnectionsTableProps) {
   const { equipment, deleteConnection } = useInfra();
 
   const getEquipmentName = (equipmentId: string) => {
@@ -104,11 +105,9 @@ export function ConnectionsTable({ data }: ConnectionsTableProps) {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                            <ConnectionDialog connection={conn}>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                                            <DropdownMenuItem onSelect={() => onEdit(conn)} className="cursor-pointer">
                                                 <Edit className="w-4 h-4 mr-2" /> Editar
                                             </DropdownMenuItem>
-                                            </ConnectionDialog>
                                             <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => deleteConnection(conn.id)}>
                                                 <Trash2 className="w-4 h-4 mr-2" /> Excluir
                                             </DropdownMenuItem>

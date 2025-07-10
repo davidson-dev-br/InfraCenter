@@ -50,9 +50,9 @@ export function ConnectionDialog({ children, connection, initialData, open: open
 
   const getDefaultFormData = (): Omit<Connection, 'id'> => ({
     cableLabel: '',
-    sourceEquipmentId: '', // No longer has a default
+    sourceEquipmentId: '',
     sourcePort: '',
-    destinationEquipmentId: '', // No longer has a default
+    destinationEquipmentId: '',
     destinationPort: '',
     cableType: cableTypes?.[0]?.name || '',
     status: 'Planejado',
@@ -71,13 +71,17 @@ export function ConnectionDialog({ children, connection, initialData, open: open
         const defaultData = getDefaultFormData();
         setFormData({
             ...defaultData,
+            ...initialData,
             sourceEquipmentId: initialData?.sourceEquipmentId || defaultData.sourceEquipmentId,
             destinationEquipmentId: initialData?.destinationEquipmentId || defaultData.destinationEquipmentId,
-            ...initialData,
         });
       }
+    } else {
+      setFormData(getDefaultFormData()); // Reset form on close
     }
-  }, [isOpen, connection, isEditMode, systemSettings, initialData]);
+  // We only want this to run when the dialog opens or the initial data changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, connection, isEditMode, initialData]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
