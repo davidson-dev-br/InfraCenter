@@ -12,9 +12,35 @@ import {
     ExtractConnectionOutput,
     ExtractConnectionOutputSchema,
 } from '@/ai/schemas';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import type { SystemSettings } from '@/lib/types';
+
+const extractConnectionPrompt = ai.definePrompt({
+    name: 'extractConnectionPrompt',
+    input: {schema: ExtractConnectionInputSchema},
+    output: {schema: ExtractConnectionOutputSchema},
+    prompt: `Você é um assistente especialista em infraestrutura de TI, especializado em ler etiquetas de cabos. Sua tarefa é analisar a imagem fornecida de uma etiqueta de cabo.
+
+A etiqueta geralmente segue o formato DE/PARA (FROM/TO).
+- "DE" refere-se ao dispositivo e porta de origem.
+- "PARA" refere-se ao dispositivo e porta de destino.
+
+Examine cuidadosamente a imagem em busca de qualquer texto. Identifique o identificador principal da etiqueta (o texto mais proeminente, muitas vezes um ID de patch panel), o hostname e a porta do dispositivo de origem, e o hostname e a porta do dispositivo de destino.
+
+Exemplo de texto da etiqueta:
+"P-01-A-01
+DE: SW-CORE-01 | Gi1/0/1
+PARA: FW-EDGE-02 | PortA"
+
+Para o exemplo acima, você extrairia:
+- cableLabel: "P-01-A-01"
+- sourceHostname: "SW-CORE-01"
+- sourcePort: "Gi1/0/1"
+- destinationHostname: "FW-EDGE-02"
+- destinationPort: "PortA"
+
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
+
+Foto: {{media url=photoDataUri}}`,
+});
 
 
 const extractConnectionDetailsFlow = ai.defineFlow(
@@ -24,25 +50,7 @@ const extractConnectionDetailsFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
-    if (!db) {
-      throw new Error("Firebase not configured.");
-    }
-    const settingsDoc = await getDoc(doc(db, 'system', 'settings'));
-    const settings = settingsDoc.data() as SystemSettings;
-    const promptText = settings.prompts?.extractConnectionDetails;
-
-    if (!promptText) {
-        throw new Error("Prompt 'extractConnectionDetails' not found in system settings.");
-    }
-
-    const prompt = ai.definePrompt({
-      name: 'extractConnectionPrompt_dynamic',
-      input: {schema: ExtractConnectionInputSchema},
-      output: {schema: ExtractConnectionOutputSchema},
-      prompt: promptText,
-    });
-    
-    const {output} = await prompt(input);
+    const {output} = await extractConnectionPrompt(input);
     return output!;
   }
 );

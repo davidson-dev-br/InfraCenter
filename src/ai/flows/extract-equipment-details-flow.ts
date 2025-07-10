@@ -12,10 +12,19 @@ import {
     ExtractEquipmentOutput,
     ExtractEquipmentOutputSchema,
 } from '@/ai/schemas';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import type { SystemSettings } from '@/lib/types';
 
+const extractEquipmentPrompt = ai.definePrompt({
+    name: 'extractEquipmentPrompt',
+    input: {schema: ExtractEquipmentInputSchema},
+    output: {schema: ExtractEquipmentOutputSchema},
+    prompt: `Você é um assistente especialista em gerenciamento de ativos de TI. Sua tarefa é analisar a imagem fornecida de um equipamento de rede ou servidor.
+
+Examine cuidadosamente a imagem em busca de textos, etiquetas ou logotipos. Identifique o tipo de equipamento, fabricante (marca), nome/número do modelo, número de série, hostname e quaisquer etiquetas de patrimônio.
+
+Extraia essas informações com precisão. Se uma informação específica não estiver visível ou não puder ser identificada, omita esse campo na saída.
+
+Foto: {{media url=photoDataUri}}`,
+});
 
 const extractEquipmentDetailsFlow = ai.defineFlow(
   {
@@ -24,25 +33,7 @@ const extractEquipmentDetailsFlow = ai.defineFlow(
     outputSchema: ExtractEquipmentOutputSchema,
   },
   async (input) => {
-    if (!db) {
-      throw new Error("Firebase not configured.");
-    }
-    const settingsDoc = await getDoc(doc(db, 'system', 'settings'));
-    const settings = settingsDoc.data() as SystemSettings;
-    const promptText = settings.prompts?.extractEquipmentDetails;
-
-    if (!promptText) {
-        throw new Error("Prompt 'extractEquipmentDetails' not found in system settings.");
-    }
-    
-    const prompt = ai.definePrompt({
-      name: 'extractEquipmentPrompt_dynamic',
-      input: {schema: ExtractEquipmentInputSchema},
-      output: {schema: ExtractEquipmentOutputSchema},
-      prompt: promptText,
-    });
-    
-    const {output} = await prompt(input);
+    const {output} = await extractEquipmentPrompt(input);
     return output!;
   }
 );
