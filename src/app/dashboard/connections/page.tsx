@@ -12,6 +12,7 @@ import { IAConnectionDialog } from '@/components/dashboard/connections/ia-connec
 import { AlertCenterDialog } from '@/components/dashboard/connections/alert-center-dialog';
 import { Badge } from '@/components/ui/badge';
 import type { Connection } from '@/lib/types';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export default function ConnectionsPage() {
   const { connections } = useInfra();
@@ -30,6 +31,18 @@ export default function ConnectionsPage() {
     setIsConnectionDialogOpen(false);
   }
 
+  const AlertCenterButton = (
+    <AlertCenterDialog connections={connectionsWithAlerts} onEditConnection={handleEditConnection}>
+      <Button variant="destructive" disabled={connectionsWithAlerts.length === 0}>
+        <AlertTriangle className="w-4 h-4 mr-2" />
+        Central de Alertas
+        {connectionsWithAlerts.length > 0 && (
+          <Badge variant="secondary" className="ml-2">{connectionsWithAlerts.length}</Badge>
+        )}
+      </Button>
+    </AlertCenterDialog>
+  );
+
   return (
     <>
       <div className="container p-4 mx-auto my-8 sm:p-8">
@@ -41,15 +54,20 @@ export default function ConnectionsPage() {
                 <CardDescription>Visualize e gerencie as conexões físicas entre seus equipamentos.</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                 {connectionsWithAlerts.length > 0 && (
-                   <AlertCenterDialog connections={connectionsWithAlerts} onEditConnection={handleEditConnection}>
-                    <Button variant="destructive">
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Central de Alertas
-                      <Badge variant="secondary" className="ml-2">{connectionsWithAlerts.length}</Badge>
-                    </Button>
-                  </AlertCenterDialog>
-                )}
+                 {connectionsWithAlerts.length === 0 ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>{AlertCenterButton}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Nenhum alerta de conexão pendente.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                 ) : (
+                  AlertCenterButton
+                 )}
                 <IAConnectionDialog>
                   <Button variant="outline">
                     <Camera className="w-4 h-4 mr-2" />

@@ -12,6 +12,7 @@ import { z } from 'genkit';
 import { ExtractConnectionOutput, ExtractConnectionOutputSchema } from '@/ai/schemas';
 import { collection, addDoc, query, orderBy, limit, getDocs, getFirestore } from 'firebase/firestore';
 import type { LabelCorrection } from '@/lib/types';
+import { db } from '@/lib/firebase';
 
 
 // Define the input for saving a correction
@@ -34,7 +35,6 @@ export type AnalyzeImageInput = z.infer<typeof AnalyzeImageInputSchema>;
  * @param input The image and the corrected data.
  */
 export async function saveLabelCorrection(input: SaveCorrectionInput): Promise<{ success: boolean }> {
-    const db = getFirestore();
     if (!db) {
         throw new Error("Firestore is not initialized.");
     }
@@ -54,13 +54,13 @@ const analyzeCableLabelFlow = ai.defineFlow(
     outputSchema: ExtractConnectionOutputSchema,
   },
   async (input) => {
-    const db = getFirestore();
-    if (!db) {
+    const firestoreDb = getFirestore();
+    if (!firestoreDb) {
         throw new Error("Firestore is not initialized.");
     }
 
     // 1. Fetch the last few corrections to use as few-shot examples
-    const correctionsRef = collection(db, 'label_corrections');
+    const correctionsRef = collection(firestoreDb, 'label_corrections');
     const q = query(correctionsRef, orderBy('createdAt', 'desc'), limit(5));
     const querySnapshot = await getDocs(q);
     const examples = querySnapshot.docs.map(doc => doc.data() as LabelCorrection);
