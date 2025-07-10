@@ -87,6 +87,7 @@ export interface Connection {
   status: 'Conectado' | 'Desconectado' | 'Planejado';
   isActive: boolean;
   notes?: string | null;
+  alert?: string | null;
 }
 
 export interface DeletionLogEntry {

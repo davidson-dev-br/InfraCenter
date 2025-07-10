@@ -184,6 +184,13 @@ export function IAConnectionDialog({ children }: IAConnectionDialogProps) {
         destinationPort: result.destinationPort || '',
       };
       
+      // If AI couldn't parse structured data but found some text, put it all in the label.
+      const allText = [result.cableLabel, result.sourceHostname, result.sourcePort, result.destinationHostname, result.destinationPort].filter(Boolean).join(' ');
+      if (allText && !sourceEquipment && !destinationEquipment) {
+          newConnectionData.cableLabel = allText;
+          newConnectionData.sourcePort = '';
+      }
+
       if (!sourceEquipment?.id && result.sourceHostname) {
           toast({ variant: 'destructive', title: 'Atenção', description: `Equipamento de origem "${result.sourceHostname}" não encontrado.` });
       }

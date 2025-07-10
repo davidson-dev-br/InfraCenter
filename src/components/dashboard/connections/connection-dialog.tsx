@@ -50,14 +50,15 @@ export function ConnectionDialog({ children, connection, initialData, open: open
 
   const getDefaultFormData = (): Omit<Connection, 'id'> => ({
     cableLabel: '',
-    sourceEquipmentId: equipment[0]?.id || '',
+    sourceEquipmentId: '', // No longer has a default
     sourcePort: '',
-    destinationEquipmentId: equipment[1]?.id || '',
+    destinationEquipmentId: '', // No longer has a default
     destinationPort: '',
     cableType: cableTypes?.[0]?.name || '',
     status: 'Planejado',
     isActive: false,
-    notes: ''
+    notes: '',
+    alert: null
   });
 
   const [formData, setFormData] = useState(getDefaultFormData());
@@ -76,7 +77,7 @@ export function ConnectionDialog({ children, connection, initialData, open: open
         });
       }
     }
-  }, [isOpen, connection, isEditMode, equipment, systemSettings, initialData]);
+  }, [isOpen, connection, isEditMode, systemSettings, initialData]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -95,10 +96,16 @@ export function ConnectionDialog({ children, connection, initialData, open: open
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    let alertMessage: string | null = null;
+    if (!formData.sourceEquipmentId || !formData.destinationEquipmentId) {
+        alertMessage = "Equipamento de origem ou destino não especificado.";
+    }
+
     const dataToSave = {
         ...formData,
         cableLabel: formData.cableLabel || null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        alert: alertMessage
     };
 
     if (isEditMode && connection) {
@@ -126,7 +133,7 @@ export function ConnectionDialog({ children, connection, initialData, open: open
               <div className="md:col-span-2 font-semibold text-lg pb-2 border-b">Ponto de Origem (DE)</div>
               <div className="space-y-2">
                 <Label htmlFor="sourceEquipmentId">Equipamento de Origem</Label>
-                <Select value={formData.sourceEquipmentId} onValueChange={handleSelectChange('sourceEquipmentId')} required>
+                <Select value={formData.sourceEquipmentId || ''} onValueChange={handleSelectChange('sourceEquipmentId')}>
                   <SelectTrigger id="sourceEquipmentId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     {equipment.map(eq => (
@@ -143,7 +150,7 @@ export function ConnectionDialog({ children, connection, initialData, open: open
               <div className="md:col-span-2 font-semibold text-lg pt-4 pb-2 border-b">Ponto de Destino (PARA)</div>
               <div className="space-y-2">
                 <Label htmlFor="destinationEquipmentId">Equipamento de Destino</Label>
-                <Select value={formData.destinationEquipmentId} onValueChange={handleSelectChange('destinationEquipmentId')} required>
+                <Select value={formData.destinationEquipmentId || ''} onValueChange={handleSelectChange('destinationEquipmentId')}>
                   <SelectTrigger id="destinationEquipmentId"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     {equipment.map(eq => (
