@@ -106,7 +106,7 @@ export function Header() {
               <span className="text-lg font-bold sm:inline-block font-headline">
                   InfraCenter Manager
               </span>
-              <Badge variant="secondary">v3.2.6</Badge>
+              <Badge variant="secondary">v4.0</Badge>
           </div>
           
           <div className="flex items-center gap-4">
