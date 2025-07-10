@@ -490,6 +490,7 @@ export function FloorPlan() {
                                 <div
                                     key={item.id}
                                     draggable
+                                    onMouseDown={(e) => e.stopPropagation()} // Prevent map pan when starting to drag an item
                                     onClick={(e) => handleItemClick(e, item.id)}
                                     onDoubleClick={() => handleItemDoubleClick(item)}
                                     onDragStart={(e) => handleDragStart(e, item)}
