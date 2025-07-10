@@ -247,13 +247,26 @@ export function FloorPlan() {
     const resetView = () => setViewTransform({ x: 20, y: 20, scale: 1 });
 
     const handleSelectItemAndAdd = (itemType: FloorPlanItemType) => {
+        if (!selectedRoomId) return;
+    
         const itemWidthM = itemType.defaultWidth || tileWidthM;
         const itemLengthM = itemType.defaultLength || tileLengthM;
 
         const itemWidthInCells = itemWidthM / tileWidthM;
         const itemLengthInCells = itemLengthM / tileLengthM;
 
-        const newItemProto = { id: 'proto', name: 'proto', type: 'proto', icon: 'Server', width: itemWidthM, length: itemLengthM, x:0, y:0, status: 'Ativo' as const };
+        const newItemProto: PlacedItem = {
+            id: 'proto',
+            name: 'proto',
+            type: 'proto',
+            icon: 'Server',
+            width: itemWidthM,
+            length: itemLengthM,
+            x: 0,
+            y: 0,
+            status: 'Ativo',
+            roomId: selectedRoomId,
+        };
         
         let newX = -1, newY = -1;
         for (let y = 0; y <= GRID_ROWS - itemLengthInCells; y++) {
@@ -284,11 +297,11 @@ export function FloorPlan() {
             length: itemLengthM,
             sizeU: 42,
             row: String.fromCharCode(65 + newX),
+            roomId: selectedRoomId,
             awaitingApproval: true,
-            createdBy: "Admin User",
+            createdBy: "Admin User", // Replace with actual user later
             createdAt: new Date().toLocaleDateString('pt-BR'),
             color: itemType.color,
-            // Initialize new fields
             serialNumber: null,
             entryDate: null,
             brand: null,
@@ -298,6 +311,7 @@ export function FloorPlan() {
             isTagEligible: false,
             dataSheetUrl: null,
             imageUrl: null,
+            description: null,
         };
         
         setItemsForCurrentRoom([...items, newItem]);
@@ -325,7 +339,7 @@ export function FloorPlan() {
 
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setFullscreenContainer(document.fullscreenElement);
+            setFullscreenContainer(document.fullscreenElement as HTMLElement | null);
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
