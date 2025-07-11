@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, XCircle, List, Edit } from "lucide-react";
+import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, XCircle, List, Edit, BookOpen, Save } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCableLabelImage, saveLabelCorrection } from '@/ai/flows/learning-machine-flow';
 import type { ExtractConnectionOutput } from '@/ai/schemas';
@@ -16,16 +16,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface DiscoveredLabel {
-    id: string; // Will use the main label text as a unique ID
-    fullText: string; // The full text read from the label
+    id: string; 
+    fullText: string;
     analysis: ExtractConnectionOutput;
+    imageDataUri: string; // Keep a reference image for each unique label
     count: number;
 }
 
@@ -50,6 +53,111 @@ const resizeImage = (imageSrc: string): Promise<string> => {
     });
 };
 
+type TrainingSessionModalProps = {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    discoveredLabels: Record<string, DiscoveredLabel>;
+    onSaveAll: (corrections: Record<string, ExtractConnectionOutput>) => Promise<void>;
+};
+
+function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAll }: TrainingSessionModalProps) {
+    const [corrections, setCorrections] = useState<Record<string, ExtractConnectionOutput>>({});
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            const initialCorrections = Object.entries(discoveredLabels).reduce((acc, [id, label]) => {
+                acc[id] = label.analysis;
+                return acc;
+            }, {} as Record<string, ExtractConnectionOutput>);
+            setCorrections(initialCorrections);
+        }
+    }, [isOpen, discoveredLabels]);
+
+    const handleCorrectionChange = (labelId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setCorrections(prev => ({
+            ...prev,
+            [labelId]: {
+                ...prev[labelId],
+                [id]: value
+            }
+        }));
+    };
+
+    const handleSaveClick = async () => {
+        setIsSaving(true);
+        await onSaveAll(corrections);
+        setIsSaving(false);
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-xl">
+                        <BookOpen className="w-6 h-6" />
+                        Sessão de Treinamento de Etiquetas
+                    </DialogTitle>
+                    <DialogDescription>
+                        Revise e corrija as informações extraídas pela IA para cada etiqueta descoberta. Suas correções ajudarão a melhorar o modelo.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="flex-grow pr-6 -mr-6">
+                    <div className="space-y-6">
+                       {Object.values(discoveredLabels).map(label => (
+                           <div key={label.id}>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                   <div className="space-y-2">
+                                        <Label>Imagem de Referência</Label>
+                                        <img src={label.imageDataUri} alt={`Preview for ${label.id}`} className="rounded-md border p-1" />
+                                        <p className='text-xs text-muted-foreground font-mono bg-muted p-2 rounded-md'>Texto Lido: {label.fullText}</p>
+                                   </div>
+                                   <div className="space-y-3">
+                                        <Label>Dados Extraídos (Editáveis)</Label>
+                                        <div>
+                                            <Label htmlFor="cableLabel" className="text-xs">Etiqueta do Cabo</Label>
+                                            <Input id="cableLabel" value={corrections[label.id]?.cableLabel || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                        </div>
+                                         <div>
+                                            <Label htmlFor="sourceHostname" className="text-xs">Hostname Origem</Label>
+                                            <Input id="sourceHostname" value={corrections[label.id]?.sourceHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                        </div>
+                                         <div>
+                                            <Label htmlFor="sourcePort" className="text-xs">Porta Origem</Label>
+                                            <Input id="sourcePort" value={corrections[label.id]?.sourcePort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                        </div>
+                                         <div>
+                                            <Label htmlFor="destinationHostname" className="text-xs">Hostname Destino</Label>
+                                            <Input id="destinationHostname" value={corrections[label.id]?.destinationHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="destinationPort" className="text-xs">Porta Destino</Label>
+                                            <Input id="destinationPort" value={corrections[label.id]?.destinationPort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                        </div>
+                                   </div>
+                               </div>
+                               <Separator className="mt-6" />
+                           </div>
+                       ))}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="outline" disabled={isSaving}>Cancelar</Button>
+                    </DialogClose>
+                    <Button onClick={handleSaveClick} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        Salvar Todas as Correções
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function LearningMachinePage() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoStreamRef = useRef<MediaStream | null>(null);
@@ -60,11 +168,7 @@ export default function LearningMachinePage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     
     const [discoveredLabels, setDiscoveredLabels] = useState<Record<string, DiscoveredLabel>>({});
-    const [capturedImageForCorrection, setCapturedImageForCorrection] = useState<string | null>(null);
-    const [labelForCorrection, setLabelForCorrection] = useState<DiscoveredLabel | null>(null);
-    const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [correctedData, setCorrectedData] = useState<ExtractConnectionOutput | null>(null);
+    const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
 
     const cleanupCamera = useCallback(() => {
         if (analysisIntervalRef.current) {
@@ -103,6 +207,7 @@ export default function LearningMachinePage() {
 
     const startAnalysisLoop = () => {
         if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current);
+        setDiscoveredLabels({}); // Clear previous results
         setIsAnalyzing(true);
 
         analysisIntervalRef.current = setInterval(async () => {
@@ -133,6 +238,7 @@ export default function LearningMachinePage() {
                                  id,
                                  fullText: fullText,
                                  analysis: result,
+                                 imageDataUri: resizedUri, // Update with the latest image
                                  count: existing ? existing.count + 1 : 1
                              }
                          }
@@ -153,62 +259,44 @@ export default function LearningMachinePage() {
         setIsAnalyzing(false);
     };
 
-    const handleOpenCorrectionModal = (label: DiscoveredLabel) => {
-        setLabelForCorrection(label);
-        setCorrectedData(label.analysis);
-        // We need a static image for the modal, so we capture one last frame.
-        if (videoRef.current) {
-            const video = videoRef.current;
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-                setCapturedImageForCorrection(canvas.toDataURL('image/jpeg'));
+    const handleSaveAllCorrections = async (corrections: Record<string, ExtractConnectionOutput>) => {
+        let savedCount = 0;
+        const totalCount = Object.keys(corrections).length;
+        
+        const promises = Object.entries(corrections).map(async ([id, correctedData]) => {
+            const originalLabel = discoveredLabels[id];
+            if (!originalLabel) return;
+            try {
+                await saveLabelCorrection({
+                    imageDataUri: originalLabel.imageDataUri,
+                    correctedData: correctedData,
+                });
+                savedCount++;
+            } catch (error) {
+                console.error(`Failed to save correction for ${id}:`, error);
             }
-        }
-        setIsCorrectionModalOpen(true);
-    };
+        });
+        
+        await Promise.all(promises);
 
-    const handleSaveCorrection = async () => {
-        if (!capturedImageForCorrection || !correctedData || !labelForCorrection) return;
-        setIsSaving(true);
-        try {
-            await saveLabelCorrection({
-                imageDataUri: capturedImageForCorrection,
-                correctedData: correctedData,
-            });
+        if (savedCount > 0) {
             toast({
-                title: "Correção Salva!",
-                description: "A IA usará este exemplo para aprender e melhorar."
+                title: "Correções Salvas!",
+                description: `${savedCount} de ${totalCount} etiquetas foram salvas como exemplos para a IA.`
             });
-            // Remove the corrected label from the discovered list
-            setDiscoveredLabels(prev => {
-                const newLabels = { ...prev };
-                delete newLabels[labelForCorrection.id];
-                return newLabels;
-            });
-            setIsCorrectionModalOpen(false);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erro ao Salvar", description: "Não foi possível salvar a correção." });
-        } finally {
-            setIsSaving(false);
         }
+
+        if (savedCount < totalCount) {
+             toast({
+                variant: "destructive",
+                title: "Erro ao Salvar",
+                description: `${totalCount - savedCount} correções não puderam ser salvas.`
+            });
+        }
+        
+        setDiscoveredLabels({}); // Clear the list after saving
     };
 
-    const handleCorrectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!correctedData) return;
-        const { id, value } = e.target;
-        setCorrectedData({ ...correctedData, [id]: value });
-    };
-
-    const handleCopyResult = () => {
-        if (!correctedData) return;
-        navigator.clipboard.writeText(JSON.stringify(correctedData, null, 2));
-        toast({ title: "Resultado copiado para a área de transferência!" });
-    };
 
     return (
         <div className="container p-4 mx-auto my-8 sm:p-8">
@@ -218,7 +306,7 @@ export default function LearningMachinePage() {
                         <BrainCircuit className="w-10 h-10 text-primary" />
                         <div>
                             <CardTitle className="text-2xl font-headline">Laboratório de Treinamento de IA</CardTitle>
-                            <CardDescription>Inicie a análise para a IA ler etiquetas em tempo real. Clique em uma etiqueta descoberta para corrigir e ensinar o modelo.</CardDescription>
+                            <CardDescription>Inicie a análise para a IA ler etiquetas em tempo real. Depois, revise e treine as etiquetas descobertas.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -275,18 +363,15 @@ export default function LearningMachinePage() {
                                     {Object.keys(discoveredLabels).length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
                                             <Bot className="w-12 h-12 mx-auto mb-2" />
-                                            <p>Aguardando detecção de etiquetas...</p>
+                                            <p>{isAnalyzing ? "Analisando..." : "Aguardando detecção de etiquetas..."}</p>
                                         </div>
                                     ) : (
                                        Object.values(discoveredLabels).map(label => (
-                                           <div key={label.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/30 hover:bg-muted/50">
+                                           <div key={label.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/30">
                                                <div className='truncate'>
                                                     <p className='font-mono text-sm font-semibold truncate' title={label.fullText}>{label.fullText}</p>
                                                     <p className='text-xs text-muted-foreground'>Visto {label.count}x</p>
                                                </div>
-                                                <Button size="sm" variant="outline" onClick={() => handleOpenCorrectionModal(label)}>
-                                                    <Edit className="w-4 h-4 mr-2" /> Corrigir
-                                                </Button>
                                            </div>
                                        ))
                                     )}
@@ -294,68 +379,27 @@ export default function LearningMachinePage() {
                                 </ScrollArea>
                             </CardContent>
                         </Card>
+                        <Button
+                            className="w-full"
+                            size="lg"
+                            disabled={Object.keys(discoveredLabels).length === 0 || isAnalyzing}
+                            onClick={() => setIsTrainingModalOpen(true)}
+                        >
+                            <Edit className="w-5 h-5 mr-2" />
+                            Revisar e Treinar {Object.keys(discoveredLabels).length > 0 ? `(${Object.keys(discoveredLabels).length})` : ''}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            <Dialog open={isCorrectionModalOpen} onOpenChange={setIsCorrectionModalOpen}>
-                <DialogContent className="sm:max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                           <Bot className="w-6 h-6" /> Resultado da Análise e Correção
-                        </DialogTitle>
-                        <DialogDescription>
-                            A IA extraiu estas informações da imagem. Corrija o que for necessário e salve para ensinar o modelo.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                        <div className="space-y-4">
-                            <Label>Imagem de Referência</Label>
-                            <div className="p-2 border rounded-md bg-muted/30">
-                                {capturedImageForCorrection && <img src={capturedImageForCorrection} alt="Captured label" className="rounded-md" />}
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <Label>Dados Extraídos (Editáveis)</Label>
-                            <div className="space-y-2">
-                                <Label htmlFor="cableLabel" className="text-xs">Etiqueta do Cabo</Label>
-                                <Input id="cableLabel" value={correctedData?.cableLabel || ''} onChange={handleCorrectionChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sourceHostname" className="text-xs">Hostname de Origem</Label>
-                                <Input id="sourceHostname" value={correctedData?.sourceHostname || ''} onChange={handleCorrectionChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sourcePort" className="text-xs">Porta de Origem</Label>
-                                <Input id="sourcePort" value={correctedData?.sourcePort || ''} onChange={handleCorrectionChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="destinationHostname" className="text-xs">Hostname de Destino</Label>
-                                <Input id="destinationHostname" value={correctedData?.destinationHostname || ''} onChange={handleCorrectionChange} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="destinationPort" className="text-xs">Porta de Destino</Label>
-                                <Input id="destinationPort" value={correctedData?.destinationPort || ''} onChange={handleCorrectionChange} />
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter className="sm:justify-between">
-                         <Button type="button" variant="ghost" onClick={handleCopyResult}>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copiar JSON
-                        </Button>
-                        <div className="flex gap-2">
-                            <DialogClose asChild>
-                                <Button type="button" variant="outline">Cancelar</Button>
-                            </DialogClose>
-                            <Button onClick={handleSaveCorrection} disabled={isSaving}>
-                                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                                Salvar Correção e Ensinar IA
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <TrainingSessionModal
+                isOpen={isTrainingModalOpen}
+                onOpenChange={setIsTrainingModalOpen}
+                discoveredLabels={discoveredLabels}
+                onSaveAll={handleSaveAllCorrections}
+            />
         </div>
     );
 }
+
+    
