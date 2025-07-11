@@ -23,6 +23,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+
 
 interface DiscoveredLabel {
     id: string; 
@@ -62,6 +65,7 @@ type TrainingSessionModalProps = {
 
 function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAll }: TrainingSessionModalProps) {
     const [corrections, setCorrections] = useState<Record<string, ExtractConnectionOutput>>({});
+    const [discardedIds, setDiscardedIds] = useState<Set<string>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -71,6 +75,7 @@ function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAl
                 return acc;
             }, {} as Record<string, ExtractConnectionOutput>);
             setCorrections(initialCorrections);
+            setDiscardedIds(new Set()); // Reset discarded on open
         }
     }, [isOpen, discoveredLabels]);
 
@@ -84,10 +89,29 @@ function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAl
             }
         }));
     };
+    
+    const toggleDiscard = (labelId: string) => {
+        setDiscardedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(labelId)) {
+                newSet.delete(labelId);
+            } else {
+                newSet.add(labelId);
+            }
+            return newSet;
+        });
+    }
 
     const handleSaveClick = async () => {
         setIsSaving(true);
-        await onSaveAll(corrections);
+        const finalCorrections = Object.entries(corrections)
+            .filter(([id]) => !discardedIds.has(id))
+            .reduce((acc, [id, data]) => {
+                acc[id] = data;
+                return acc;
+            }, {} as Record<string, ExtractConnectionOutput>);
+
+        await onSaveAll(finalCorrections);
         setIsSaving(false);
         onOpenChange(false);
     }
@@ -101,46 +125,60 @@ function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAl
                         Sessão de Treinamento de Etiquetas
                     </DialogTitle>
                     <DialogDescription>
-                        Revise e corrija as informações extraídas pela IA para cada etiqueta descoberta. Suas correções ajudarão a melhorar o modelo.
+                        Revise e corrija as informações extraídas. Marque as etiquetas incorretas para descartá-las antes de salvar.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-grow pr-6 -mr-6">
                     <div className="space-y-6">
-                       {Object.values(discoveredLabels).map(label => (
-                           <div key={label.id}>
+                       {Object.values(discoveredLabels).map(label => {
+                           const isDiscarded = discardedIds.has(label.id);
+                           return (
+                           <div key={label.id} className={cn("transition-opacity", isDiscarded && "opacity-50")}>
                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                    <div className="space-y-2">
-                                        <Label>Imagem de Referência</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox
+                                                id={`discard-${label.id}`}
+                                                checked={isDiscarded}
+                                                onCheckedChange={() => toggleDiscard(label.id)}
+                                            />
+                                            <Label htmlFor={`discard-${label.id}`} className={cn(isDiscarded && "line-through")}>
+                                                Imagem de Referência
+                                            </Label>
+                                            <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-destructive" onClick={() => toggleDiscard(label.id)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                         <img src={label.imageDataUri} alt={`Preview for ${label.id}`} className="rounded-md border p-1" />
                                         <p className='text-xs text-muted-foreground font-mono bg-muted p-2 rounded-md'>Texto Lido: {label.fullText}</p>
                                    </div>
                                    <div className="space-y-3">
-                                        <Label>Dados Extraídos (Editáveis)</Label>
+                                        <Label className={cn(isDiscarded && "line-through")}>Dados Extraídos (Editáveis)</Label>
                                         <div>
                                             <Label htmlFor="cableLabel" className="text-xs">Etiqueta do Cabo</Label>
-                                            <Input id="cableLabel" value={corrections[label.id]?.cableLabel || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                            <Input id="cableLabel" value={corrections[label.id]?.cableLabel || ''} onChange={(e) => handleCorrectionChange(label.id, e)} disabled={isDiscarded} />
                                         </div>
                                          <div>
                                             <Label htmlFor="sourceHostname" className="text-xs">Hostname Origem</Label>
-                                            <Input id="sourceHostname" value={corrections[label.id]?.sourceHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                            <Input id="sourceHostname" value={corrections[label.id]?.sourceHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} disabled={isDiscarded} />
                                         </div>
                                          <div>
                                             <Label htmlFor="sourcePort" className="text-xs">Porta Origem</Label>
-                                            <Input id="sourcePort" value={corrections[label.id]?.sourcePort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                            <Input id="sourcePort" value={corrections[label.id]?.sourcePort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} disabled={isDiscarded} />
                                         </div>
                                          <div>
                                             <Label htmlFor="destinationHostname" className="text-xs">Hostname Destino</Label>
-                                            <Input id="destinationHostname" value={corrections[label.id]?.destinationHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                            <Input id="destinationHostname" value={corrections[label.id]?.destinationHostname || ''} onChange={(e) => handleCorrectionChange(label.id, e)} disabled={isDiscarded} />
                                         </div>
                                         <div>
                                             <Label htmlFor="destinationPort" className="text-xs">Porta Destino</Label>
-                                            <Input id="destinationPort" value={corrections[label.id]?.destinationPort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} />
+                                            <Input id="destinationPort" value={corrections[label.id]?.destinationPort || ''} onChange={(e) => handleCorrectionChange(label.id, e)} disabled={isDiscarded} />
                                         </div>
                                    </div>
                                </div>
                                <Separator className="mt-6" />
                            </div>
-                       ))}
+                       )})}
                     </div>
                 </ScrollArea>
                 <DialogFooter>
@@ -149,7 +187,7 @@ function TrainingSessionModal({ isOpen, onOpenChange, discoveredLabels, onSaveAl
                     </DialogClose>
                     <Button onClick={handleSaveClick} disabled={isSaving}>
                         {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                        Salvar Todas as Correções
+                        Salvar Correções Válidas
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -268,8 +306,18 @@ export default function LearningMachinePage() {
     };
 
     const handleSaveAllCorrections = async (corrections: Record<string, ExtractConnectionOutput>) => {
+        const correctionsToSave = Object.values(corrections);
+        if (correctionsToSave.length === 0) {
+            toast({
+                title: "Nenhuma correção para salvar",
+                description: "Nenhuma etiqueta válida foi submetida.",
+            });
+            setDiscoveredLabels({}); // Still clear the list
+            return;
+        }
+
         let savedCount = 0;
-        const totalCount = Object.keys(corrections).length;
+        const totalCount = correctionsToSave.length;
         
         const promises = Object.entries(corrections).map(async ([id, correctedData]) => {
             const originalLabel = discoveredLabels[id];
