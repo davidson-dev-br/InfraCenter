@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -15,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/export';
 import { PrintableReport } from '@/components/dashboard/reports/printable-report';
 import { importFromSpreadsheet } from '@/ai/flows/import-spreadsheet-flow';
+import type { ImportedEquipment } from '@/ai/schemas';
+import { ImportReviewDialog } from '@/components/dashboard/reports/import-review-dialog';
 
 export default function ReportsPage() {
   const [isGeneratingHtml, setIsGeneratingHtml] = useState(false);
@@ -28,6 +31,8 @@ export default function ReportsPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importRoomId, setImportRoomId] = useState<string>('');
+  const [equipmentToReview, setEquipmentToReview] = useState<ImportedEquipment[] | null>(null);
+
   const { buildings, itemsByRoom, equipment, connections, users, systemSettings, addEquipment } = useInfra();
   const { toast } = useToast();
 
@@ -129,21 +134,9 @@ export default function ReportsPage() {
         const result = await importFromSpreadsheet({ jsonData: JSON.stringify(json) });
         if (!result.equipment || result.equipment.length === 0) {
             toast({ title: 'Importação Concluída', description: 'A IA não encontrou equipamentos para importar na planilha.' });
-            setIsImporting(false);
-            return;
+        } else {
+            setEquipmentToReview(result.equipment);
         }
-        
-        const racksInRoom = (itemsByRoom[importRoomId] || []).filter(item => item.type.toLowerCase().includes('rack'));
-        const defaultParentId = racksInRoom.length > 0 ? racksInRoom[0].id : null;
-
-        let successCount = 0;
-        for (const equip of result.equipment) {
-            await addEquipment({ ...equip, parentItemId: defaultParentId });
-            successCount++;
-        }
-        
-        toast({ title: 'Importação bem-sucedida!', description: `${successCount} equipamentos foram importados para a sala selecionada.` });
-
     } catch (error) {
         console.error("AI Import failed:", error);
         toast({ variant: 'destructive', title: 'Importação Falhou', description: 'Não foi possível processar a planilha. Verifique o formato do arquivo e tente novamente.' });
@@ -151,7 +144,26 @@ export default function ReportsPage() {
         setIsImporting(false);
         setSelectedFile(null);
     }
-};
+  };
+
+  const handleConfirmImport = async (finalEquipmentList: ImportedEquipment[]) => {
+    if (!importRoomId) {
+        toast({ variant: 'destructive', title: 'Erro Interno', description: 'ID da sala de importação não encontrado.' });
+        return;
+    }
+    
+    const racksInRoom = (itemsByRoom[importRoomId] || []).filter(item => item.type.toLowerCase().includes('rack'));
+    const defaultParentId = racksInRoom.length > 0 ? racksInRoom[0].id : null;
+
+    let successCount = 0;
+    for (const equip of finalEquipmentList) {
+        await addEquipment({ ...equip, parentItemId: defaultParentId });
+        successCount++;
+    }
+    
+    toast({ title: 'Importação bem-sucedida!', description: `${successCount} equipamentos foram importados para a sala selecionada.` });
+    setEquipmentToReview(null);
+  };
 
   return (
     <>
@@ -271,7 +283,7 @@ export default function ReportsPage() {
           <CardFooter className="justify-end">
             <Button onClick={handleImport} disabled={!selectedFile || !importRoomId || isImporting}>
                 {isImporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <UploadCloud className="w-5 h-5 mr-2" />}
-                {isImporting ? 'Importando...' : 'Iniciar Importação com IA'}
+                {isImporting ? 'Analisando...' : 'Analisar planilha com IA'}
             </Button>
           </CardFooter>
         </Card>
@@ -287,6 +299,15 @@ export default function ReportsPage() {
               includeSignatures={includeSignatures}
           />
       </div>
+
+      {equipmentToReview && (
+        <ImportReviewDialog
+          isOpen={!!equipmentToReview}
+          onOpenChange={(isOpen) => !isOpen && setEquipmentToReview(null)}
+          equipmentList={equipmentToReview}
+          onConfirmImport={handleConfirmImport}
+        />
+      )}
     </>
   );
 }

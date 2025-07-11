@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Shared Zod schemas and TypeScript types for AI flows.
  * This file does not contain 'use server' and can be safely imported by both
@@ -52,7 +53,7 @@ export const ImportFromSpreadsheetInputSchema = z.object({
 });
 export type ImportFromSpreadsheetInput = z.infer<typeof ImportFromSpreadsheetInputSchema>;
 
-const ImportedEquipmentSchema = z.object({
+export const ImportedEquipmentSchema = z.object({
   hostname: z.string().optional().describe("The hostname of the device."),
   model: z.string().optional().describe("The model number or name of the device."),
   serialNumber: z.string().optional().describe("The serial number of the device."),
@@ -65,6 +66,8 @@ const ImportedEquipmentSchema = z.object({
   positionU: z.string().optional().describe("The position in the rack, in U."),
   status: z.string().optional().describe("The current operational status of the equipment."),
 });
+export type ImportedEquipment = z.infer<typeof ImportedEquipmentSchema>;
+
 
 export const ImportFromSpreadsheetOutputSchema = z.object({
   equipment: z.array(ImportedEquipmentSchema).describe("The list of equipment extracted and mapped from the spreadsheet data."),
