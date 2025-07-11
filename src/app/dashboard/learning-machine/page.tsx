@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, XCircle, List, Edit, BookOpen, Save } from "lucide-react";
+import { Camera, BrainCircuit, Bot, Sparkles, Loader2, Check, Copy, Play, XCircle, List, Edit, BookOpen, Save, Trash2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCableLabelImage, saveLabelCorrection } from '@/ai/flows/learning-machine-flow';
 import type { ExtractConnectionOutput } from '@/ai/schemas';
@@ -258,6 +258,14 @@ export default function LearningMachinePage() {
         }
         setIsAnalyzing(false);
     };
+    
+    const handleClearList = () => {
+        setDiscoveredLabels({});
+        toast({
+            title: "Lista Limpa",
+            description: "A lista de etiquetas descobertas foi esvaziada.",
+        });
+    };
 
     const handleSaveAllCorrections = async (corrections: Record<string, ExtractConnectionOutput>) => {
         let savedCount = 0;
@@ -379,15 +387,26 @@ export default function LearningMachinePage() {
                                 </ScrollArea>
                             </CardContent>
                         </Card>
-                        <Button
-                            className="w-full"
-                            size="lg"
-                            disabled={Object.keys(discoveredLabels).length === 0 || isAnalyzing}
-                            onClick={() => setIsTrainingModalOpen(true)}
-                        >
-                            <Edit className="w-5 h-5 mr-2" />
-                            Revisar e Treinar {Object.keys(discoveredLabels).length > 0 ? `(${Object.keys(discoveredLabels).length})` : ''}
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                className="w-full"
+                                size="lg"
+                                disabled={Object.keys(discoveredLabels).length === 0 || isAnalyzing}
+                                onClick={() => setIsTrainingModalOpen(true)}
+                            >
+                                <Edit className="w-5 h-5 mr-2" />
+                                Revisar e Treinar {Object.keys(discoveredLabels).length > 0 ? `(${Object.keys(discoveredLabels).length})` : ''}
+                            </Button>
+                             <Button
+                                variant="outline"
+                                size="lg"
+                                disabled={Object.keys(discoveredLabels).length === 0 || isAnalyzing}
+                                onClick={handleClearList}
+                                aria-label="Limpar lista"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -401,5 +420,3 @@ export default function LearningMachinePage() {
         </div>
     );
 }
-
-    
