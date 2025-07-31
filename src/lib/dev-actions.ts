@@ -18,9 +18,9 @@ const testBuildings = [
 ];
 
 const testRooms = [
-    { id: 'R1722382686121', name: 'Sala de Servidores 1A', buildingId: 'B1722382574515', largura: 15, comprimento: 20, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true },
-    { id: 'R1722382717387', name: 'Sala de Rede 1B', buildingId: 'B1722382574515', largura: 8, comprimento: 10, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'numeric', yAxisNaming: 'alpha', isTestData: true },
-    { id: 'R1722382741544', name: 'Sala de Servidores 2A', buildingId: 'B1722382604646', largura: 25, comprimento: 30, tileWidthCm: 50, tileHeightCm: 50, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true }
+    { id: 'R1722382686121', name: 'Sala de Servidores 1A', buildingId: 'B1722382574515', largura: 15, widthM: 20, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true },
+    { id: 'R1722382717387', name: 'Sala de Rede 1B', buildingId: 'B1722382574515', largura: 8, widthM: 10, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'numeric', yAxisNaming: 'alpha', isTestData: true },
+    { id: 'R1722382741544', name: 'Sala de Servidores 2A', buildingId: 'B1722382604646', largura: 25, widthM: 30, tileWidthCm: 50, tileHeightCm: 50, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true }
 ];
 
 const testParentItemTypes = [
@@ -36,11 +36,13 @@ const testChildItemTypes = [
 const testManufacturers = [
     { id: 'man_cisco', name: 'Cisco', isTestData: true },
     { id: 'man_dell', name: 'Dell EMC', isTestData: true },
+    { id: 'man_hpe', name: 'HPE', isTestData: true },
 ];
 
 const testModels = [
     { id: 'model_c9300', name: 'Catalyst 9300', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;4xSFP+', isTestData: true },
     { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB', isTestData: true },
+    { id: 'model_dl380', name: 'ProLiant DL380', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: null, isTestData: true },
 ];
 
 const testParentItems = [
@@ -48,8 +50,8 @@ const testParentItems = [
 ];
 
 const testChildItems = [
-    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, isTestData: true },
-    { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, isTestData: true },
+    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, isTestData: true, brand: 'Cisco' },
+    { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, isTestData: true, brand: 'Dell EMC' },
 ];
 
 
@@ -70,16 +72,17 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
     
     // Função auxiliar para definir o tipo SQL correto para cada campo.
     const addInput = (key: string, value: any) => {
+        const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
+        const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'];
+
         if (value === null || value === undefined) {
-            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, null);
-            else if (['width', 'height', 'preco', 'largura', 'comprimento', 'tileWidthCm', 'tileHeightCm'].includes(key)) request.input(key, sql.Float, null);
-            else if (['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'].includes(key)) request.input(key, sql.Bit, null);
+            if (numericColumns.includes(key)) request.input(key, sql.Float, null);
+            else if (booleanColumns.includes(key)) request.input(key, sql.Bit, null);
             else request.input(key, sql.NVarChar, null);
         } else if (typeof value === 'boolean') {
             request.input(key, sql.Bit, value);
         } else if (typeof value === 'number') {
-            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, value);
-            else request.input(key, sql.Float, value);
+            request.input(key, sql.Float, value);
         } else if (value instanceof Date) {
             request.input(key, sql.DateTime2, value);
         } else if (typeof value === 'object') {
@@ -108,7 +111,7 @@ export async function populateTestData() {
         const operationsInOrder = [
             ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
             ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
-            ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', {...item, widthM: item.comprimento})),
+            ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
             ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
             ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
             ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
@@ -138,9 +141,10 @@ export async function cleanTestData() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
 
+    // Ordem de exclusão inversa à de inserção para respeitar as chaves estrangeiras
     const tablesToDeleteFrom = [
-        'ChildItems', 'ParentItems', 'Models', 'Rooms', 'Buildings', 
-        'Manufacturers', 'ItemTypes', 'ItemTypesEqp', 'Users'
+        'ChildItems', 'ParentItems', 'Models', 'Manufacturers', 'Rooms', 'Buildings', 
+        'ItemTypes', 'ItemTypesEqp', 'Users'
     ];
 
     try {
