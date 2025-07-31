@@ -423,10 +423,8 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
     } else if ('email' in userData && userData.email) {
         // Se o usuário não existe, cria um novo
         const email = userData.email.toLowerCase();
-        // Define o cargo 'developer' para o e-mail específico, senão 'guest' ou o cargo passado
-        const devEmail = "davidson.php@outlook.com";
         const newId = `user_${Date.now()}`;
-        const role = email === devEmail ? 'developer' : (userData.role || 'guest');
+        const role = userData.role || 'guest';
         
         await pool.request()
             .input('id', sql.NVarChar, newId)
