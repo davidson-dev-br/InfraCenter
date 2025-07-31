@@ -15,6 +15,8 @@ import { ManufacturersTable } from '@/components/system/manufacturers-table';
 import { ManageManufacturerDialog } from '@/components/system/manage-manufacturer-dialog';
 import { ModelsTable } from '@/components/system/models-table';
 import { ManageModelDialog } from '@/components/system/manage-model-dialog';
+import { PortTypesTable } from '@/components/system/port-types-table';
+import { ManagePortTypeDialog } from '@/components/system/manage-port-type-dialog';
 
 async function SystemPage() {
   
@@ -127,9 +129,15 @@ async function SystemPage() {
                     <TabsTrigger value="connection_types"><Puzzle className="mr-2 h-4 w-4"/>Tipos de Conexão</TabsTrigger>
                 </TabsList>
                  <TabsContent value="port_types" className="mt-6 space-y-6">
-                    <div className="text-center text-muted-foreground py-8">
-                        Funcionalidade em desenvolvimento.
+                    <div className="flex items-center justify-between">
+                        <p className="text-muted-foreground text-sm max-w-xl">
+                            Gerencie a lista de tipos de porta (conectores) disponíveis no sistema.
+                        </p>
+                        <ManagePortTypeDialog mode="add">
+                          <Button><Plus className="mr-2" />Adicionar Tipo de Porta</Button>
+                        </ManagePortTypeDialog>
                     </div>
+                    <PortTypesTable />
                  </TabsContent>
                  <TabsContent value="connection_types" className="mt-6 space-y-6">
                     <div className="text-center text-muted-foreground py-8">
@@ -165,3 +173,5 @@ async function SystemPage() {
 }
 
 export default SystemPage;
+
+    
