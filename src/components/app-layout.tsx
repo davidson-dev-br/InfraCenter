@@ -163,14 +163,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center justify-between p-2">
              <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary">
                   <Server className="text-primary-foreground size-6" />
                 </div>
-                <h1 className="text-xl font-headline font-semibold text-primary group-data-[collapsible=icon]:hidden">InfraVision</h1>
+                <h1 className="text-xl font-headline font-semibold text-primary group-data-[state=collapsed]:hidden">InfraVision</h1>
              </div>
              <SidebarTrigger className="hidden md:flex" />
           </div>
@@ -179,7 +179,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
            {visibleNavSections.map((section, index) => (
               section && (
                  <SidebarMenu key={section.title} className={index > 0 ? 'mt-4 pt-4 border-t border-sidebar-border' : ''}>
-                    <SidebarMenuItem className='px-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden'>{section.title}</SidebarMenuItem>
+                    <SidebarMenuItem className='px-2 text-xs text-muted-foreground group-data-[state=collapsed]:hidden'>{section.title}</SidebarMenuItem>
                     {section.items.map((item) => (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
@@ -189,7 +189,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                           <Link href={item.href}>
                             <item.icon />
-                            <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                            <span className="group-data-[state=collapsed]:hidden">{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
