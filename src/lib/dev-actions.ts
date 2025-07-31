@@ -64,7 +64,7 @@ const testModels = [
     { id: 'model_giga_cat6', name: 'Gigalan CAT6 24P', manufacturerId: 'man_furukawa', tamanhoU: 1, portConfig: '24xRJ45', isTestData: true },
 ];
 
-const testItems = [
+const testParentItems = [
     { id: 'item_1722382897042', label: 'RACK-A01', x: 2, y: 2, width: 0.6, height: 1, type: 'Rack 42U', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-RACK-001', brand: 'Dell EMC', tag: 'ASSET-001', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/rack.pdf', description: 'Rack principal de servidores', imageUrl: 'https://placehold.co/600x400.png', modelo: 'PowerEdge R42', preco: 5000, trellisId: 'TRELLIS-001', tamanhoU: 42, potenciaW: 3000, isTestData: true },
     { id: 'item_1722383020668', label: 'AC-01', x: 0, y: 5, width: 0.8, height: 2, type: 'Ar Condicionado', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-AC-001', brand: 'Stulz', tag: 'ASSET-002', isTagEligible: false, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/ac.pdf', description: 'Ar condicionado da fileira A', imageUrl: null, modelo: 'CyberAir 3', preco: 15000, trellisId: 'TRELLIS-002', tamanhoU: null, potenciaW: 10000, isTestData: true },
     { id: 'item_1722383173367', label: 'RACK-B05', x: 5, y: 5, width: 0.6, height: 1, type: 'Rack 42U', status: 'maintenance', roomId: 'R1722382741544', serialNumber: 'SN-RACK-005', brand: 'HPE', tag: 'ASSET-004', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: null, description: 'Rack de armazenamento', imageUrl: null, modelo: 'ProLiant DL380', preco: 4500, trellisId: 'TRELLIS-004', tamanhoU: 42, potenciaW: 2800, isTestData: true },
@@ -77,47 +77,96 @@ const testChildItems = [
     { id: 'citem_003', label: 'PATCH-A01-01', parentId: 'item_1722382897042', type: 'Patch Panel', status: 'draft', serialNumber: 'SN-PATCH-001', brand: 'Furukawa', tag: 'ASSET-007', isTagEligible: false, ownerEmail: 'rede@example.com', dataSheetUrl: null, description: 'Patch Panel para servidores', imageUrl: null, modelo: 'Gigalan Cat6', preco: 500, trellisId: 'TRELLIS-007', tamanhoU: 1, posicaoU: 35, isTestData: true },
 ];
 
-async function upsertRecord(pool: sql.ConnectionPool, tableName: string, record: Record<string, any>) {
-    const checkResult = await pool.request().input('id', sql.NVarChar, record.id).query(`SELECT id FROM ${tableName} WHERE id = @id`);
+async function bulkInsert(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>[]) {
+    if (data.length === 0) return;
     
-    if (checkResult.recordset.length === 0) {
-        const columns = Object.keys(record);
-        const values = columns.map(col => `@${col}`);
-        const request = pool.request();
-        
-        for (const col of columns) {
-            const value = record[col];
-            if (typeof value === 'boolean') request.input(col, sql.Bit, value);
-            else if (typeof value === 'number') request.input(col, sql.Float, value);
-            else if (value instanceof Date) request.input(col, sql.DateTime2, value);
-            else request.input(col, sql.NVarChar, value ?? null);
-        }
-        
-        await request.query(`INSERT INTO ${tableName} (${columns.join(',')}) VALUES (${values.join(',')})`);
+    const table = new sql.Table(tableName);
+    
+    // Mapeamento de tipos para colunas comuns
+    table.columns.add('id', sql.NVarChar, { nullable: false, primary: true });
+    if ('name' in data[0]) table.columns.add('name', sql.NVarChar, { nullable: false });
+    if ('address' in data[0]) table.columns.add('address', sql.NVarChar, { nullable: true });
+    if ('email' in data[0]) table.columns.add('email', sql.NVarChar, { nullable: false });
+    if ('displayName' in data[0]) table.columns.add('displayName', sql.NVarChar, { nullable: true });
+    if ('photoURL' in data[0]) table.columns.add('photoURL', sql.NVarChar, { nullable: true });
+    if ('role' in data[0]) table.columns.add('role', sql.NVarChar, { nullable: false });
+    if ('permissions' in data[0]) table.columns.add('permissions', sql.NVarChar, { nullable: true });
+    if ('accessibleBuildingIds' in data[0]) table.columns.add('accessibleBuildingIds', sql.NVarChar, { nullable: true });
+    if ('lastLoginAt' in data[0]) table.columns.add('lastLoginAt', sql.DateTime2, { nullable: false });
+    if ('preferences' in data[0]) table.columns.add('preferences', sql.NVarChar, { nullable: true });
+    if ('buildingId' in data[0]) table.columns.add('buildingId', sql.NVarChar, { nullable: false });
+    if ('largura' in data[0]) table.columns.add('largura', sql.Float, { nullable: true });
+    if ('comprimento' in data[0]) table.columns.add('widthM', sql.Float, { nullable: true });
+    if ('tileWidthCm' in data[0]) table.columns.add('tileWidthCm', sql.Float, { nullable: true });
+    if ('tileHeightCm' in data[0]) table.columns.add('tileHeightCm', sql.Float, { nullable: true });
+    if ('xAxisNaming' in data[0]) table.columns.add('xAxisNaming', sql.NVarChar, { nullable: true });
+    if ('yAxisNaming' in data[0]) table.columns.add('yAxisNaming', sql.NVarChar, { nullable: true });
+    if ('category' in data[0]) table.columns.add('category', sql.NVarChar, { nullable: false });
+    if ('defaultWidthM' in data[0]) table.columns.add('defaultWidthM', sql.Float, { nullable: false });
+    if ('defaultHeightM' in data[0]) table.columns.add('defaultHeightM', sql.Float, { nullable: false });
+    if ('iconName' in data[0]) table.columns.add('iconName', sql.NVarChar, { nullable: true });
+    if ('status' in data[0]) table.columns.add('status', sql.NVarChar, { nullable: false });
+    if ('defaultColor' in data[0]) table.columns.add('defaultColor', sql.NVarChar, { nullable: true });
+    if ('canHaveChildren' in data[0]) table.columns.add('canHaveChildren', sql.Bit, { nullable: true });
+    if ('isResizable' in data[0]) table.columns.add('isResizable', sql.Bit, { nullable: true });
+    if ('manufacturerId' in data[0]) table.columns.add('manufacturerId', sql.NVarChar, { nullable: false });
+    if ('portConfig' in data[0]) table.columns.add('portConfig', sql.NVarChar, { nullable: true });
+    if ('tamanhoU' in data[0]) table.columns.add('tamanhoU', sql.Int, { nullable: true });
+    if ('label' in data[0]) table.columns.add('label', sql.NVarChar, { nullable: false });
+    if ('x' in data[0]) table.columns.add('x', sql.Int, { nullable: false });
+    if ('y' in data[0]) table.columns.add('y', sql.Int, { nullable: false });
+    if ('width' in data[0]) table.columns.add('width', sql.Float, { nullable: false });
+    if ('height' in data[0]) table.columns.add('height', sql.Float, { nullable: false });
+    if ('type' in data[0]) table.columns.add('type', sql.NVarChar, { nullable: false });
+    if ('roomId' in data[0]) table.columns.add('roomId', sql.NVarChar, { nullable: false });
+    if ('serialNumber' in data[0]) table.columns.add('serialNumber', sql.NVarChar, { nullable: true });
+    if ('brand' in data[0]) table.columns.add('brand', sql.NVarChar, { nullable: true });
+    if ('tag' in data[0]) table.columns.add('tag', sql.NVarChar, { nullable: true });
+    if ('isTagEligible' in data[0]) table.columns.add('isTagEligible', sql.Bit, { nullable: true });
+    if ('ownerEmail' in data[0]) table.columns.add('ownerEmail', sql.NVarChar, { nullable: true });
+    if ('dataSheetUrl' in data[0]) table.columns.add('dataSheetUrl', sql.NVarChar, { nullable: true });
+    if ('description' in data[0]) table.columns.add('description', sql.NVarChar, { nullable: true });
+    if ('imageUrl' in data[0]) table.columns.add('imageUrl', sql.NVarChar, { nullable: true });
+    if ('modelo' in data[0]) table.columns.add('modelo', sql.NVarChar, { nullable: true });
+    if ('preco' in data[0]) table.columns.add('preco', sql.Float, { nullable: true });
+    if ('trellisId' in data[0]) table.columns.add('trellisId', sql.NVarChar, { nullable: true });
+    if ('potenciaW' in data[0]) table.columns.add('potenciaW', sql.Int, { nullable: true });
+    if ('color' in data[0]) table.columns.add('color', sql.NVarChar, { nullable: true });
+    if ('parentId' in data[0]) table.columns.add('parentId', sql.NVarChar, { nullable: false });
+    if ('posicaoU' in data[0]) table.columns.add('posicaoU', sql.Int, { nullable: true });
+    if ('isTestData' in data[0]) table.columns.add('isTestData', sql.Bit, { nullable: true });
+
+    for (const item of data) {
+        const row = Object.values(item).map(val => (typeof val === 'object' && val !== null ? JSON.stringify(val) : val));
+        table.rows.add(...row);
     }
+    
+    const request = pool.request();
+    await request.bulk(table);
 }
 
 
 export async function populateTestData() {
     try {
+        await cleanTestData();
         const pool = await getDbPool();
 
-        // Nível 1: Entidades sem dependências externas
-        for (const user of testUsers) await _updateUser(user);
-        for (const building of testBuildings) await upsertRecord(pool, 'Buildings', building);
-        for (const type of testParentItemTypes) await upsertRecord(pool, 'ItemTypes', type);
-        for (const type of testChildItemTypes) await upsertRecord(pool, 'ItemTypesEqp', type);
-        for (const man of testManufacturers) await upsertRecord(pool, 'Manufacturers', man);
+        // Nível 1: Entidades sem dependências
+        await bulkInsert(pool, 'Users', testUsers.map(u => ({...u, permissions: JSON.stringify(u.permissions), accessibleBuildingIds: JSON.stringify(u.accessibleBuildingIds), preferences: JSON.stringify(u.preferences) })));
+        await bulkInsert(pool, 'Buildings', testBuildings);
+        await bulkInsert(pool, 'ItemTypes', testParentItemTypes);
+        await bulkInsert(pool, 'ItemTypesEqp', testChildItemTypes);
+        await bulkInsert(pool, 'Manufacturers', testManufacturers);
         
         // Nível 2: Entidades com dependências de Nível 1
-        for (const room of testRooms) await upsertRecord(pool, 'Rooms', room);
-        for (const model of testModels) await upsertRecord(pool, 'Models', model);
+        await bulkInsert(pool, 'Rooms', testRooms.map(r => ({...r, widthM: r.comprimento})));
+        await bulkInsert(pool, 'Models', testModels);
         
         // Nível 3: Itens que dependem de Nível 2
-        for (const item of testItems) await upsertRecord(pool, 'ParentItems', item);
+        await bulkInsert(pool, 'ParentItems', testParentItems);
         
         // Nível 4: Itens que dependem de Nível 3
-        for (const item of testChildItems) await upsertRecord(pool, 'ChildItems', item);
+        await bulkInsert(pool, 'ChildItems', testChildItems);
         
         console.log("Banco de dados populado com dados de teste.");
     } catch (error) {
@@ -146,3 +195,5 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
+
+    
