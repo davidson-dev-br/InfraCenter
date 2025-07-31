@@ -2,14 +2,26 @@
 
 ## [2024-08-05]
 
+### O que foi feito hoje?
+- **Implementado o CRUD completo para "Tipos de Porta"**:
+  - Criada a tabela `PortTypes` no banco de dados.
+  - Desenvolvidas as `server actions` para adicionar, editar e excluir tipos de porta.
+  - Construída a interface (tabela e modais) na aba "Gerenciamento de Conexões" da página de Sistema.
+- **Implementado o CRUD completo para "Tipos de Conexão"**:
+  - Criada a tabela `ConnectionTypes` no banco de dados.
+  - Desenvolvidas as `server actions` para o CRUD de tipos de conexão.
+  - Construída a interface completa na página de Sistema.
+- **Melhorias de Robustez e Experiência do Usuário**:
+  - Aumentado o timeout da conexão com o banco de dados para evitar falhas por lentidão.
+  - Implementada uma página de erro global (`error.tsx`) para capturar falhas e permitir que o usuário tente novamente.
+  - Criada uma página `404 Not Found` personalizada.
+  - Ajustada a inicialização do servidor para não travar caso o banco de dados esteja indisponível.
+- **Atualizada a Documentação**:
+  - O `ARCHITECTURE.md` foi atualizado para refletir a conclusão das tarefas de "Tipos de Porta" e "Tipos de Conexão".
+
 ### Foco do Dia
-- **Implementar o CRUD para a entidade "Tipos de Porta"**:
-    - **Objetivo:** Construir a lógica e a interface na página `/system` para gerenciar os `PortTypes` (ex: RJ45, SFP+, Tomada 20A).
-    - **O que será feito (Passo a Passo):**
-        1. Criar a tabela `PortTypes` no banco de dados. (`Concluído`)
-        2. Desenvolver as `server actions` para adicionar, editar e excluir tipos de porta. (`A fazer`)
-        3. Construir a interface (tabela e modais) na aba "Gerenciamento de Conexões" da página de Sistema. (`A fazer`)
-- **Atualizar a Documentação:** Refletir o início da Fase 7 no arquivo `ARCHITECTURE.md`. (`Concluído`)
+- **Finalizar as fundações de conectividade na página `/system`**:
+    - **Objetivo:** Construir a lógica e a interface para gerenciar `PortTypes` e `ConnectionTypes`.
 
 ### Impedimentos
 - Nenhum.

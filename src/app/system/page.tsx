@@ -6,7 +6,7 @@ import { AddItemTypeDialog } from '@/components/add-item-type-dialog';
 import { AddStatusButton } from '@/components/system/add-status-button';
 import { ItemTypesTable } from '@/components/system/item-types-table';
 import { StatusesTable } from '@/components/system/statuses-table';
-import { Puzzle, RefreshCcwDot, HardDrive, LayoutGrid, Tag, Plus, Library, Network, Plug } from 'lucide-react';
+import { Puzzle, RefreshCcwDot, HardDrive, LayoutGrid, Tag, Plus, Library, Network, Plug, Link2 } from 'lucide-react';
 import { ParentColumnConfig } from '@/components/system/parent-column-config';
 import { ChildColumnConfig } from '@/components/system/child-column-config';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +17,8 @@ import { ModelsTable } from '@/components/system/models-table';
 import { ManageModelDialog } from '@/components/system/manage-model-dialog';
 import { PortTypesTable } from '@/components/system/port-types-table';
 import { ManagePortTypeDialog } from '@/components/system/manage-port-type-dialog';
+import { ConnectionTypesTable } from '@/components/system/connection-types-table';
+import { ManageConnectionTypeDialog } from '@/components/system/manage-connection-type-dialog';
 
 async function SystemPage() {
   
@@ -126,7 +128,7 @@ async function SystemPage() {
              <Tabs defaultValue="port_types">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="port_types"><Plug className="mr-2 h-4 w-4"/>Tipos de Porta</TabsTrigger>
-                    <TabsTrigger value="connection_types"><Puzzle className="mr-2 h-4 w-4"/>Tipos de Conexão</TabsTrigger>
+                    <TabsTrigger value="connection_types"><Link2 className="mr-2 h-4 w-4"/>Tipos de Conexão</TabsTrigger>
                 </TabsList>
                  <TabsContent value="port_types" className="mt-6 space-y-6">
                     <div className="flex items-center justify-between">
@@ -140,9 +142,15 @@ async function SystemPage() {
                     <PortTypesTable />
                  </TabsContent>
                  <TabsContent value="connection_types" className="mt-6 space-y-6">
-                    <div className="text-center text-muted-foreground py-8">
-                        Funcionalidade em desenvolvimento.
+                    <div className="flex items-center justify-between">
+                        <p className="text-muted-foreground text-sm max-w-xl">
+                            Gerencie a natureza de uma conexão (ex: Dados UTP, Energia AC).
+                        </p>
+                         <ManageConnectionTypeDialog mode="add">
+                            <Button><Plus className="mr-2" />Adicionar Tipo de Conexão</Button>
+                        </ManageConnectionTypeDialog>
                     </div>
+                    <ConnectionTypesTable />
                  </TabsContent>
              </Tabs>
         </CardContent>
@@ -173,5 +181,3 @@ async function SystemPage() {
 }
 
 export default SystemPage;
-
-    

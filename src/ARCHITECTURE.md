@@ -56,11 +56,15 @@ Construir os blocos fundamentais para o mapeamento de conexões físicas e lógi
 
 1.  **7.1. Gerenciar Tipos de Porta:**
     *   **Descrição:** Criar a tabela `PortTypes` no banco de dados e implementar o CRUD completo na aba "Tipos de Porta" da página de Sistema. Isso nos permitirá definir os tipos de conectores físicos (ex: RJ45, SFP+, Tomada 20A).
-    *   **Status:** `Próximo Passo`.
+    *   **Status:** `Concluído`.
 
 2.  **7.2. Gerenciar Tipos de Conexão:**
     *   **Descrição:** Implementar o CRUD para `ConnectionTypes`, que definirá a natureza da conexão (ex: Dados UTP, Fibra Óptica, Energia AC).
-    *   **Status:** `A Fazer`.
+    *   **Status:** `Concluído`.
+
+3.  **7.3. Gerenciar Portas de Equipamentos:**
+    *   **Descrição:** Criar a tabela `EquipmentPorts` no banco de dados para armazenar cada porta individual de um equipamento (ex: `SW-01:Porta_1`).
+    *   **Status:** `Próximo Passo`.
 
 ### Fase 8: Mapeamento Avançado e Inteligência Proativa
 **Status:** `A Fazer`
