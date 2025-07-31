@@ -266,6 +266,7 @@ async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
+
 async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'AuditLog', `
         CREATE TABLE AuditLog (

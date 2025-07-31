@@ -5,11 +5,11 @@
 ### Foco do Dia
 - **Implementar o CRUD para a entidade "Tipos de Porta"**:
     - **Objetivo:** Construir a lógica e a interface na página `/system` para gerenciar os `PortTypes` (ex: RJ45, SFP+, Tomada 20A).
-    - **O que será feito:**
-        1. Criar a tabela `PortTypes` no banco de dados.
-        2. Desenvolver as `server actions` para adicionar, editar e excluir tipos de porta.
-        3. Construir a interface (tabela e modais) na aba "Gerenciamento de Conexões" da página de Sistema.
-- **Atualizar a Documentação:** Refletir o início da Fase 7 no arquivo `ARCHITECTURE.md`.
+    - **O que será feito (Passo a Passo):**
+        1. Criar a tabela `PortTypes` no banco de dados. (`Concluído`)
+        2. Desenvolver as `server actions` para adicionar, editar e excluir tipos de porta. (`A fazer`)
+        3. Construir a interface (tabela e modais) na aba "Gerenciamento de Conexões" da página de Sistema. (`A fazer`)
+- **Atualizar a Documentação:** Refletir o início da Fase 7 no arquivo `ARCHITECTURE.md`. (`Concluído`)
 
 ### Impedimentos
 - Nenhum.
@@ -30,8 +30,8 @@
 
 ### Foco do Dia (Revisado)
 - **Finalizar a configuração da página de Equipamentos no menu principal:**
-  - O objetivo é construir a lógica de "Modelos", que depende de "Fabricantes".
-  - Isso nos permitirá, no futuro, popular automaticamente as portas de um equipamento quando ele for adicionado ao inventário.
+  - O objetivo era construir a lógica de "Modelos", que depende de "Fabricantes".
+  - Isso nos permitiria, no futuro, popular automaticamente as portas de um equipamento quando ele for adicionado ao inventário.
 - **Estruturar o "backend" (configurações) da página de Conexões dentro da página de Sistema.**
 
 ### Plano Específico (Step-by-Step)
