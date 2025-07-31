@@ -74,7 +74,11 @@ export default function SettingsPage() {
       if (section.permission && !hasPermission(section.permission)) {
         return null;
       }
-      const visibleItems = section.items.filter(item => hasPermission(item.permission));
+      // Filtra os itens que o usuário pode ver E que não são a própria página de configurações
+      const visibleItems = section.items.filter(item => 
+        hasPermission(item.permission) && item.href !== '/settings'
+      );
+      
       if (visibleItems.length === 0) {
         return null;
       }
