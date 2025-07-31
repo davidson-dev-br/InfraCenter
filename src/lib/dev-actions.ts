@@ -3,7 +3,6 @@
 
 import sql from 'mssql';
 import { getDbPool } from './db';
-import { _updateUser } from './user-service';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
 
@@ -69,20 +68,29 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
     const values = columns.map(col => `@${col}`);
     const request = pool.request();
     
-    for (const col of columns) {
-        const value = data[col];
-        // Lógica simples para determinar o tipo SQL
-        if (typeof value === 'boolean') {
-            request.input(col, sql.Bit, value);
+    // Função auxiliar para definir o tipo SQL correto para cada campo.
+    const addInput = (key: string, value: any) => {
+        if (value === null || value === undefined) {
+            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, null);
+            else if (['width', 'height', 'preco', 'largura', 'comprimento', 'tileWidthCm', 'tileHeightCm'].includes(key)) request.input(key, sql.Float, null);
+            else if (['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'].includes(key)) request.input(key, sql.Bit, null);
+            else request.input(key, sql.NVarChar, null);
+        } else if (typeof value === 'boolean') {
+            request.input(key, sql.Bit, value);
         } else if (typeof value === 'number') {
-            request.input(col, sql.Int, value);
+            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, value);
+            else request.input(key, sql.Float, value);
         } else if (value instanceof Date) {
-            request.input(col, sql.DateTime2, value);
-        } else if (typeof value === 'object' && value !== null) {
-            request.input(col, sql.NVarChar, JSON.stringify(value));
+            request.input(key, sql.DateTime2, value);
+        } else if (typeof value === 'object') {
+            request.input(key, sql.NVarChar, JSON.stringify(value));
         } else {
-            request.input(col, sql.NVarChar, value);
+            request.input(key, sql.NVarChar, String(value));
         }
+    };
+    
+    for (const col of columns) {
+        addInput(col, data[col]);
     }
 
     await request.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`);
@@ -94,32 +102,31 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
  */
 export async function populateTestData() {
     const pool = await getDbPool();
-    const transaction = new sql.Transaction(pool);
     
     try {
-        await transaction.begin();
-
         // A ordem de inserção é crucial por causa das chaves estrangeiras.
-        const operations = [
-            ...testUsers.map(item => upsertRecord(pool, 'Users', item)),
-            ...testBuildings.map(item => upsertRecord(pool, 'Buildings', item)),
-            ...testRooms.map(item => upsertRecord(pool, 'Rooms', {...item, widthM: item.comprimento})),
-            ...testParentItemTypes.map(item => upsertRecord(pool, 'ItemTypes', item)),
-            ...testChildItemTypes.map(item => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
-            ...testManufacturers.map(item => upsertRecord(pool, 'Manufacturers', item)),
-            ...testModels.map(item => upsertRecord(pool, 'Models', item)),
-            ...testParentItems.map(item => upsertRecord(pool, 'ParentItems', item)),
-            ...testChildItems.map(item => upsertRecord(pool, 'ChildItems', item)),
+        const operationsInOrder = [
+            ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
+            ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
+            ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', {...item, widthM: item.comprimento})),
+            ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
+            ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
+            ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
+            ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
+            ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', item)),
+            ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', item)),
         ];
 
-        await Promise.all(operations);
-        await transaction.commit();
+        // Executa as operações sequencialmente para garantir a ordem de dependência
+        for (const operation of operationsInOrder) {
+            await operation();
+        }
+        
         console.log("Banco de dados populado com dados de teste (apenas itens faltantes).");
 
     } catch (error) {
-        await transaction.rollback();
         console.error("Erro ao popular banco de dados:", error);
-        throw new Error("Falha ao popular o banco de dados. A transação foi revertida.");
+        throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor.");
     }
 }
 
@@ -132,8 +139,8 @@ export async function cleanTestData() {
     const transaction = new sql.Transaction(pool);
 
     const tablesToDeleteFrom = [
-        'ChildItems', 'ParentItems', 'Rooms', 'Buildings', 
-        'Models', 'Manufacturers', 'ItemTypes', 'ItemTypesEqp', 'Users'
+        'ChildItems', 'ParentItems', 'Models', 'Rooms', 'Buildings', 
+        'Manufacturers', 'ItemTypes', 'ItemTypesEqp', 'Users'
     ];
 
     try {
