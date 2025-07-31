@@ -63,7 +63,6 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
     await ensureAuditLogTableExists(pool);
-    // Adicionando as tabelas que estavam faltando
     await ensureIncidentsTableExists(pool);
     await ensureEvidenceTableExists(pool);
     await ensureSensorsTableExists(pool);
@@ -190,7 +189,7 @@ async function ensureParentItemsTableExists(pool: sql.ConnectionPool) {
             height FLOAT NOT NULL DEFAULT 1.0,
             type NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL,
-            roomId NVARCHAR(50) NOT NULL,
+            roomId NVARCHAR(50),
             serialNumber NVARCHAR(100),
             brand NVARCHAR(100),
             tag NVARCHAR(100),
@@ -578,5 +577,7 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
+
+    
 
     

@@ -71,7 +71,7 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
     const request = pool.request();
     
     // Função auxiliar para definir o tipo SQL correto para cada campo.
-    const addInput = (key: string, value: any) => {
+    const addInput = (request: sql.Request, key: string, value: any) => {
         const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
         const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'];
 
@@ -108,15 +108,14 @@ export async function populateTestData() {
     await cleanTestData(); // Garante um ambiente limpo antes de popular
     const pool = await getDbPool();
     
-    // A ordem de inserção é crucial por causa das chaves estrangeiras.
     const operationsInOrder = [
         ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
         ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
-        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
         ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
         ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
         ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
         ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
+        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
         ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', item)),
         ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', item)),
     ];
@@ -176,3 +175,5 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
+
+    
