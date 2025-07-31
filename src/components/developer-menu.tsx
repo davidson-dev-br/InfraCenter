@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
-import { Settings, X, Loader2, Database, Trash2, Download } from 'lucide-react';
+import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { populateTestData, cleanTestData } from '@/lib/dev-actions';
+import { ensureDatabaseSchema } from '@/lib/user-service'; // Importando a nova função
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 
@@ -16,19 +17,32 @@ export const DeveloperMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
     const { toast } = useToast();
     
-    // Armazena as configurações de desenvolvedor no localStorage
     const [auditLogEnabled, setAuditLogEnabled] = useLocalStorage('dev_auditLogEnabled', false);
+    const [isCheckingSchema, setIsCheckingSchema] = useState(false);
     const [isPopulating, setIsPopulating] = useState(false);
     const [isCleaning, setIsCleaning] = useState(false);
     
+    const handleEnsureSchema = async () => {
+        setIsCheckingSchema(true);
+        try {
+            const result = await ensureDatabaseSchema();
+            toast({ title: 'Sucesso', description: result });
+            // Não precisa recarregar a página
+        } catch (error: any) {
+            toast({ title: 'Erro na verificação do Schema', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsCheckingSchema(false);
+        }
+    }
+
     const handlePopulate = async () => {
         setIsPopulating(true);
         try {
             await populateTestData();
-            toast({ title: 'Sucesso', description: 'Banco de dados populado com dados de teste.' });
-            window.location.reload();
-        } catch (error) {
-            toast({ title: 'Erro', description: 'Falha ao popular o banco de dados.', variant: 'destructive' });
+            toast({ title: 'Sucesso', description: 'Banco de dados populado com dados de teste. Recarregue a página para ver as alterações.' });
+            // window.location.reload(); // Opcional, o usuário pode recarregar manualmente.
+        } catch (error: any) {
+            toast({ title: 'Erro ao Popular', description: error.message, variant: 'destructive' });
         } finally {
             setIsPopulating(false);
         }
@@ -38,10 +52,10 @@ export const DeveloperMenu = () => {
         setIsCleaning(true);
         try {
             await cleanTestData();
-            toast({ title: 'Sucesso', description: 'Dados de teste removidos do banco de dados.' });
+            toast({ title: 'Sucesso', description: 'Dados de teste removidos do banco de dados. Recarregue a página.' });
             window.location.reload();
-        } catch (error) {
-            toast({ title: 'Erro', description: 'Falha ao limpar os dados de teste.', variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: 'Erro ao Limpar', description: (error as Error).message, variant: 'destructive' });
         } finally {
             setIsCleaning(false);
         }
@@ -56,6 +70,8 @@ export const DeveloperMenu = () => {
             </div>
         )
     }
+
+    const isAnyTaskRunning = isCheckingSchema || isPopulating || isCleaning;
 
     return (
         <Card className="fixed bottom-4 right-4 z-50 w-80 shadow-2xl">
@@ -85,11 +101,15 @@ export const DeveloperMenu = () => {
             </CardContent>
             <Separator className="my-2"/>
             <CardFooter className="flex flex-col gap-2 !p-4">
-                 <Button onClick={handlePopulate} disabled={isPopulating || isCleaning} className="w-full">
-                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                    Popular Banco de Dados
+                 <Button onClick={handleEnsureSchema} disabled={isAnyTaskRunning} className="w-full">
+                    {isCheckingSchema ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Verificar/Criar Schema DB
                 </Button>
-                <Button variant="destructive" onClick={handleClean} disabled={isPopulating || isCleaning} className="w-full">
+                <Button onClick={handlePopulate} disabled={isAnyTaskRunning} className="w-full">
+                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                    Popular Dados de Teste
+                </Button>
+                <Button variant="destructive" onClick={handleClean} disabled={isAnyTaskRunning} className="w-full">
                     {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                     Limpar Dados de Teste
                 </Button>

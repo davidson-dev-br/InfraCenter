@@ -48,6 +48,23 @@ async function ensureTableExists(pool: sql.ConnectionPool, tableName: string, cr
 // ====================================================================
 // DEFINIÇÃO E CRIAÇÃO DE CADA TABELA DO SISTEMA
 // ====================================================================
+async function createAllTables(pool: sql.ConnectionPool) {
+    // A ordem é importante por causa das chaves estrangeiras (FK)
+    await ensureUsersTableExists(pool);
+    await ensureBuildingsTableExists(pool);
+    await ensureRoomsTableExists(pool);
+    await ensureItemTypesTableExists(pool);
+    await ensureItemTypesEqpTableExists(pool);
+    await ensureManufacturersTableExists(pool);
+    await ensureModelsTableExists(pool);
+    await ensureParentItemsTableExists(pool);
+    await ensureChildItemsTableExists(pool);
+    await ensureItemStatusesTableExists(pool);
+    await ensurePortTypesTableExists(pool);
+    await ensureConnectionTypesTableExists(pool);
+    await ensureAuditLogTableExists(pool);
+}
+
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Users', `
         CREATE TABLE Users (
@@ -94,6 +111,65 @@ async function ensureRoomsTableExists(pool: sql.ConnectionPool) {
             backgroundPosY FLOAT,
             isTestData BIT NOT NULL DEFAULT 0,
             FOREIGN KEY (buildingId) REFERENCES Buildings(id) ON DELETE CASCADE
+        );
+    `);
+}
+
+async function ensureItemTypesTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'ItemTypes', `
+        CREATE TABLE ItemTypes (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            category NVARCHAR(100) NOT NULL,
+            defaultWidthM FLOAT NOT NULL,
+            defaultHeightM FLOAT NOT NULL,
+            iconName NVARCHAR(50),
+            canHaveChildren BIT NOT NULL DEFAULT 0,
+            isResizable BIT NOT NULL DEFAULT 1,
+            status NVARCHAR(50) NOT NULL DEFAULT 'active',
+            isTestData BIT NOT NULL DEFAULT 0,
+            defaultColor NVARCHAR(50)
+        );
+    `);
+}
+
+async function ensureItemTypesEqpTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'ItemTypesEqp', `
+        CREATE TABLE ItemTypesEqp (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            category NVARCHAR(100) NOT NULL,
+            defaultWidthM FLOAT NOT NULL,
+            defaultHeightM FLOAT NOT NULL,
+            iconName NVARCHAR(50),
+            status NVARCHAR(50) NOT NULL DEFAULT 'active',
+            isTestData BIT NOT NULL DEFAULT 0,
+            defaultColor NVARCHAR(50)
+        );
+    `);
+}
+
+async function ensureManufacturersTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Manufacturers', `
+        CREATE TABLE Manufacturers (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            isTestData BIT NOT NULL DEFAULT 0
+        );
+    `);
+}
+
+async function ensureModelsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Models', `
+        CREATE TABLE Models (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL,
+            manufacturerId NVARCHAR(50) NOT NULL,
+            portConfig NVARCHAR(MAX),
+            tamanhoU INT,
+            isTestData BIT NOT NULL DEFAULT 0,
+            FOREIGN KEY (manufacturerId) REFERENCES Manufacturers(id) ON DELETE CASCADE,
+            UNIQUE (name, manufacturerId)
         );
     `);
 }
@@ -157,40 +233,6 @@ async function ensureChildItemsTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
-async function ensureItemTypesTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'ItemTypes', `
-        CREATE TABLE ItemTypes (
-            id NVARCHAR(50) PRIMARY KEY,
-            name NVARCHAR(100) NOT NULL UNIQUE,
-            category NVARCHAR(100) NOT NULL,
-            defaultWidthM FLOAT NOT NULL,
-            defaultHeightM FLOAT NOT NULL,
-            iconName NVARCHAR(50),
-            canHaveChildren BIT NOT NULL DEFAULT 0,
-            isResizable BIT NOT NULL DEFAULT 1,
-            status NVARCHAR(50) NOT NULL DEFAULT 'active',
-            isTestData BIT NOT NULL DEFAULT 0,
-            defaultColor NVARCHAR(50)
-        );
-    `);
-}
-
-async function ensureItemTypesEqpTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'ItemTypesEqp', `
-        CREATE TABLE ItemTypesEqp (
-            id NVARCHAR(50) PRIMARY KEY,
-            name NVARCHAR(100) NOT NULL UNIQUE,
-            category NVARCHAR(100) NOT NULL,
-            defaultWidthM FLOAT NOT NULL,
-            defaultHeightM FLOAT NOT NULL,
-            iconName NVARCHAR(50),
-            status NVARCHAR(50) NOT NULL DEFAULT 'active',
-            isTestData BIT NOT NULL DEFAULT 0,
-            defaultColor NVARCHAR(50)
-        );
-    `);
-}
-
 async function ensureItemStatusesTableExists(pool: sql.ConnectionPool) {
     const wasCreated = await ensureTableExists(pool, 'ItemStatuses', `
         CREATE TABLE ItemStatuses (
@@ -210,14 +252,12 @@ async function ensureItemStatusesTableExists(pool: sql.ConnectionPool) {
             { id: 'active', name: 'Ativo', description: 'Item aprovado e operacional.', color: 'green', isArchived: 0, isDefault: 1 },
             { id: 'maintenance', name: 'Manutenção', description: 'Item em manutenção, temporariamente indisponível.', color: 'orange', isArchived: 0, isDefault: 1 },
             { id: 'decommissioned', name: 'Descomissionado', description: 'Item removido e movido para a lixeira.', color: 'gray', isArchived: 1, isDefault: 1 },
-            { id: 'aposentado', name: 'Aposentado', description: 'Item permanentemente aposentado.', color: 'red', isArchived: 1, isDefault: 1 },
-            { id: 'rejected', name: 'Rejeitado', description: 'Item rejeitado na aprovação, aguardando correção.', color: 'red', isArchived: 0, isDefault: 1 },
         ];
         const transaction = new sql.Transaction(pool);
         try {
             await transaction.begin();
-            const request = new sql.Request(transaction);
             for (const status of defaultStatuses) {
+                const request = new sql.Request(transaction);
                 await request.query`
                     INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault)
                     VALUES (${status.id}, ${status.name}, ${status.description}, ${status.color}, ${status.isArchived}, ${status.isDefault})
@@ -229,31 +269,6 @@ async function ensureItemStatusesTableExists(pool: sql.ConnectionPool) {
             throw err;
         }
     }
-}
-
-async function ensureManufacturersTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Manufacturers', `
-        CREATE TABLE Manufacturers (
-            id NVARCHAR(50) PRIMARY KEY,
-            name NVARCHAR(100) NOT NULL UNIQUE,
-            isTestData BIT NOT NULL DEFAULT 0
-        );
-    `);
-}
-
-async function ensureModelsTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Models', `
-        CREATE TABLE Models (
-            id NVARCHAR(50) PRIMARY KEY,
-            name NVARCHAR(100) NOT NULL,
-            manufacturerId NVARCHAR(50) NOT NULL,
-            portConfig NVARCHAR(MAX),
-            tamanhoU INT,
-            isTestData BIT NOT NULL DEFAULT 0,
-            FOREIGN KEY (manufacturerId) REFERENCES Manufacturers(id) ON DELETE CASCADE,
-            UNIQUE (name, manufacturerId)
-        );
-    `);
 }
 
 async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
@@ -270,16 +285,12 @@ async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
         const defaultPortTypes = [
             { id: 'port_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP (par trançado).', isDefault: 1 },
             { id: 'port_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre de pequena dimensão.', isDefault: 1 },
-            { id: 'port_nema_5_15r', name: 'NEMA 5-15R', description: 'Tomada elétrica padrão americano, 15A.', isDefault: 1 },
-            { id: 'port_nema_5_20r', name: 'NEMA 5-20R', description: 'Tomada elétrica padrão americano, 20A.', isDefault: 1 },
-            { id: 'port_fibra_lc', name: 'Fibra LC', description: 'Conector Lucent para fibra óptica.', isDefault: 1 },
-            { id: 'port_fibra_sc', name: 'Fibra SC', description: 'Conector Subscriber para fibra óptica.', isDefault: 1 },
         ];
         const transaction = new sql.Transaction(pool);
         try {
             await transaction.begin();
-            const request = new sql.Request(transaction);
             for (const ptype of defaultPortTypes) {
+                const request = new sql.Request(transaction);
                 await request.query`
                     INSERT INTO PortTypes (id, name, description, isDefault)
                     VALUES (${ptype.id}, ${ptype.name}, ${ptype.description}, ${ptype.isDefault})
@@ -307,15 +318,12 @@ async function ensureConnectionTypesTableExists(pool: sql.ConnectionPool) {
         const defaultConnectionTypes = [
             { id: 'conn_utp', name: 'Dados UTP', description: 'Conexão de dados via cabo de par trançado.', isDefault: 1 },
             { id: 'conn_fibra', name: 'Fibra Óptica', description: 'Conexão de dados via fibra óptica monomodo ou multimodo.', isDefault: 1 },
-            { id: 'conn_energia_ac', name: 'Energia AC', description: 'Alimentação de energia de corrente alternada.', isDefault: 1 },
-            { id: 'conn_energia_dc', name: 'Energia DC', description: 'Alimentação de energia de corrente contínua.', isDefault: 1 },
-            { id: 'conn_console', name: 'Console', description: 'Conexão serial para gerenciamento de dispositivo.', isDefault: 1 },
         ];
         const transaction = new sql.Transaction(pool);
         try {
             await transaction.begin();
-            const request = new sql.Request(transaction);
             for (const ctype of defaultConnectionTypes) {
+                 const request = new sql.Request(transaction);
                 await request.query`
                     INSERT INTO ConnectionTypes (id, name, description, isDefault)
                     VALUES (${ctype.id}, ${ctype.name}, ${ctype.description}, ${ctype.isDefault})
@@ -345,31 +353,20 @@ async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
-async function initializeDatabaseSchema() {
+/**
+ * Server Action exportada para ser chamada pelo menu de desenvolvedor.
+ * Garante que todo o schema do banco de dados exista.
+ */
+export async function ensureDatabaseSchema(): Promise<string> {
     try {
         const pool = await getDbPool();
-        // A ordem é importante por causa das chaves estrangeiras (FK)
-        await ensureUsersTableExists(pool);
-        await ensureBuildingsTableExists(pool);
-        await ensureRoomsTableExists(pool);
-        await ensureParentItemsTableExists(pool);
-        await ensureChildItemsTableExists(pool);
-        await ensureItemTypesTableExists(pool);
-        await ensureItemTypesEqpTableExists(pool);
-        await ensureItemStatusesTableExists(pool);
-        await ensureManufacturersTableExists(pool);
-        await ensureModelsTableExists(pool);
-        await ensurePortTypesTableExists(pool);
-        await ensureConnectionTypesTableExists(pool);
-        await ensureAuditLogTableExists(pool);
-        console.log("Verificação do schema do banco de dados concluída com sucesso.");
-    } catch (error) {
-        console.error("Falha crítica ao inicializar o schema do banco de dados. A aplicação pode não funcionar corretamente.", error);
+        await createAllTables(pool);
+        return "Verificação do schema do banco de dados concluída com sucesso.";
+    } catch (error: any) {
+        console.error("Falha crítica ao inicializar o schema do banco de dados:", error);
+        throw new Error(`Falha ao criar tabelas: ${error.message}`);
     }
 }
-
-// Executa a verificação ao iniciar o servidor, mas com tratamento de erro para não travar.
-initializeDatabaseSchema();
 
 
 // ====================================================================
