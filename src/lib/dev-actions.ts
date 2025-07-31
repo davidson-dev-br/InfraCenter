@@ -102,20 +102,21 @@ export async function populateTestData() {
     try {
         const pool = await getDbPool();
 
+        // Nível 1: Entidades sem dependências externas
         for (const user of testUsers) await _updateUser(user);
         for (const building of testBuildings) await upsertRecord(pool, 'Buildings', building);
-        for (const room of testRooms) await upsertRecord(pool, 'Rooms', room);
-        
-        // Inserir os tipos de item
         for (const type of testParentItemTypes) await upsertRecord(pool, 'ItemTypes', type);
         for (const type of testChildItemTypes) await upsertRecord(pool, 'ItemTypesEqp', type);
-        
-        // Inserir os Fabricantes e Modelos na ordem correta
         for (const man of testManufacturers) await upsertRecord(pool, 'Manufacturers', man);
+        
+        // Nível 2: Entidades com dependências de Nível 1
+        for (const room of testRooms) await upsertRecord(pool, 'Rooms', room);
         for (const model of testModels) await upsertRecord(pool, 'Models', model);
-
-        // Inserir os Itens
+        
+        // Nível 3: Itens que dependem de Nível 2
         for (const item of testItems) await upsertRecord(pool, 'ParentItems', item);
+        
+        // Nível 4: Itens que dependem de Nível 3
         for (const item of testChildItems) await upsertRecord(pool, 'ChildItems', item);
         
         console.log("Banco de dados populado com dados de teste.");
