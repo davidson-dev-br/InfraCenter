@@ -54,21 +54,25 @@ export const PermissionsProvider = ({ children, user }: { children: ReactNode, u
     // A permissão universal '*' concede acesso a tudo.
     const universalAccess = (permissions: string[]) => permissions.includes('*');
 
-    // O papel de desenvolvedor sempre tem acesso total.
+    // Se o desenvolvedor está no modo "Ver como", ele deve ter as permissões do cargo que está vendo.
+    if (isDeveloper && viewAs !== 'developer') {
+        const defaultPermissionsForRole = rolePermissions[viewAs] || [];
+        return universalAccess(defaultPermissionsForRole) || defaultPermissionsForRole.includes(permissionId);
+    }
+
+    // O papel de desenvolvedor sempre tem acesso total no seu modo padrão.
     if (isDeveloper && viewAs === 'developer') {
         return true;
     }
 
-    // Determina o papel a ser verificado (visualização do desenvolvedor ou papel real).
-    const roleToCheck = isDeveloper ? viewAs : user.role;
-    
+    // Para usuários normais (não-desenvolvedores):
     // Verifica primeiro as permissões individuais do usuário.
     if (user.permissions && user.permissions.length > 0) {
       return universalAccess(user.permissions) || user.permissions.includes(permissionId);
     }
 
     // Se não houver permissões individuais, recorre às permissões padrão do cargo.
-    const defaultPermissionsForRole = rolePermissions[roleToCheck] || [];
+    const defaultPermissionsForRole = rolePermissions[user.role] || [];
     return universalAccess(defaultPermissionsForRole) || defaultPermissionsForRole.includes(permissionId);
   };
 

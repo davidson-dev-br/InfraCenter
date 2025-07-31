@@ -1,9 +1,10 @@
-
 {
   "developer": {
     "name": "Desenvolvedor",
     "description": "Acesso total a todas as funcionalidades para fins de desenvolvimento.",
-    "permissions": ["*"]
+    "permissions": [
+      "*"
+    ]
   },
   "manager": {
     "name": "Gerente",
@@ -29,7 +30,9 @@
       "user:edit:role",
       "user:edit:permissions",
       "item:image:upload",
-      "item:decommission:active"
+      "item:decommission:active",
+      "page:incidents:view",
+      "item:delete:draft"
     ]
   },
   "project_manager": {
@@ -40,7 +43,23 @@
       "page:inventory:view",
       "page:connections:view",
       "page:depara:view",
-      "page:reports:view"
+      "page:reports:view",
+      "section:management:view",
+      "section:supervisor:view",
+      "page:import:view",
+      "page:users:view",
+      "page:permissions:view",
+      "page:settings:view",
+      "page:buildings:view",
+      "page:system:view",
+      "page:incidents:view",
+      "page:approvals:view",
+      "page:audit:view",
+      "page:trash:view",
+      "item:image:upload",
+      "item:delete:draft",
+      "item:decommission:active",
+      "user:edit:permissions"
     ]
   },
   "supervisor_1": {
@@ -57,7 +76,11 @@
       "page:audit:view",
       "page:trash:view",
       "item:decommission:active",
-      "item:delete:draft"
+      "item:delete:draft",
+      "page:import:view",
+      "page:incidents:view",
+      "item:image:upload",
+      "section:management:view"
     ]
   },
   "supervisor_2": {
@@ -68,7 +91,15 @@
       "page:inventory:view",
       "page:connections:view",
       "page:depara:view",
-      "page:reports:view"
+      "page:reports:view",
+      "section:management:view",
+      "section:supervisor:view",
+      "page:import:view",
+      "page:incidents:view",
+      "page:approvals:view",
+      "page:audit:view",
+      "item:image:upload",
+      "item:delete:draft"
     ]
   },
   "technician_1": {
@@ -80,7 +111,11 @@
       "page:connections:view",
       "page:depara:view",
       "item:image:upload",
-      "item:delete:draft"
+      "item:delete:draft",
+      "section:management:view",
+      "page:import:view",
+      "page:reports:view",
+      "page:incidents:view"
     ]
   },
   "technician_2": {
@@ -90,7 +125,12 @@
       "page:datacenter:view",
       "page:inventory:view",
       "page:connections:view",
-      "page:depara:view"
+      "page:depara:view",
+      "section:management:view",
+      "page:reports:view",
+      "page:incidents:view",
+      "item:delete:draft",
+      "item:image:upload"
     ]
   },
   "guest": {
