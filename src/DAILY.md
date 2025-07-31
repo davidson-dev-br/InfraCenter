@@ -1,5 +1,21 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-05]
+
+### Foco do Dia
+- **Implementar o CRUD para a entidade "Tipos de Porta"**:
+    - **Objetivo:** Construir a lógica e a interface na página `/system` para gerenciar os `PortTypes` (ex: RJ45, SFP+, Tomada 20A).
+    - **O que será feito:**
+        1. Criar a tabela `PortTypes` no banco de dados.
+        2. Desenvolver as `server actions` para adicionar, editar e excluir tipos de porta.
+        3. Construir a interface (tabela e modais) na aba "Gerenciamento de Conexões" da página de Sistema.
+- **Atualizar a Documentação:** Refletir o início da Fase 7 no arquivo `ARCHITECTURE.md`.
+
+### Impedimentos
+- Nenhum.
+
+---
+
 ## [2024-08-02] - Post-Mortem & Replanejamento
 
 ### O que foi feito?
