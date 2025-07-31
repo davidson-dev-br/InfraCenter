@@ -170,23 +170,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="p-1.5 rounded-lg bg-primary">
                   <Server className="text-primary-foreground size-6" />
                 </div>
-                <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
+                <h1 className="text-xl font-headline font-semibold text-primary group-data-[collapsible=icon]:hidden">InfraVision</h1>
              </div>
-             {hasPermission('page:settings:view') && (
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/settings">
-                  <Settings />
-                  <span className="sr-only">Configurações</span>
-                </Link>
-              </Button>
-            )}
+             <SidebarTrigger className="hidden md:flex" />
           </div>
         </SidebarHeader>
         <SidebarContent>
            {visibleNavSections.map((section, index) => (
               section && (
                  <SidebarMenu key={section.title} className={index > 0 ? 'mt-4 pt-4 border-t border-sidebar-border' : ''}>
-                    <SidebarMenuItem className='px-2 text-xs text-muted-foreground'>{section.title}</SidebarMenuItem>
+                    <SidebarMenuItem className='px-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden'>{section.title}</SidebarMenuItem>
                     {section.items.map((item) => (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
@@ -196,7 +189,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                           <Link href={item.href}>
                             <item.icon />
-                            <span>{item.label}</span>
+                            <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -265,6 +258,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                   </>
+                )}
+                 <DropdownMenuSeparator />
+                {hasPermission('page:settings:view') && (
+                    <DropdownMenuItem onSelect={() => router.push('/settings')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Preferências</span>
+                    </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

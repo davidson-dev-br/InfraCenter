@@ -256,7 +256,7 @@ async function ensureModelsTableExists(pool: sql.ConnectionPool) {
 }
 
 async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'PortTypes', `
+    const wasCreated = await ensureTableExists(pool, 'PortTypes', `
         CREATE TABLE PortTypes (
             id NVARCHAR(50) PRIMARY KEY,
             name NVARCHAR(100) NOT NULL UNIQUE,
@@ -264,10 +264,36 @@ async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
             isDefault BIT NOT NULL DEFAULT 0
         );
     `);
+    
+    if(wasCreated) {
+        const defaultPortTypes = [
+            { id: 'port_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP (par trançado).', isDefault: 1 },
+            { id: 'port_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre de pequena dimensão.', isDefault: 1 },
+            { id: 'port_nema_5_15r', name: 'NEMA 5-15R', description: 'Tomada elétrica padrão americano, 15A.', isDefault: 1 },
+            { id: 'port_nema_5_20r', name: 'NEMA 5-20R', description: 'Tomada elétrica padrão americano, 20A.', isDefault: 1 },
+            { id: 'port_fibra_lc', name: 'Fibra LC', description: 'Conector Lucent para fibra óptica.', isDefault: 1 },
+            { id: 'port_fibra_sc', name: 'Fibra SC', description: 'Conector Subscriber para fibra óptica.', isDefault: 1 },
+        ];
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            const request = new sql.Request(transaction);
+            for (const ptype of defaultPortTypes) {
+                await request.query`
+                    INSERT INTO PortTypes (id, name, description, isDefault)
+                    VALUES (${ptype.id}, ${ptype.name}, ${ptype.description}, ${ptype.isDefault})
+                `;
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    }
 }
 
 async function ensureConnectionTypesTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'ConnectionTypes', `
+    const wasCreated = await ensureTableExists(pool, 'ConnectionTypes', `
         CREATE TABLE ConnectionTypes (
             id NVARCHAR(50) PRIMARY KEY,
             name NVARCHAR(100) NOT NULL UNIQUE,
@@ -275,6 +301,31 @@ async function ensureConnectionTypesTableExists(pool: sql.ConnectionPool) {
             isDefault BIT NOT NULL DEFAULT 0
         );
     `);
+
+     if(wasCreated) {
+        const defaultConnectionTypes = [
+            { id: 'conn_utp', name: 'Dados UTP', description: 'Conexão de dados via cabo de par trançado.', isDefault: 1 },
+            { id: 'conn_fibra', name: 'Fibra Óptica', description: 'Conexão de dados via fibra óptica monomodo ou multimodo.', isDefault: 1 },
+            { id: 'conn_energia_ac', name: 'Energia AC', description: 'Alimentação de energia de corrente alternada.', isDefault: 1 },
+            { id: 'conn_energia_dc', name: 'Energia DC', description: 'Alimentação de energia de corrente contínua.', isDefault: 1 },
+            { id: 'conn_console', name: 'Console', description: 'Conexão serial para gerenciamento de dispositivo.', isDefault: 1 },
+        ];
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            const request = new sql.Request(transaction);
+            for (const ctype of defaultConnectionTypes) {
+                await request.query`
+                    INSERT INTO ConnectionTypes (id, name, description, isDefault)
+                    VALUES (${ctype.id}, ${ctype.name}, ${ctype.description}, ${ctype.isDefault})
+                `;
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    }
 }
 
 
@@ -293,7 +344,7 @@ async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
-async function ensureAllTablesExist() {
+async function initializeDatabaseSchema() {
     try {
         const pool = await getDbPool();
         // A ordem é importante por causa das chaves estrangeiras (FK)
@@ -310,14 +361,14 @@ async function ensureAllTablesExist() {
         await ensurePortTypesTableExists(pool);
         await ensureConnectionTypesTableExists(pool);
         await ensureAuditLogTableExists(pool);
+        console.log("Verificação do schema do banco de dados concluída com sucesso.");
     } catch (error) {
-        console.error("Falha ao inicializar o schema do banco de dados.", error);
-        // Em um cenário de produção, você pode querer parar a aplicação se o DB não puder ser inicializado.
+        console.error("Falha crítica ao inicializar o schema do banco de dados. A aplicação pode não funcionar corretamente.", error);
     }
 }
 
-// Executa a verificação ao iniciar o servidor
-ensureAllTablesExist();
+// Executa a verificação ao iniciar o servidor, mas com tratamento de erro para não travar.
+initializeDatabaseSchema();
 
 
 // ====================================================================
