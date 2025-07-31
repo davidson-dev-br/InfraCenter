@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import sql from 'mssql';
@@ -29,8 +30,8 @@ const testParentItemTypes = [
 ];
 
 const testChildItemTypes = [
-    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isTestData: true },
-    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isTestData: true },
+    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0 },
+    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0 },
 ];
 
 const testManufacturers = [
@@ -110,11 +111,13 @@ export async function populateTestData() {
     
     const pool = await getDbPool();
     
+    await cleanTestData();
+
     const operationsInOrder = [
         ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
         ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
         ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
-        ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
+        ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', item)),
         ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
         ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
         ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
