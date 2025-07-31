@@ -12,6 +12,7 @@ export interface Model {
   manufacturerId: string;
   portConfig: string | null;
   tamanhoU: number | null;
+  isTestData?: boolean;
 }
 
 const modelSchema = z.object({
@@ -54,9 +55,10 @@ export async function addModel(data: z.infer<typeof modelSchema>) {
       .input('manufacturerId', sql.NVarChar, manufacturerId)
       .input('portConfig', sql.NVarChar, portConfig || null)
       .input('tamanhoU', sql.Int, tamanhoU || null)
+      .input('isTestData', sql.Bit, false)
       .query`
-        INSERT INTO Models (id, name, manufacturerId, portConfig, tamanhoU)
-        VALUES (@id, @name, @manufacturerId, @portConfig, @tamanhoU)
+        INSERT INTO Models (id, name, manufacturerId, portConfig, tamanhoU, isTestData)
+        VALUES (@id, @name, @manufacturerId, @portConfig, @tamanhoU, @isTestData)
       `;
 
     revalidatePath('/system');

@@ -40,21 +40,35 @@ const testChildItemTypes = [
 ];
 
 const testManufacturers = [
-    { id: 'man_cisco', name: 'Cisco' },
-    { id: 'man_dell', name: 'Dell EMC' },
-    { id: 'man_hp', name: 'HPE' },
-    { id: 'man_juniper', name: 'Juniper' },
-    { id: 'man_legrand', name: 'Legrand' },
-    { id: 'man_apc', name: 'APC by Schneider Electric' },
-    { id: 'man_furukawa', name: 'Furukawa' },
+    { id: 'man_cisco', name: 'Cisco', isTestData: true },
+    { id: 'man_dell', name: 'Dell EMC', isTestData: true },
+    { id: 'man_hp', name: 'HPE', isTestData: true },
+    { id: 'man_juniper', name: 'Juniper', isTestData: true },
+    { id: 'man_legrand', name: 'Legrand', isTestData: true },
+    { id: 'man_apc', name: 'APC', isTestData: true },
+    { id: 'man_furukawa', name: 'Furukawa', isTestData: true },
 ];
 
+const testModels = [
+    // Cisco
+    { id: 'model_c9300', name: 'Catalyst 9300', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;4xSFP+', isTestData: true },
+    { id: 'model_c2960', name: 'Catalyst 2960', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;2xSFP', isTestData: true },
+    // Dell
+    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '2xRJ45;2xSFP+;1xVGA', isTestData: true },
+    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB', isTestData: true },
+    // HPE
+    { id: 'model_dl380', name: 'ProLiant DL380 Gen10', manufacturerId: 'man_hp', tamanhoU: 2, portConfig: '4xRJ45;1xVGA', isTestData: true },
+    // APC
+    { id: 'model_ap8853', name: 'AP8853', manufacturerId: 'man_apc', tamanhoU: 42, portConfig: '20xC13;4xC19', isTestData: true },
+    // Furukawa
+    { id: 'model_giga_cat6', name: 'Gigalan CAT6 24P', manufacturerId: 'man_furukawa', tamanhoU: 1, portConfig: '24xRJ45', isTestData: true },
+];
 
 const testItems = [
     { id: 'item_1722382897042', label: 'RACK-A01', x: 2, y: 2, width: 0.6, height: 1, type: 'Rack 42U', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-RACK-001', brand: 'Dell EMC', tag: 'ASSET-001', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/rack.pdf', description: 'Rack principal de servidores', imageUrl: 'https://placehold.co/600x400.png', modelo: 'PowerEdge R42', preco: 5000, trellisId: 'TRELLIS-001', tamanhoU: 42, potenciaW: 3000, isTestData: true },
     { id: 'item_1722383020668', label: 'AC-01', x: 0, y: 5, width: 0.8, height: 2, type: 'Ar Condicionado', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-AC-001', brand: 'Stulz', tag: 'ASSET-002', isTagEligible: false, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/ac.pdf', description: 'Ar condicionado da fileira A', imageUrl: null, modelo: 'CyberAir 3', preco: 15000, trellisId: 'TRELLIS-002', tamanhoU: null, potenciaW: 10000, isTestData: true },
     { id: 'item_1722383173367', label: 'RACK-B05', x: 5, y: 5, width: 0.6, height: 1, type: 'Rack 42U', status: 'maintenance', roomId: 'R1722382741544', serialNumber: 'SN-RACK-005', brand: 'HPE', tag: 'ASSET-004', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: null, description: 'Rack de armazenamento', imageUrl: null, modelo: 'ProLiant DL380', preco: 4500, trellisId: 'TRELLIS-004', tamanhoU: 42, potenciaW: 2800, isTestData: true },
-    { id: 'item_1722383173368', label: 'PDU-A01-L', x: 2, y: 3, width: 0.05, height: 1.8, type: 'PDU de Rack', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-PDU-001', brand: 'APC by Schneider Electric', tag: 'ASSET-005', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/pdu.pdf', description: 'PDU Esquerda do Rack A01', imageUrl: 'https://placehold.co/50x180.png', modelo: 'AP8853', preco: 1200, trellisId: 'TRELLIS-005', tamanhoU: null, potenciaW: 17300, isTestData: true }
+    { id: 'item_1722383173368', label: 'PDU-A01-L', x: 2, y: 3, width: 0.05, height: 1.8, type: 'PDU de Rack', status: 'active', roomId: 'R1722382686121', serialNumber: 'SN-PDU-001', brand: 'APC', tag: 'ASSET-005', isTagEligible: true, ownerEmail: 'infra@example.com', dataSheetUrl: 'http://example.com/pdu.pdf', description: 'PDU Esquerda do Rack A01', imageUrl: 'https://placehold.co/50x180.png', modelo: 'AP8853', preco: 1200, trellisId: 'TRELLIS-005', tamanhoU: null, potenciaW: 17300, isTestData: true }
 ];
 
 const testChildItems = [
@@ -96,8 +110,9 @@ export async function populateTestData() {
         for (const type of testParentItemTypes) await upsertRecord(pool, 'ItemTypes', type);
         for (const type of testChildItemTypes) await upsertRecord(pool, 'ItemTypesEqp', type);
         
-        // Inserir os Fabricantes
+        // Inserir os Fabricantes e Modelos
         for (const man of testManufacturers) await upsertRecord(pool, 'Manufacturers', man);
+        for (const model of testModels) await upsertRecord(pool, 'Models', model);
 
         // Inserir os Itens
         for (const item of testItems) await upsertRecord(pool, 'ParentItems', item);
@@ -120,8 +135,9 @@ export async function cleanTestData() {
         await pool.request().query("DELETE FROM Buildings WHERE isTestData = 1");
         await pool.request().query("DELETE FROM ItemTypes WHERE isTestData = 1");
         await pool.request().query("DELETE FROM ItemTypesEqp WHERE isTestData = 1");
+        await pool.request().query("DELETE FROM Models WHERE isTestData = 1");
+        await pool.request().query("DELETE FROM Manufacturers WHERE isTestData = 1");
         await pool.request().query("DELETE FROM Users WHERE isTestData = 1");
-        await pool.request().query("DELETE FROM Manufacturers WHERE name IN ('Cisco', 'Dell EMC', 'HPE', 'Juniper', 'Legrand', 'APC by Schneider Electric', 'Furukawa')");
 
         console.log("Dados de teste removidos do banco de dados.");
     } catch (error) {
@@ -129,5 +145,3 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
-
-    

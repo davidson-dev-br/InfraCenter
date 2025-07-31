@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -236,7 +235,8 @@ async function ensureManufacturersTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Manufacturers', `
         CREATE TABLE Manufacturers (
             id NVARCHAR(50) PRIMARY KEY,
-            name NVARCHAR(100) NOT NULL UNIQUE
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            isTestData BIT NOT NULL DEFAULT 0
         );
     `);
 }
@@ -249,6 +249,7 @@ async function ensureModelsTableExists(pool: sql.ConnectionPool) {
             manufacturerId NVARCHAR(50) NOT NULL,
             portConfig NVARCHAR(MAX),
             tamanhoU INT,
+            isTestData BIT NOT NULL DEFAULT 0,
             FOREIGN KEY (manufacturerId) REFERENCES Manufacturers(id) ON DELETE CASCADE,
             UNIQUE (name, manufacturerId)
         );

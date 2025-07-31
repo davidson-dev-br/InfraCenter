@@ -9,6 +9,7 @@ import { getDbPool } from './db';
 export interface Manufacturer {
   id: string;
   name: string;
+  isTestData?: boolean;
 }
 
 const manufacturerSchema = z.object({
@@ -43,8 +44,9 @@ export async function addManufacturer(data: { name: string }) {
     await pool.request()
       .input('id', sql.NVarChar, newId)
       .input('name', sql.NVarChar, name)
+      .input('isTestData', sql.Bit, false)
       .query`
-        INSERT INTO Manufacturers (id, name) VALUES (@id, @name)
+        INSERT INTO Manufacturers (id, name, isTestData) VALUES (@id, @name, @isTestData)
       `;
 
     revalidatePath('/system');
