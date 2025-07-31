@@ -266,6 +266,17 @@ async function ensurePortTypesTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
+async function ensureConnectionTypesTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'ConnectionTypes', `
+        CREATE TABLE ConnectionTypes (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            description NVARCHAR(255),
+            isDefault BIT NOT NULL DEFAULT 0
+        );
+    `);
+}
+
 
 async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'AuditLog', `
@@ -297,6 +308,7 @@ async function ensureAllTablesExist() {
         await ensureManufacturersTableExists(pool);
         await ensureModelsTableExists(pool);
         await ensurePortTypesTableExists(pool);
+        await ensureConnectionTypesTableExists(pool);
         await ensureAuditLogTableExists(pool);
     } catch (error) {
         console.error("Falha ao inicializar o schema do banco de dados.", error);
