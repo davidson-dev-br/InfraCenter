@@ -56,22 +56,17 @@ const testChildItems = [
 
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
-
-/**
- * Insere um registro em uma tabela se ele não existir (baseado no ID).
- */
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
     const checkResult = await pool.request().input('id', sql.NVarChar, data.id).query(`SELECT 1 FROM ${tableName} WHERE id = @id`);
     if (checkResult.recordset.length > 0) {
-        return; // Registro já existe, não faz nada
+        return; 
     }
 
     const columns = Object.keys(data);
     const values = columns.map(col => `@${col}`);
     const request = pool.request();
     
-    // Função auxiliar para definir o tipo SQL correto para cada campo.
-    const addInput = (request: sql.Request, key: string, value: any) => {
+    const addInput = (key: string, value: any) => {
         const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
         const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'];
 
@@ -97,7 +92,14 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
         addInput(col, data[col]);
     }
 
-    await request.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`);
+    const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+    try {
+        await request.query(query);
+    } catch (err: any) {
+        console.error(`Falha ao inserir na tabela ${tableName}. Query: ${query}`);
+        console.error('Dados:', data);
+        throw err;
+    }
 }
 
 
@@ -105,7 +107,7 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
  * Popula o banco de dados com dados de teste. Limpa os dados de teste antigos primeiro.
  */
 export async function populateTestData() {
-    await cleanTestData(); // Garante um ambiente limpo antes de popular
+    
     const pool = await getDbPool();
     
     const operationsInOrder = [
@@ -140,7 +142,6 @@ export async function cleanTestData() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
 
-    // Ordem de exclusão inversa à de inserção para respeitar as chaves estrangeiras
     const tablesToDeleteFrom = [
         'ChildItems', 'ParentItems', 'Models', 'Manufacturers', 'Rooms', 'Buildings', 
         'ItemTypes', 'ItemTypesEqp', 'Users'
@@ -151,7 +152,6 @@ export async function cleanTestData() {
         console.log("Iniciando limpeza dos dados de teste...");
 
         for (const table of tablesToDeleteFrom) {
-            // Verifica se a coluna isTestData existe antes de tentar deletar
             const columnCheck = await pool.request().query(`
                 SELECT 1 
                 FROM INFORMATION_SCHEMA.COLUMNS 
@@ -175,5 +175,3 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
-
-    

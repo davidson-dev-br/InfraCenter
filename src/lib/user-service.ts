@@ -577,7 +577,3 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
-
-    
-
-    
