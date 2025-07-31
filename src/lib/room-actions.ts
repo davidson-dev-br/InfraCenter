@@ -129,7 +129,7 @@ export async function deleteRoom(roomId: string): Promise<void> {
     // 1. Verificar se a sala contém itens
     const itemsCheck = await pool.request()
       .input('roomId', sql.NVarChar, roomId)
-      .query('SELECT COUNT(*) as itemCount FROM Items WHERE roomId = @roomId');
+      .query('SELECT COUNT(*) as itemCount FROM ParentItems WHERE roomId = @roomId');
 
     if (itemsCheck.recordset[0].itemCount > 0) {
       throw new Error('Não é possível excluir a sala pois ela contém equipamentos. Mova ou exclua os equipamentos primeiro.');
@@ -149,3 +149,5 @@ export async function deleteRoom(roomId: string): Promise<void> {
     throw new Error('Falha ao excluir a sala no banco de dados.');
   }
 }
+
+    

@@ -63,6 +63,11 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
     await ensureAuditLogTableExists(pool);
+    // Adicionando as tabelas que estavam faltando
+    await ensureIncidentsTableExists(pool);
+    await ensureEvidenceTableExists(pool);
+    await ensureSensorsTableExists(pool);
+    await ensureConnectionsTableExists(pool);
 }
 
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
@@ -353,6 +358,66 @@ async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
+async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Incidents', `
+        CREATE TABLE Incidents (
+            id NVARCHAR(50) PRIMARY KEY,
+            description NVARCHAR(MAX) NOT NULL,
+            severity NVARCHAR(50) NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
+            status NVARCHAR(50) NOT NULL CHECK (status IN ('open', 'investigating', 'closed')),
+            detectedAt DATETIME2 NOT NULL,
+            resolvedAt DATETIME2,
+            entityType NVARCHAR(50),
+            entityId NVARCHAR(100)
+        );
+    `);
+}
+
+async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Evidence', `
+        CREATE TABLE Evidence (
+            id NVARCHAR(50) PRIMARY KEY,
+            incidentId NVARCHAR(50) NOT NULL,
+            timestamp DATETIME2 NOT NULL,
+            type NVARCHAR(50) NOT NULL, -- e.g., 'log', 'image', 'metric'
+            data NVARCHAR(MAX) NOT NULL,
+            FOREIGN KEY (incidentId) REFERENCES Incidents(id) ON DELETE CASCADE
+        );
+    `);
+}
+
+async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Sensors', `
+        CREATE TABLE Sensors (
+            id NVARCHAR(50) PRIMARY KEY,
+            itemId NVARCHAR(50) NOT NULL,
+            type NVARCHAR(100) NOT NULL, -- e.g., 'temperature', 'humidity', 'power'
+            value FLOAT,
+            unit NVARCHAR(20),
+            lastReading DATETIME2,
+            FOREIGN KEY (itemId) REFERENCES ParentItems(id) ON DELETE CASCADE
+        );
+    `);
+}
+
+async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Connections', `
+        CREATE TABLE Connections (
+            id NVARCHAR(50) PRIMARY KEY,
+            fromItemId NVARCHAR(50) NOT NULL,
+            fromPortId NVARCHAR(50) NOT NULL,
+            toItemId NVARCHAR(50) NOT NULL,
+            toPortId NVARCHAR(50) NOT NULL,
+            connectionTypeId NVARCHAR(50) NOT NULL,
+            status NVARCHAR(50),
+            FOREIGN KEY (fromItemId) REFERENCES ParentItems(id), -- ou ChildItems, requer lógica mais complexa
+            FOREIGN KEY (toItemId) REFERENCES ParentItems(id),   -- ou ChildItems
+            FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id)
+        );
+    `);
+}
+
+
 /**
  * Server Action exportada para ser chamada pelo menu de desenvolvedor.
  * Garante que todo o schema do banco de dados exista.
@@ -513,3 +578,5 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
+
+    
