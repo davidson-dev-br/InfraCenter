@@ -110,7 +110,7 @@ export async function populateTestData() {
         for (const type of testParentItemTypes) await upsertRecord(pool, 'ItemTypes', type);
         for (const type of testChildItemTypes) await upsertRecord(pool, 'ItemTypesEqp', type);
         
-        // Inserir os Fabricantes e Modelos
+        // Inserir os Fabricantes e Modelos na ordem correta
         for (const man of testManufacturers) await upsertRecord(pool, 'Manufacturers', man);
         for (const model of testModels) await upsertRecord(pool, 'Models', model);
 
