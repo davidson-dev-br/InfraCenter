@@ -20,8 +20,8 @@ interface InventoryItem extends GridItem {
 // Uma função para obter o usuário atual no servidor.
 async function getCurrentUser(): Promise<User | null> {
     if (!auth) {
-        console.warn("Firebase Admin não inicializado. Retornando usuário de fallback.");
-        return _getUserByEmail('davidson.php@outlook.com');
+        console.warn("Firebase Admin não inicializado. Não é possível autenticar o usuário.");
+        return null;
     }
 
     const authorization = headers().get('Authorization');
@@ -30,14 +30,14 @@ async function getCurrentUser(): Promise<User | null> {
         try {
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
-                return _getUserByEmail(decodedToken.email);
+                return await _getUserByEmail(decodedToken.email);
             }
         } catch (error) {
             console.error("Erro ao verificar o token de autenticação:", error);
-            return null;
         }
     }
-    return _getUserByEmail('davidson.php@outlook.com');
+    // Se não houver token ou se a verificação falhar, retorne null.
+    return null;
 }
 
 
