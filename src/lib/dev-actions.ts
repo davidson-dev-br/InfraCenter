@@ -82,7 +82,8 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
         } else if (typeof value === 'boolean') {
             request.input(key, sql.Bit, value);
         } else if (typeof value === 'number') {
-            request.input(key, sql.Float, value);
+            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, value);
+            else request.input(key, sql.Float, value);
         } else if (value instanceof Date) {
             request.input(key, sql.DateTime2, value);
         } else if (typeof value === 'object') {
@@ -101,35 +102,34 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
 
 
 /**
- * Popula o banco de dados com dados de teste, inserindo apenas o que não existe.
+ * Popula o banco de dados com dados de teste. Limpa os dados de teste antigos primeiro.
  */
 export async function populateTestData() {
+    await cleanTestData(); // Garante um ambiente limpo antes de popular
     const pool = await getDbPool();
     
-    try {
-        // A ordem de inserção é crucial por causa das chaves estrangeiras.
-        const operationsInOrder = [
-            ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
-            ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
-            ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
-            ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
-            ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
-            ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
-            ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
-            ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', item)),
-            ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', item)),
-        ];
+    // A ordem de inserção é crucial por causa das chaves estrangeiras.
+    const operationsInOrder = [
+        ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
+        ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
+        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
+        ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
+        ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', {...item, defaultWidthM: 0, defaultHeightM: 0})),
+        ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
+        ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
+        ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', item)),
+        ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', item)),
+    ];
 
-        // Executa as operações sequencialmente para garantir a ordem de dependência
+    try {
         for (const operation of operationsInOrder) {
             await operation();
         }
-        
-        console.log("Banco de dados populado com dados de teste (apenas itens faltantes).");
+        console.log("Banco de dados populado com sucesso.");
 
     } catch (error) {
-        console.error("Erro ao popular banco de dados:", error);
-        throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor.");
+        console.error("Erro detalhado ao popular banco de dados:", error);
+        throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor para detalhes.");
     }
 }
 
@@ -152,9 +152,20 @@ export async function cleanTestData() {
         console.log("Iniciando limpeza dos dados de teste...");
 
         for (const table of tablesToDeleteFrom) {
-            const request = new sql.Request(transaction);
-            await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
-            console.log(`Dados de teste limpos da tabela: ${table}`);
+            // Verifica se a coluna isTestData existe antes de tentar deletar
+            const columnCheck = await pool.request().query(`
+                SELECT 1 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = '${table}' AND COLUMN_NAME = 'isTestData'
+            `);
+            
+            if (columnCheck.recordset.length > 0) {
+                const request = new sql.Request(transaction);
+                await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
+                console.log(`Dados de teste limpos da tabela: ${table}`);
+            } else {
+                 console.log(`Tabela ${table} não possui coluna isTestData, pulando limpeza.`);
+            }
         }
 
         await transaction.commit();
