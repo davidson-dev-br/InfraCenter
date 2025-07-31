@@ -1,0 +1,101 @@
+
+{
+  "developer": {
+    "name": "Desenvolvedor",
+    "description": "Acesso total a todas as funcionalidades para fins de desenvolvimento.",
+    "permissions": ["*"]
+  },
+  "manager": {
+    "name": "Gerente",
+    "description": "Acesso de alto nível para gerenciamento estratégico e de equipes.",
+    "permissions": [
+      "section:management:view",
+      "section:supervisor:view",
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view",
+      "page:import:view",
+      "page:reports:view",
+      "page:approvals:view",
+      "page:audit:view",
+      "page:trash:view",
+      "page:users:view",
+      "page:permissions:view",
+      "page:buildings:view",
+      "page:system:view",
+      "page:settings:view",
+      "user:create",
+      "user:edit:role",
+      "user:edit:permissions",
+      "item:image:upload",
+      "item:decommission:active"
+    ]
+  },
+  "project_manager": {
+    "name": "Gerente de Projeto",
+    "description": "Acesso para gerenciar projetos específicos e visualizar dados relevantes.",
+    "permissions": [
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view",
+      "page:reports:view"
+    ]
+  },
+  "supervisor_1": {
+    "name": "Supervisor 1",
+    "description": "Supervisão de operações diárias e gerenciamento de aprovações de nível 1.",
+    "permissions": [
+      "section:supervisor:view",
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view",
+      "page:reports:view",
+      "page:approvals:view",
+      "page:audit:view",
+      "page:trash:view",
+      "item:decommission:active",
+      "item:delete:draft"
+    ]
+  },
+  "supervisor_2": {
+    "name": "Supervisor 2",
+    "description": "Supervisão de equipes de campo, com foco em execução e visualização.",
+    "permissions": [
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view",
+      "page:reports:view"
+    ]
+  },
+  "technician_1": {
+    "name": "Técnico 1",
+    "description": "Acesso operacional para execução e documentação de tarefas no data center.",
+    "permissions": [
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view",
+      "item:image:upload",
+      "item:delete:draft"
+    ]
+  },
+  "technician_2": {
+    "name": "Técnico 2",
+    "description": "Acesso de visualização para consulta de informações em campo.",
+    "permissions": [
+      "page:datacenter:view",
+      "page:inventory:view",
+      "page:connections:view",
+      "page:depara:view"
+    ]
+  },
+  "guest": {
+    "name": "Convidado",
+    "description": "Acesso mínimo, apenas para visualização limitada. Sem acesso por padrão.",
+    "permissions": []
+  }
+}
