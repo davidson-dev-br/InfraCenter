@@ -163,7 +163,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon">
+      <Sidebar>
         <SidebarHeader>
           <div className="flex items-center justify-between p-2">
              <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
                           asChild
-                          isActive={pathname.startsWith(item.href) && item.href !== '/'}
+                          isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
                           tooltip={{ children: item.label }}
                         >
                           <Link href={item.href}>
@@ -199,8 +199,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
            ))}
         </SidebarContent>
          <SidebarFooter>
-            {/* O menu de perfil foi movido para o cabeçalho */}
-        </SidebarFooter>
+         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
@@ -261,7 +260,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 )}
                  <DropdownMenuSeparator />
                 {hasPermission('page:settings:view') && (
-                    <DropdownMenuItem onSelect={() => router.push('/settings')}>
+                    <DropdownMenuItem onSelect={() => router.push('/settings')} disabled={!hasPermission('page:settings:view')}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Preferências</span>
                     </DropdownMenuItem>
