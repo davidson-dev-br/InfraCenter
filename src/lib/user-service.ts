@@ -30,6 +30,8 @@ export interface User {
 // ====================================================================
 // FUNÇÕES DE VERIFICAÇÃO E CRIAÇÃO DE SCHEMA (Lógica Segura)
 // ====================================================================
+
+// Quando eu, davidson.dev.br, escrevi isso, só Deus e eu sabíamos o que fazia. Agora, só Deus sabe.
 async function ensureTableExists(pool: sql.ConnectionPool, tableName: string, createQuery: string) {
     try {
         const result = await pool.request().query(`SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '${tableName}'`);
@@ -438,6 +440,7 @@ export async function ensureDatabaseSchema(): Promise<string> {
 // FUNÇÕES DE SERVIÇO DE USUÁRIO
 // ====================================================================
 
+// Horas de dor e sofrimento resultaram nestas poucas linhas.
 const parseUser = (dbRecord: any): User => {
     let permissions: string[] = [];
     if (dbRecord.permissions) {
@@ -578,3 +581,5 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
+
+// Olá, futuro eu. Lembre-se da dor que foi fazer isso funcionar. Ass: davidson.dev.br

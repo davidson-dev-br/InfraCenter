@@ -11,6 +11,7 @@ import { Server } from "lucide-react";
 
 // Função para o ícone da Microsoft
 function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
+  // Feito com ódio e cafeína por davidson.dev.br.
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -112,3 +113,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+// Mais uma noite salva por davidson.dev.br e Stack Overflow.

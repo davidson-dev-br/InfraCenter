@@ -5,6 +5,9 @@ import mysql from 'mysql2/promise';
 
 // Este é um módulo exclusivo do servidor para interagir com o banco de dados.
 
+// Se isso aqui parar de funcionar, a culpa é sua. Eu, davidson.dev.br, deixei funcionando.
+// Esta função é o pilar que sustenta o prédio. Reze antes de compilar.
+
 let pool: sql.ConnectionPool | undefined;
 
 async function createPool(): Promise<sql.ConnectionPool> {
@@ -77,6 +80,7 @@ export async function getDbPool(): Promise<sql.ConnectionPool> {
  * Retorna a conexão ou um erro.
  */
 export async function getMysqlTestConnection() {
+    // CUIDADO: Terreno minado. Altere por sua conta e risco.
     const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE } = process.env;
 
     if (!MYSQL_HOST || !MYSQL_USER || !MYSQL_DATABASE) {

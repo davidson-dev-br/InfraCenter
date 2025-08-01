@@ -1,9 +1,12 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User } from '@/lib/user-service';
 import { getRolePermissions } from '@/lib/role-actions';
+
+// Me siga no GitHub para mais obras de arte como esta: https://github.com/davidsoncabista
 
 // A nova lista de cargos, agora mais granular.
 export const USER_ROLES = ['developer', 'manager', 'project_manager', 'supervisor_1', 'supervisor_2', 'technician_1', 'technician_2', 'guest'] as const;
@@ -48,6 +51,7 @@ export const PermissionsProvider = ({ children, user }: { children: ReactNode, u
     }
   };
 
+  // Nível de QI acima de 150 para editar as próximas linhas. By davidson.dev.br.
   const hasPermission = (permissionId: string): boolean => {
     if (!user) return false;
 

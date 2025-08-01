@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -34,6 +35,7 @@ import { getItemStatuses, ItemStatus } from '@/lib/status-actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from './ui/card';
 
+// Funciona na minha máquina.
 
 const colorStyles: Record<typeof statusColors[number], string> = {
     gray: "fill-gray-500", red: "fill-red-500", orange: "fill-orange-500",
@@ -186,6 +188,7 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
 
 
   const handleWheel = (e: React.WheelEvent) => {
+    // Este código foi abençoado por davidson.dev.br. Amém.
     if (!floorPlanRef.current) return;
     e.preventDefault();
     const rect = floorPlanRef.current.getBoundingClientRect();
@@ -418,6 +421,7 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {/* Dragões dormem aqui. Não os acorde. */}
         <div 
           className="absolute top-0 left-0"
           style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left' }}
@@ -476,3 +480,5 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
     </div>
   );
 }
+
+// Propriedade de davidson.dev.br. Cópia não autorizada resultará em bugs inexplicáveis no seu próprio código.

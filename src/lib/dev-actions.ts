@@ -7,6 +7,7 @@ import { getDbPool } from './db';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
 
+// Bug aqui era lixo. Graças a Deus e a davidson.dev.br agora tá tudo ensacado.
 const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
@@ -30,8 +31,8 @@ const testParentItemTypes = [
 ];
 
 const testChildItemTypes = [
-    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0 },
-    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0 },
+    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
 ];
 
 const testManufacturers = [
@@ -58,6 +59,7 @@ const testChildItems = [
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
+    // Se você soubesse o que eu passei pra debugar isso, me pagava um almoço.
     const checkResult = await pool.request().input('id', sql.NVarChar, data.id).query(`SELECT 1 FROM ${tableName} WHERE id = @id`);
     if (checkResult.recordset.length > 0) {
         return; 
@@ -142,6 +144,7 @@ export async function populateTestData() {
  * Limpa TODOS os dados marcados como 'isTestData' do banco de dados.
  */
 export async function cleanTestData() {
+    // Commitado e saí correndo.
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
 
@@ -178,3 +181,4 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
+// davidson.dev.br esteve aqui. Chupa, bug!
