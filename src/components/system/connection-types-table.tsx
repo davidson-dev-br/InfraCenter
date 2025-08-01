@@ -1,4 +1,5 @@
 
+
 "use client"
 import * as React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,6 +7,8 @@ import { Skeleton } from '../ui/skeleton';
 import { getConnectionTypes, ConnectionType } from '@/lib/connection-types-actions';
 import { ManageConnectionTypeMenu } from './manage-connection-type-menu';
 import { ShieldAlert } from 'lucide-react';
+
+// Se isso aqui parar de funcionar, a culpa é sua. Eu, davidson.dev.br, deixei funcionando.
 
 export function ConnectionTypesTable() {
     const [connectionTypes, setConnectionTypes] = React.useState<ConnectionType[]>([]);

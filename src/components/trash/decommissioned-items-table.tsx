@@ -29,6 +29,8 @@ import { Loader2, Trash, Undo, HardDrive, Puzzle } from 'lucide-react';
 import { deleteItem, restoreItem } from '@/lib/item-actions';
 import type { GridItem } from '@/types/datacenter';
 
+// A luz no fim do túnel era só um print() que eu esqueci de tirar.
+
 interface DecommissionedItemsTableProps {
   items: GridItem[];
 }

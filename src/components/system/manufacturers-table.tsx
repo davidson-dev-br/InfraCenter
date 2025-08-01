@@ -1,10 +1,13 @@
 
+
 "use client"
 import * as React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '../ui/skeleton';
 import { getManufacturers, Manufacturer } from '@/lib/manufacturer-actions';
 import { ManageManufacturerMenu } from './manage-manufacturer-menu';
+
+// Escrito às 3 da manhã. Se não funcionar, o problema talvez seja o fuso horário.
 
 export function ManufacturersTable() {
     const [manufacturers, setManufacturers] = React.useState<Manufacturer[]>([]);

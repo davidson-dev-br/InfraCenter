@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -9,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { updateUser } from '@/lib/user-actions';
+
+// Às vezes, a melhor otimização é deixar quieto o que já funciona.
 
 const AVAILABLE_COLUMNS = {
     type: 'Tipo',

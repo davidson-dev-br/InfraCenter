@@ -1,5 +1,8 @@
 
+
 import type { GridItem, Room } from '@/types/datacenter';
+
+// Bem-vindo à selva. Você está por sua conta.
 
 interface TileDimensions {
   widthCm: number;
