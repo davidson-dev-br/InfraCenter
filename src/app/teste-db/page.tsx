@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getMysqlTestConnection, listAllTables } from "@/lib/debug-actions";
-import { CheckCircle, AlertCircle, Database, Server, ListTree, Loader2, Brick } from "lucide-react";
+import { CheckCircle, AlertCircle, Database, Server, ListTree, Loader2, BrickWall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useTransition, useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -131,7 +131,7 @@ export default function TesteDbPage() {
                         <AccordionItem value={table.name} key={table.name}>
                              <AccordionTrigger>
                                 <div className="flex items-center gap-2">
-                                    <Brick className="h-4 w-4 text-primary" />
+                                    <BrickWall className="h-4 w-4 text-primary" />
                                     <span className="font-mono text-base">{table.name}</span>
                                     <Badge variant="outline">{table.columns.length} colunas</Badge>
                                 </div>
@@ -207,4 +207,5 @@ export default function TesteDbPage() {
        </div>
     </div>
   );
-}
+
+    
