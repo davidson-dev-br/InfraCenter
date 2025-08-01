@@ -1,4 +1,6 @@
-
+// This file is no longer used by the new static layout.
+// It can be safely removed or kept for future reference.
+// The layout logic has been moved directly into AppLayout for simplicity.
 "use client"
 
 import * as React from "react"
@@ -9,10 +11,7 @@ import { PanelLeft, Pin, PinOff } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
