@@ -5,20 +5,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getMysqlTestConnection, listAllTables } from "@/lib/debug-actions";
-import { CheckCircle, AlertCircle, Database, Server, ListTree, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Database, Server, ListTree, Loader2, Brick } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
-interface TableInfo {
+interface ColumnInfo {
   TABLE_SCHEMA: string;
   TABLE_NAME: string;
+  COLUMN_NAME: string;
+  DATA_TYPE: string;
+  CHARACTER_MAXIMUM_LENGTH: number | null;
+  IS_NULLABLE: 'YES' | 'NO';
 }
 
-// Este componente agora é interativo para permitir a chamada da nova função.
+interface TableWithColumns {
+    name: string;
+    columns: ColumnInfo[];
+}
+
 export default function TesteDbPage() {
   const [mysqlResult, setMysqlResult] = useState<{ success: boolean; message: string; data: any } | null>(null);
-  const [schemaResult, setSchemaResult] = useState<{ success: boolean; data: TableInfo[] | null; error: string | null } | null>(null);
+  const [schemaResult, setSchemaResult] = useState<{ success: boolean; data: ColumnInfo[] | null; error: string | null } | null>(null);
   
   const [isMysqlPending, startMysqlTransition] = useTransition();
   const [isSchemaPending, startSchemaTransition] = useTransition();
@@ -37,11 +47,25 @@ export default function TesteDbPage() {
     });
   }
 
+  const tablesWithColumns = useMemo(() => {
+    if (!schemaResult?.success || !schemaResult.data) {
+      return [];
+    }
+    const tablesMap = new Map<string, TableWithColumns>();
+    for (const column of schemaResult.data) {
+      if (!tablesMap.has(column.TABLE_NAME)) {
+        tablesMap.set(column.TABLE_NAME, { name: column.TABLE_NAME, columns: [] });
+      }
+      tablesMap.get(column.TABLE_NAME)!.columns.push(column);
+    }
+    return Array.from(tablesMap.values());
+  }, [schemaResult]);
+
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold font-headline">Laboratório de Banco de Dados</h1>
       
-      {/* Card para Teste de Conexão MySQL */}
       <Card>
         <CardHeader>
           <CardTitle>Teste de Conexão com MySQL</CardTitle>
@@ -87,41 +111,60 @@ export default function TesteDbPage() {
         </CardContent>
       </Card>
       
-      {/* Novo Card para Listar Tabelas do Azure SQL */}
       <Card>
         <CardHeader>
           <CardTitle>Inspetor de Schema (Azure SQL)</CardTitle>
           <CardDescription>
-            Clique no botão abaixo para listar todas as tabelas de usuário existentes no banco de dados principal da aplicação (Azure SQL).
+            Clique no botão abaixo para listar todas as tabelas e suas colunas no banco de dados principal (Azure SQL).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <Button onClick={handleListTables} disabled={isSchemaPending}>
                 {isSchemaPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ListTree className="mr-2 h-4 w-4" />}
-                Listar Tabelas
+                Inspecionar Schema
             </Button>
 
             {schemaResult && (
-                schemaResult.success && schemaResult.data ? (
-                    <div className="border rounded-md mt-4 max-h-96 overflow-y-auto">
-                        <Table>
-                            <TableHeader className="sticky top-0 bg-muted">
-                                <TableRow>
-                                    <TableHead>Schema</TableHead>
-                                    <TableHead>Nome da Tabela</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {schemaResult.data.map(table => (
-                                    <TableRow key={`${table.TABLE_SCHEMA}.${table.TABLE_NAME}`}>
-                                        <TableCell>{table.TABLE_SCHEMA}</TableCell>
-                                        <TableCell className="font-mono">{table.TABLE_NAME}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                ) : (
+                schemaResult.success && tablesWithColumns.length > 0 ? (
+                    <Accordion type="multiple" className="w-full">
+                       {tablesWithColumns.map(table => (
+                        <AccordionItem value={table.name} key={table.name}>
+                             <AccordionTrigger>
+                                <div className="flex items-center gap-2">
+                                    <Brick className="h-4 w-4 text-primary" />
+                                    <span className="font-mono text-base">{table.name}</span>
+                                    <Badge variant="outline">{table.columns.length} colunas</Badge>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className="overflow-x-auto border rounded-md">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Coluna</TableHead>
+                                                <TableHead>Tipo de Dado</TableHead>
+                                                <TableHead>Nulo?</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {table.columns.map(col => (
+                                                <TableRow key={col.COLUMN_NAME}>
+                                                    <TableCell className="font-mono">{col.COLUMN_NAME}</TableCell>
+                                                    <TableCell className="font-mono text-xs">
+                                                        {col.DATA_TYPE}
+                                                        {col.CHARACTER_MAXIMUM_LENGTH ? `(${col.CHARACTER_MAXIMUM_LENGTH})` : ''}
+                                                    </TableCell>
+                                                    <TableCell>{col.IS_NULLABLE === 'YES' ? 'Sim' : 'Não'}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                       ))}
+                    </Accordion>
+                ) : schemaResult.error ? (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Falha ao Listar Tabelas</AlertTitle>
@@ -133,7 +176,7 @@ export default function TesteDbPage() {
                             </pre>
                         </AlertDescription>
                     </Alert>
-                )
+                ) : null
             )}
         </CardContent>
       </Card>

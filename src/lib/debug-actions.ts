@@ -36,21 +36,30 @@ export async function getMysqlTestConnection() {
 }
 
 /**
- * Server Action para listar todas as tabelas de usuário do banco de dados principal (Azure SQL).
+ * Server Action para listar todas as tabelas e suas colunas do banco de dados principal (Azure SQL).
  * Retorna um objeto com os dados ou um erro.
  */
 export async function listAllTables() {
   try {
     const pool = await getDbPool();
     const result = await pool.request().query(`
-      SELECT TABLE_SCHEMA, TABLE_NAME
-      FROM INFORMATION_SCHEMA.TABLES
-      WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'dbo'
-      ORDER BY TABLE_NAME;
+      SELECT
+          c.TABLE_SCHEMA,
+          c.TABLE_NAME,
+          c.COLUMN_NAME,
+          c.DATA_TYPE,
+          c.CHARACTER_MAXIMUM_LENGTH,
+          c.IS_NULLABLE
+      FROM INFORMATION_SCHEMA.TABLES AS t
+      JOIN INFORMATION_SCHEMA.COLUMNS AS c ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
+      WHERE t.TABLE_TYPE = 'BASE TABLE' AND t.TABLE_SCHEMA = 'dbo'
+      ORDER BY
+          t.TABLE_NAME,
+          c.ORDINAL_POSITION;
     `);
     return { success: true, data: result.recordset, error: null };
   } catch (error: any) {
-    console.error('Erro ao listar tabelas:', error);
+    console.error('Erro ao listar tabelas e colunas:', error);
     return { success: false, data: null, error: error.message };
   }
 }
