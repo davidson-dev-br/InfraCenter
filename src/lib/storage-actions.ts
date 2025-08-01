@@ -59,4 +59,3 @@ export async function uploadImage(dataURI: string, blobName: string): Promise<st
     throw new Error(`Falha no upload para o Azure: ${error.message}`);
   }
 }
-

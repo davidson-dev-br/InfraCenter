@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { getDbPool } from './db';
 import { statusColors } from './status-config';
 
+// A dualidade do dev: amar e odiar este exato trecho de código que gerencia o estado das coisas.
 export interface ItemStatus {
   id: string;
   name: string;
@@ -111,7 +112,7 @@ export async function deleteStatus(id: string) {
         
         const usageCheck = await pool.request()
             .input('statusId', sql.NVarChar, id)
-            .query`SELECT TOP 1 id FROM Items WHERE status = @statusId`;
+            .query`SELECT TOP 1 id FROM ParentItems WHERE status = @statusId UNION SELECT TOP 1 id FROM ChildItems WHERE status = @statusId`;
     
         if (usageCheck.recordset.length > 0) {
             throw new Error('Este status está em uso por um ou mais itens e não pode ser excluído.');

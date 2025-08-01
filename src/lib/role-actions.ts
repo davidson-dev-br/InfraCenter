@@ -61,4 +61,3 @@ export async function updateRolePermissions(newPermissions: RolePermissionsMap):
     throw new Error('Failed to update role permissions.');
   }
 }
-

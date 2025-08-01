@@ -34,6 +34,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, 
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
+// Eu poderia ter feito mais simples. Mas aí não seria tão legal.
 
 const ChildItemsList = ({ parentId, allItems, onItemClick }: { parentId: string, allItems: GridItem[], onItemClick: (item: GridItem) => void }) => {
     const childItems = allItems.filter(item => item.parentId === parentId);
@@ -346,7 +347,7 @@ export const ItemDetailDialog = ({ item, open, onOpenChange, onItemUpdate, onIte
   
   const canDeleteItem = (
     (item.status === 'draft' && hasPermission('item:delete:draft')) ||
-    (item.status === 'active' && hasPermission('item:decommission:active'))
+    (item.status !== 'draft' && hasPermission('item:decommission:active'))
   );
 
   const currentRoom = fullItemContext.availableRooms?.find(r => r.id === item.roomId);

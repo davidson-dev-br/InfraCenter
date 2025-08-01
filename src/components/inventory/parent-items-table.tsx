@@ -37,12 +37,13 @@ interface ParentItemsTableProps {
 
 const statusColorClasses: Record<string, string> = {
     active: "bg-green-500/20 text-green-400 border-green-500/30",
-    maintenance: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    maintenance: "bg-orange-500/20 text-orange-400 border-orange-500/30",
     draft: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     pending_approval: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
 };
 
 
+// Simples, elegante e funciona. De nada. - davidson.dev.br
 export function ParentItemsTable({ items, allItems, statuses, preferences = {} }: ParentItemsTableProps) {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,7 +128,7 @@ export function ParentItemsTable({ items, allItems, statuses, preferences = {} }
                             <TableCell className="font-medium">{item.label}</TableCell>
                             <TableCell>{item.buildingName && item.roomName ? `${item.buildingName} / ${item.roomName}` : 'N/A'}</TableCell>
                             <TableCell>
-                                <Badge variant="outline" className={cn("capitalize", statusColorClasses[item.status] || 'text-foreground')}>
+                                <Badge variant="outline" className={cn("capitalize", statusColorClasses[statusesById.get(item.status)?.name.toLowerCase() || ''] || 'text-foreground')}>
                                 {statusesById.get(item.status)?.name || item.status}
                                 </Badge>
                             </TableCell>

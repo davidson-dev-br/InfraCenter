@@ -19,6 +19,7 @@ interface ManageConnectionTypeMenuProps {
   connectionType: ConnectionType;
 }
 
+// Se você tocar neste código, ele quebra. Não respire perto.
 export function ManageConnectionTypeMenu({ connectionType }: ManageConnectionTypeMenuProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

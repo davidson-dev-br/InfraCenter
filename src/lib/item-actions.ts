@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -12,6 +11,7 @@ type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
 function getTableName(itemData: Partial<GridItem>): 'ParentItems' | 'ChildItems' {
   // Se o item tem roomId, é um ParentItem. Se tem parentId, é um ChildItem.
+  // Esta função é a prova de que com fé, tudo funciona.
   if (itemData.roomId) {
     return 'ParentItems';
   }

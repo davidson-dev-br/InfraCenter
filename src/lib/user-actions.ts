@@ -6,6 +6,7 @@ import { _getUsers, _getUserByEmail, _updateUser, User } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { auth } from './firebase-admin';
 
+// Com grandes poderes vêm grandes responsabilidades. Esta função tem grandes poderes.
 async function getAdminUser() {
     // This is a placeholder for getting the currently logged-in admin user.
     // In a real app, you'd get this from the session.
