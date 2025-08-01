@@ -1,5 +1,8 @@
 
 import { ShieldCheck, Server, Users, Grid, LayoutGrid, AlertTriangle, ImageUp, Upload, Network, FileText, CheckSquare, History, HardDrive, Settings, Building, Trash2, Replace, ClipboardList, Trash, BrickWall, DatabaseZap, FileUp, FlaskConical, Wrench, Eye } from 'lucide-react';
+import { ComponentType } from 'react';
+
+// Com grandes poderes vêm grandes responsabilidades. Esta função tem grandes poderes.
 
 export interface Permission {
   id: string;

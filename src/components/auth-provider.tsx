@@ -13,6 +13,8 @@ import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from './building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
 
+// Aquele momento de silêncio antes de rodar o código pela primeira vez. Pura fé.
+
 const FullPageLoader = () => (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -29,6 +31,7 @@ type Building = {
 };
 
 // Esta função injeta o token de autenticação em todas as requisições fetch.
+// Alterar isto é como trocar o pneu do carro em movimento.
 const createAuthorizedFetch = (getAuthToken: () => Promise<string | null>) => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;

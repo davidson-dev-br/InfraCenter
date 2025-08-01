@@ -17,6 +17,7 @@ interface InventoryItem extends GridItem {
     buildingName: string | null;
 }
 
+// Eu sou o perigo. Eu sou aquele que faz o commit.
 // Uma função para obter o usuário atual no servidor.
 async function getCurrentUser(): Promise<User | null> {
     if (!auth) {

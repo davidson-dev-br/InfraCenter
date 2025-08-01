@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// ESTÁ VIVO! VIVOOO! - Eu, depois de fazer isso funcionar.
 const KONAMI_CODE = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
   'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',

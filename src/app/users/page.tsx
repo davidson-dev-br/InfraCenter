@@ -17,6 +17,8 @@ import { ManageUserButton } from "@/components/manage-user-button";
 import { AddUserDialog } from "@/components/add-user-dialog";
 import type { UserRole } from "@/components/permissions-provider";
 
+// Simples, elegante e funciona. De nada. - davidson.dev.br
+
 export const dynamic = 'force-dynamic';
 
 // Mapeia os identificadores de função para rótulos amigáveis em português.
