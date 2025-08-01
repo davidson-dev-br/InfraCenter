@@ -51,32 +51,32 @@ Separação estrutural dos dados em `ParentItems` e `ChildItems` no banco de dad
 Expansão da página `/system` com a criação e gerenciamento de Fabricantes e Modelos de equipamentos.
 
 ### Fase 7: Fundações de Conectividade
-**Status:** `Em Andamento`
+**Status:** `Concluído`
 Construir os blocos fundamentais para o mapeamento de conexões físicas e lógicas.
 
 1.  **7.1. Gerenciar Tipos de Porta:**
-    *   **Descrição:** Criar a tabela `PortTypes` no banco de dados e implementar o CRUD completo na aba "Tipos de Porta" da página de Sistema. Isso nos permitirá definir os tipos de conectores físicos (ex: RJ45, SFP+, Tomada 20A).
+    *   **Descrição:** Criar a tabela `PortTypes` no banco de dados e implementar o CRUD completo na aba "Gerenciamento de Conexões" da página de Sistema.
     *   **Status:** `Concluído`.
 
 2.  **7.2. Gerenciar Tipos de Conexão:**
-    *   **Descrição:** Implementar o CRUD para `ConnectionTypes`, que definirá a natureza da conexão (ex: Dados UTP, Fibra Óptica, Energia AC).
+    *   **Descrição:** Implementar o CRUD para `ConnectionTypes`, que definirá a natureza da conexão.
     *   **Status:** `Concluído`.
 
 3.  **7.3. Gerenciar Portas de Equipamentos:**
-    *   **Descrição:** Criar a tabela `EquipmentPorts` no banco de dados para armazenar cada porta individual de um equipamento (ex: `SW-01:Porta_1`).
+    *   **Descrição:** Criar a tabela `EquipmentPorts` no banco de dados para armazenar cada porta individual de um equipamento.
     *   **Status:** `Concluído`.
 
 ### Fase 8: Mapeamento Avançado e Inteligência Proativa
-**Status:** `A Fazer`
+**Status:** `Em Andamento`
 Módulo central para mapear conexões e garantir a integridade dos dados de forma proativa.
 
 1.  **8.1. Geração Automática de Portas:**
-    *   **Descrição:** Modificar a criação de `ChildItems` para que, ao adicionar um equipamento baseado em um `Modelo` com portas pré-configuradas, o sistema crie automaticamente as instâncias dessas portas no banco de dados, prontas para serem conectadas.
-    *   **Status:** `Próximo Passo`.
+    *   **Descrição:** Modificar a criação de `ChildItems` para que, ao adicionar um equipamento baseado em um `Modelo` com portas pré-configuradas, o sistema crie automaticamente as instâncias dessas portas no banco de dados.
+    *   **Status:** `Concluído`.
 
 2.  **8.2. Desenvolver Interface De/Para:**
     *   **Descrição:** Construir a interface visual na página `/depara` para permitir que os usuários conectem `Porta A` à `Porta B`.
-    *   **Status:** A fazer.
+    *   **Status:** `Próximo Passo`.
 
 3.  **8.3. Central de Incidentes de Integridade:**
     *   **Descrição:** Desenvolver a página `/incidents`. O sistema irá gerar "incidentes" automaticamente para inconsistências de dados (ex: uma porta de uplink de switch que não está conectada, um servidor sem TAG).

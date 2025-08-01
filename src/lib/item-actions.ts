@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { getDbPool } from './db';
 import type { GridItem, Room } from '@/types/datacenter';
 import type { ItemType } from './item-types-actions';
+import { getModelsByManufacturerId } from './models-actions';
+import { getPortTypes, PortType } from './port-types-actions';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
@@ -84,7 +86,7 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
         throw new Error(`Falha ao atualizar o item ${itemData.label || id} no banco de dados. Detalhe: ${error.message}`);
     }
   } else {
-    // INSERT
+    // INSERT - Lógica de criação de item
      try {
         const allDataForInsert = { id, ...fieldsToUpdate };
         const columns = Object.keys(allDataForInsert)
@@ -98,7 +100,29 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
         
         const finalValues = columns.map(col => `@${col}`);
         const query = `INSERT INTO ${tableName} (${columns.join(',')}) VALUES (${finalValues.join(',')})`;
-        await request.query(query);
+        
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+        try {
+            const transactionRequest = new sql.Request(transaction);
+            
+            // Adicionar inputs à requisição da transação
+            for (const col of columns) {
+                addInput(transactionRequest, col, (allDataForInsert as any)[col]);
+            }
+            await transactionRequest.query(query);
+
+            // Se for um ChildItem e tiver um modelo, tenta criar as portas
+            if (tableName === 'ChildItems' && allDataForInsert.modelo) {
+                await createPortsForModel(transaction, id, allDataForInsert.modelo);
+            }
+            
+            await transaction.commit();
+
+        } catch (err) {
+            await transaction.rollback();
+            throw err; // Re-lança o erro para ser pego pelo bloco catch externo
+        }
 
     } catch (error: any) {
         console.error(`Erro de banco de dados ao CRIAR item ${id} na tabela ${tableName}:`, error);
@@ -110,6 +134,69 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
   revalidatePath('/mapa-teste');
   revalidatePath('/inventory');
 }
+
+/**
+ * Cria as portas para um equipamento com base na configuração do seu modelo.
+ * Esta função deve ser chamada dentro de uma transação.
+ */
+async function createPortsForModel(transaction: sql.Transaction, childItemId: string, modelName: string) {
+    console.log(`Iniciando criação de portas para ${childItemId} baseado no modelo ${modelName}`);
+
+    // 1. Encontrar o modelo e sua configuração de portas
+    // Esta é uma simplificação. Em um sistema real, você pode precisar de uma forma mais robusta de encontrar o modelo.
+    // Assumindo que o nome do modelo é único por enquanto.
+    const modelResult = await new sql.Request(transaction).input('modelName', sql.NVarChar, modelName).query`SELECT portConfig FROM Models WHERE name = @modelName`;
+
+    if (modelResult.recordset.length === 0 || !modelResult.recordset[0].portConfig) {
+        console.log(`Nenhuma configuração de porta encontrada para o modelo ${modelName}. Pulando criação de portas.`);
+        return; // Nenhuma configuração de porta, então não faz nada
+    }
+
+    const portConfig = modelResult.recordset[0].portConfig;
+    console.log(`Configuração de portas encontrada: ${portConfig}`);
+
+    // 2. Buscar todos os tipos de porta para mapeamento (evita múltiplas queries)
+    const portTypesResult = await new sql.Request(transaction).query`SELECT id, name FROM PortTypes`;
+    const portTypesMap = new Map<string, string>(portTypesResult.recordset.map(pt => [pt.name.toUpperCase(), pt.id]));
+    
+    // 3. Analisar a string de configuração e criar as portas
+    const portGroups = portConfig.split(';').filter(Boolean); // ex: ["24xRJ45", "4xSFP+"]
+    let portCounter = 1;
+
+    for (const group of portGroups) {
+        const parts = group.toLowerCase().split('x'); // ex: ["24", "rj45"]
+        if (parts.length !== 2) continue;
+
+        const quantity = parseInt(parts[0], 10);
+        const typeName = parts[1].toUpperCase();
+
+        if (isNaN(quantity) || !portTypesMap.has(typeName)) {
+            console.warn(`Configuração de porta inválida ou tipo de porta não encontrado: ${group}`);
+            continue;
+        }
+
+        const portTypeId = portTypesMap.get(typeName);
+
+        for (let i = 0; i < quantity; i++) {
+            const portId = `eport_${childItemId}_${portCounter}`;
+            const portLabel = `${typeName.replace(/[^A-Z0-9]/g, '')}-${i + 1}`;
+            
+            const portRequest = new sql.Request(transaction);
+            await portRequest
+                .input('id', sql.NVarChar, portId)
+                .input('childItemId', sql.NVarChar, childItemId)
+                .input('portTypeId', sql.NVarChar, portTypeId)
+                .input('label', sql.NVarChar, portLabel)
+                .query`
+                    INSERT INTO EquipmentPorts (id, childItemId, portTypeId, label, status)
+                    VALUES (@id, @childItemId, @portTypeId, @label, 'down')
+                `;
+            portCounter++;
+        }
+    }
+    console.log(`${portCounter - 1} portas criadas com sucesso para ${childItemId}.`);
+}
+
 
 interface AddItemParams {
   label: string;
