@@ -1,6 +1,29 @@
 # Guia de Implantação e Transferência
 
-Este documento descreve os passos essenciais para transferir a aplicação **InfraVision** para o seu repositório no GitHub.
+Este documento descreve os passos essenciais para implantar a aplicação **InfraVision** do zero e para transferi-la para seu próprio repositório no GitHub.
+
+---
+## Implantação Inicial do Banco de Dados
+
+Para configurar o banco de dados pela primeira vez em um novo ambiente (local ou na nuvem), siga estes passos:
+
+1.  **Acesse o Menu de Desenvolvedor:**
+    *   No canto inferior direito da aplicação em execução, clique no ícone de engrenagem para abrir o "Dev Menu".
+
+2.  **Baixe o Script de Infraestrutura:**
+    *   Clique no botão **"Baixar Script de Infra (.sql)"**. Isso fará o download do arquivo `infra_setup.sql`.
+
+3.  **Execute o Script no seu Banco de Dados:**
+    *   Abra seu cliente de banco de dados preferido (como SQL Server Management Studio, Azure Data Studio, etc.).
+    *   Conecte-se à sua instância de banco de dados SQL Server (ou Azure SQL) limpa.
+    *   Abra e execute o conteúdo do arquivo `infra_setup.sql`.
+    *   Este script criará todas as tabelas, relacionamentos e dados iniciais necessários para a aplicação funcionar.
+
+4.  **Primeiro Login e Segurança:**
+    *   O script cria um usuário padrão com acesso de desenvolvedor:
+        *   **Email:** `dev@dev.com`
+        *   **Senha:** (A autenticação é via Microsoft, então não há uma senha local)
+    *   **MUITO IMPORTANTE:** Após fazer o login pela primeira vez com esta conta, acesse a página de **Gerenciamento de Usuários**, crie sua própria conta com as permissões necessárias e, em seguida, **desative ou exclua o usuário `dev@dev.com`** para garantir a segurança do seu ambiente.
 
 ---
 

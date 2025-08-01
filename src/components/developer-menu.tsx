@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
-import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle } from 'lucide-react';
+import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle, FileCode } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { populateTestData, cleanTestData } from '@/lib/dev-actions';
-import { ensureDatabaseSchema } from '@/lib/user-service'; // Importando a nova função
+import { ensureDatabaseSchema } from '@/lib/user-service';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 
@@ -27,7 +27,6 @@ export const DeveloperMenu = () => {
         try {
             const result = await ensureDatabaseSchema();
             toast({ title: 'Sucesso', description: result });
-            // Não precisa recarregar a página
         } catch (error: any) {
             toast({ title: 'Erro na verificação do Schema', description: error.message, variant: 'destructive' });
         } finally {
@@ -40,7 +39,6 @@ export const DeveloperMenu = () => {
         try {
             await populateTestData();
             toast({ title: 'Sucesso', description: 'Banco de dados populado com dados de teste. Recarregue a página para ver as alterações.' });
-            // window.location.reload(); // Opcional, o usuário pode recarregar manualmente.
         } catch (error: any) {
             toast({ title: 'Erro ao Popular', description: error.message, variant: 'destructive' });
         } finally {
@@ -115,9 +113,9 @@ export const DeveloperMenu = () => {
                 </Button>
                 <Separator className="my-2"/>
                 <Button variant="outline" asChild className="w-full">
-                    <a href="/project_archive.zip" download="infravision_project.zip">
-                        <Download className="mr-2 h-4 w-4" />
-                        Baixar Projeto (.zip)
+                    <a href="/infra_setup.sql" download="infra_setup.sql">
+                        <FileCode className="mr-2 h-4 w-4" />
+                        Baixar Script de Infra (.sql)
                     </a>
                 </Button>
             </CardFooter>
