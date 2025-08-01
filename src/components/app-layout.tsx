@@ -260,7 +260,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 )}
                  <DropdownMenuSeparator />
                 {hasPermission('page:settings:view') && (
-                    <DropdownMenuItem onSelect={() => router.push('/settings')} disabled={!hasPermission('page:settings:view')}>
+                    <DropdownMenuItem onSelect={() => router.push('/settings')}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Preferências</span>
                     </DropdownMenuItem>
