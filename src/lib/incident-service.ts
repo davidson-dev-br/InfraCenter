@@ -1,8 +1,9 @@
 
-import 'server-only';
+'use server';
 import sql from 'mssql';
 import { getDbPool } from './db';
 
+// Este código passou no teste do "confia na call".
 // Este é um módulo exclusivo do servidor que interage com um banco de dados.
 
 export interface Incident {

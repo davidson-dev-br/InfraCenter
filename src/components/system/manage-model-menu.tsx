@@ -62,10 +62,12 @@ export function ManageModelMenu({ model }: ManageModelMenuProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </DropdownMenuItem>
+          <ManageModelDialog mode="edit" model={model}>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+          </ManageModelDialog>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -75,21 +77,7 @@ export function ManageModelMenu({ model }: ManageModelMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-       <ManageModelDialog mode="edit" model={model}>
-          {/* Este Dialog é aberto programaticamente, então o trigger é um fragmento vazio */}
-          <div data-state={isEditDialogOpen ? 'open' : 'closed'} onPointerDownOutside={() => setIsEditDialogOpen(false)} />
-       </ManageModelDialog>
       
-      {/* Dialog de Edição */}
-      {isEditDialogOpen && (
-        <ManageModelDialog mode="edit" model={model}>
-          <div/>
-        </ManageModelDialog>
-      )}
-
-
-      {/* Dialog de Exclusão */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>

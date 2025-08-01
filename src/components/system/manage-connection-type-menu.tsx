@@ -49,10 +49,12 @@ export function ManageConnectionTypeMenu({ connectionType }: ManageConnectionTyp
           <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
         )}
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} disabled={isDisabled}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </DropdownMenuItem>
+          <ManageConnectionTypeDialog mode="edit" connectionType={connectionType}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+          </ManageConnectionTypeDialog>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -63,10 +65,6 @@ export function ManageConnectionTypeMenu({ connectionType }: ManageConnectionTyp
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <ManageConnectionTypeDialog mode="edit" connectionType={connectionType}>
-          <div data-state={isEditDialogOpen ? 'open' : 'closed'} onPointerDownOutside={() => setIsEditDialogOpen(false)} />
-      </ManageConnectionTypeDialog>
 
       <DeleteConnectionTypeDialog
         connectionType={connectionType}

@@ -49,10 +49,12 @@ export function ManagePortTypeMenu({ portType }: ManagePortTypeMenuProps) {
           <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
         )}
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} disabled={isDisabled}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </DropdownMenuItem>
+            <ManagePortTypeDialog mode="edit" portType={portType}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            </ManagePortTypeDialog>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -63,10 +65,6 @@ export function ManagePortTypeMenu({ portType }: ManagePortTypeMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <ManagePortTypeDialog mode="edit" portType={portType}>
-          <div data-state={isEditDialogOpen ? 'open' : 'closed'} onPointerDownOutside={() => setIsEditDialogOpen(false)} />
-      </ManagePortTypeDialog>
 
       <DeletePortTypeDialog
         portType={portType}
