@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransitionLoader } from '@/components/page-transition-loader';
 
+// Olá, futuro eu. Lembre-se da dor que foi fazer isso funcionar. Ass: davidson.dev.br
 export const metadata: Metadata = {
   title: 'InfraVision',
   description: 'A robust data center management app to visualize and monitor IT infrastructure.',
