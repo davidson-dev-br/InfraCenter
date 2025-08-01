@@ -35,13 +35,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { GridItem } from '@/types/datacenter';
-import { getItemTypes, ItemType } from '@/lib/item-types-actions';
+import { getManufacturers, Manufacturer } from '@/lib/manufacturer-actions';
+import { getModelsByManufacturerId, Model } from '@/lib/models-actions';
 import { updateItem } from '@/lib/item-actions';
 
 const formSchema = z.object({
   label: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
   parentId: z.string({ required_error: "Você deve selecionar um item pai." }),
-  type: z.string({ required_error: "Você deve selecionar um tipo de equipamento." }),
+  manufacturerId: z.string({ required_error: "Você deve selecionar um fabricante." }),
+  modelId: z.string({ required_error: "Você deve selecionar um modelo." }),
   posicaoU: z.coerce.number().optional(),
 });
 
@@ -56,37 +58,64 @@ interface AddChildItemDialogProps {
 export function AddChildItemDialog({ allItems, open, onOpenChange }: AddChildItemDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [isLoadingManufacturers, setIsLoadingManufacturers] = useState(true);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
   const parentCandidates = allItems.filter(item => item.tamanhoU && item.tamanhoU > 0);
+  const selectedManufacturerId = form.watch('manufacturerId');
   
   useEffect(() => {
     if (open) {
-      setIsLoading(true);
-      // Fetch types for child items (isParentType = false)
-      getItemTypes(false) 
-        .then(setItemTypes)
-        .catch(() => toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os tipos de item." }))
-        .finally(() => setIsLoading(false));
+      setIsLoadingManufacturers(true);
+      getManufacturers()
+        .then(setManufacturers)
+        .catch(() => toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os fabricantes." }))
+        .finally(() => setIsLoadingManufacturers(false));
     }
   }, [open, toast]);
+  
+  useEffect(() => {
+      if (selectedManufacturerId) {
+          setIsLoadingModels(true);
+          setModels([]); 
+          form.setValue('modelId', ''); 
+          getModelsByManufacturerId(selectedManufacturerId)
+              .then(setModels)
+              .catch(() => toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os modelos." }))
+              .finally(() => setIsLoadingModels(false));
+      } else {
+          setModels([]);
+      }
+  // A dependência `form` é omitida para evitar um loop, pois `setValue` a modifica.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedManufacturerId]);
+
 
   const onSubmit = async (data: FormData) => {
     try {
+        const selectedModel = models.find(m => m.id === data.modelId);
+        if (!selectedModel) {
+            throw new Error("Modelo selecionado não é válido.");
+        }
+
         const newId = `citem_${Date.now()}`;
         
         await updateItem({
             id: newId,
             label: data.label,
-            type: data.type,
+            type: selectedModel.name, // O tipo do item agora é o nome do modelo.
+            modelo: selectedModel.name, // Armazena o nome do modelo
+            brand: manufacturers.find(m => m.id === data.manufacturerId)?.name,
             parentId: data.parentId,
             status: 'draft',
-            posicaoU: data.posicaoU || null, // Garante que o valor seja null e não undefined
+            posicaoU: data.posicaoU || null,
+            tamanhoU: selectedModel.tamanhoU,
         });
 
       toast({
@@ -121,9 +150,9 @@ export function AddChildItemDialog({ allItems, open, onOpenChange }: AddChildIte
               name="label"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Equipamento</FormLabel>
+                  <FormLabel>Nome do Equipamento (Hostname)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Servidor WEB-01" {...field} />
+                    <Input placeholder="Ex: SRV-WEB-01" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -166,29 +195,52 @@ export function AddChildItemDialog({ allItems, open, onOpenChange }: AddChildIte
                     )}
                 />
             </div>
-
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de Equipamento</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {itemTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="manufacturerId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Fabricante</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingManufacturers}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {manufacturers.map((man) => (
+                            <SelectItem key={man.id} value={man.id}>{man.name}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="modelId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Modelo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingModels || !selectedManufacturerId}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder={isLoadingModels ? "Carregando..." : "Selecione..."} />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {models.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
 
             <DialogFooter className="pt-4">
               <Button
