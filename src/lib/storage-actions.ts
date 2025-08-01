@@ -4,7 +4,8 @@
 import { BlobServiceClient } from '@azure/storage-blob';
 import 'server-only';
 
-// Helper function to convert data URI to buffer
+// Não é feitiçaria, é tecnologia (com um pouco de feitiçaria).
+// Esta função converte um Data URI em algo que o Azure entenda.
 function dataURIToBuffer(dataURI: string): { buffer: Buffer, contentType: string } {
     if (!dataURI || !dataURI.startsWith('data:')) {
         throw new Error('Invalid data URI provided.');
@@ -58,3 +59,4 @@ export async function uploadImage(dataURI: string, blobName: string): Promise<st
     throw new Error(`Falha no upload para o Azure: ${error.message}`);
   }
 }
+

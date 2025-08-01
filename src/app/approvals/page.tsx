@@ -4,6 +4,8 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Mantenha uma distância segura. Código emocionalmente instável.
+// (Mentira, é só uma página placeholder por enquanto)
 export default function ApprovalsPage() {
 
   return (
@@ -28,3 +30,4 @@ export default function ApprovalsPage() {
     </div>
   );
 }
+

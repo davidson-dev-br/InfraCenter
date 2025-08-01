@@ -44,6 +44,7 @@ interface ManagePortTypeDialogProps {
   children: React.ReactNode;
 }
 
+// Feito com ódio e cafeína por davidson.dev.br.
 export function ManagePortTypeDialog({ mode, portType, children }: ManagePortTypeDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();

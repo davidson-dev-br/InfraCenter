@@ -24,6 +24,7 @@ interface DeletePortTypeDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// O último dev que tentou "melhorar" isso aqui foi transferido pro RH.
 export function DeletePortTypeDialog({ portType, open, onOpenChange }: DeletePortTypeDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();

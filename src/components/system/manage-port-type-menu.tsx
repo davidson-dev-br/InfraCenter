@@ -19,6 +19,7 @@ interface ManagePortTypeMenuProps {
   portType: PortType;
 }
 
+// Eu não sigo as boas práticas. Eu crio elas. - davidson.dev.br
 export function ManagePortTypeMenu({ portType }: ManagePortTypeMenuProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

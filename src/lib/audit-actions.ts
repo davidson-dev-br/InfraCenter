@@ -5,6 +5,9 @@ import sql from 'mssql';
 import { getDbPool } from './db';
 import type { User } from './user-service';
 
+// Este arquivo é o "olho que tudo vê" do sistema.
+// Trate com o devido respeito. - davidson.dev.br
+
 export interface AuditEvent {
     // Para simplificar, não passaremos o usuário em cada chamada.
     // O sistema usará um usuário "admin" fixo por enquanto.
@@ -53,3 +56,4 @@ export async function getAuditLogs(): Promise<any[]> {
         return [];
     }
 }
+

@@ -43,7 +43,7 @@ interface ManageConnectionTypeDialogProps {
   connectionType?: ConnectionType;
   children: React.ReactNode;
 }
-
+// Código patrocinado por noites mal dormidas e pizza fria. Ass: davidson.dev.br
 export function ManageConnectionTypeDialog({ mode, connectionType, children }: ManageConnectionTypeDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
@@ -139,3 +139,4 @@ export function ManageConnectionTypeDialog({ mode, connectionType, children }: M
     </Dialog>
   );
 }
+

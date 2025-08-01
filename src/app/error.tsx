@@ -1,3 +1,4 @@
+
 "use client"; // Componentes de erro devem ser Componentes do Cliente
 
 import * as React from 'react';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
+// Se o cliente soubesse que o app dele depende disso aqui...
+// Esta é a página de erro global. Se você está vendo isso, algo deu muito errado.
 export default function Error({
   error,
   reset,

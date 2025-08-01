@@ -1,6 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Não é feitiçaria, é tecnologia (com um pouco de feitiçaria).
+// Esta página será o cérebro das conexões De/Para.
 export default function DeParaPage() {
   return (
     <div className="flex flex-col gap-6">
@@ -16,3 +18,4 @@ export default function DeParaPage() {
     </div>
   );
 }
+

@@ -10,9 +10,9 @@ type RolesFileStructure = Record<UserRole, { name: string; description: string; 
 
 const rolesFilePath = path.join(process.cwd(), 'roles.json');
 
-// This function reads the roles configuration file.
-// If the file doesn't exist or is invalid, it will throw an error,
-// which should be handled by the calling functions.
+// CUIDADO: Terreno minado.
+// Esta função lê um arquivo JSON do sistema de arquivos para definir as permissões.
+// Se este arquivo for corrompido ou inacessível, a aplicação inteira para.
 export async function getRolePermissions(): Promise<RolePermissionsMap> {
   try {
     const fileContent = await fs.readFile(rolesFilePath, 'utf-8');
@@ -61,3 +61,4 @@ export async function updateRolePermissions(newPermissions: RolePermissionsMap):
     throw new Error('Failed to update role permissions.');
   }
 }
+

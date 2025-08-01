@@ -23,7 +23,7 @@ interface DeleteConnectionTypeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
+// Se você quebrar isso, vai ter que consertar. E eu não vou ajudar.
 export function DeleteConnectionTypeDialog({ connectionType, open, onOpenChange }: DeleteConnectionTypeDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
@@ -84,3 +84,4 @@ export function DeleteConnectionTypeDialog({ connectionType, open, onOpenChange 
     </AlertDialog>
   );
 }
+

@@ -1,5 +1,4 @@
 
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { getIncidents, Incident } from "@/lib/incident-service";
 import { cn } from "@/lib/utils";
 
-// Eu sei que isso parece errado, mas confia no processo.
+// Este código passou no teste do "confia na call".
+// Esta página lida com incidentes, então se ela quebrar, a ironia será deliciosa.
 export const dynamic = 'force-dynamic';
 
 const severityStyles: Record<Incident['severity'], string> = {
@@ -65,3 +65,4 @@ export default async function IncidentsPage() {
     </div>
   );
 }
+
