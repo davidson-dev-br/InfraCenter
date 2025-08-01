@@ -1,5 +1,25 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-06]
+
+### O que foi feito hoje?
+- **Definida a estrutura da tabela `EquipmentPorts`**:
+  - Adicionado o comando `CREATE TABLE` no arquivo `user-service.ts` para garantir que a tabela seja criada se não existir.
+  - Atualizado o script de infraestrutura `infra_setup.sql` na pasta `/public` para incluir a nova tabela.
+  - A tabela possui chaves estrangeiras para `ChildItems` e `PortTypes`, estabelecendo a base para o relacionamento de conexões.
+- **Atualizada a Documentação**:
+  - O `ARCHITECTURE.md` foi atualizado para marcar a fase `7.3` como concluída.
+  - A `DAILY.md` foi atualizada com o progresso de hoje.
+
+### Foco do Dia
+- **Criar a tabela `EquipmentPorts` no banco de dados**:
+    - **Objetivo:** Estabelecer a tabela que armazenará cada porta individual dos equipamentos, preparando o terreno para o mapeamento De/Para.
+
+### Impedimentos
+- Nenhum.
+
+---
+
 ## [2024-08-05]
 
 ### O que foi feito hoje?

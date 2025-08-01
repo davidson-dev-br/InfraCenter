@@ -65,6 +65,7 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureItemStatusesTableExists(pool);
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
+    await ensureEquipmentPortsTableExists(pool); // Adicionada nova tabela
     await ensureAuditLogTableExists(pool);
     await ensureIncidentsTableExists(pool);
     await ensureEvidenceTableExists(pool);
@@ -342,6 +343,23 @@ async function ensureConnectionTypesTableExists(pool: sql.ConnectionPool) {
             throw err;
         }
     }
+}
+
+async function ensureEquipmentPortsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'EquipmentPorts', `
+        CREATE TABLE EquipmentPorts (
+            id NVARCHAR(50) PRIMARY KEY,
+            childItemId NVARCHAR(50) NOT NULL,
+            portTypeId NVARCHAR(50) NOT NULL,
+            label NVARCHAR(100) NOT NULL,
+            status NVARCHAR(50) NOT NULL DEFAULT 'down',
+            connectedToPortId NVARCHAR(50),
+            notes NVARCHAR(MAX),
+            FOREIGN KEY (childItemId) REFERENCES ChildItems(id) ON DELETE CASCADE,
+            FOREIGN KEY (portTypeId) REFERENCES PortTypes(id),
+            FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id)
+        );
+    `);
 }
 
 

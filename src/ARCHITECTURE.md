@@ -64,7 +64,7 @@ Construir os blocos fundamentais para o mapeamento de conexões físicas e lógi
 
 3.  **7.3. Gerenciar Portas de Equipamentos:**
     *   **Descrição:** Criar a tabela `EquipmentPorts` no banco de dados para armazenar cada porta individual de um equipamento (ex: `SW-01:Porta_1`).
-    *   **Status:** `Próximo Passo`.
+    *   **Status:** `Concluído`.
 
 ### Fase 8: Mapeamento Avançado e Inteligência Proativa
 **Status:** `A Fazer`
@@ -72,7 +72,7 @@ Módulo central para mapear conexões e garantir a integridade dos dados de form
 
 1.  **8.1. Geração Automática de Portas:**
     *   **Descrição:** Modificar a criação de `ChildItems` para que, ao adicionar um equipamento baseado em um `Modelo` com portas pré-configuradas, o sistema crie automaticamente as instâncias dessas portas no banco de dados, prontas para serem conectadas.
-    *   **Status:** A fazer.
+    *   **Status:** `Próximo Passo`.
 
 2.  **8.2. Desenvolver Interface De/Para:**
     *   **Descrição:** Construir a interface visual na página `/depara` para permitir que os usuários conectem `Porta A` à `Porta B`.
