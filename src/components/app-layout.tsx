@@ -1,4 +1,3 @@
-
 "use client"
 import React from 'react';
 import Link from 'next/link';
@@ -89,7 +88,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       }
       
       const visibleItems = section.items.filter(item => 
-        hasPermission(item.permission) && !hiddenMenuItems.includes(item.href)
+        hasPermission(item.permission) && !hiddenMenuItems.includes(item.href) && item.href !== '/settings'
       );
       
       if (visibleItems.length === 0) {
@@ -180,7 +179,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
            <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={accessibleBuildings.length === 0}>
+                <Button variant="secondary" disabled={accessibleBuildings.length === 0}>
                     <Building className="mr-2 h-4 w-4" />
                     <span>{accessibleBuildings.find(b => b.id === activeBuildingId)?.name || 'Nenhum Prédio Acessível'}</span>
                 </Button>
@@ -198,7 +197,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
            </DropdownMenu>
            <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                 <Button variant="secondary" className="relative h-10 w-10 rounded-full">
                    <Avatar className="h-9 w-9">
                       <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'User'} />
                       <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
@@ -251,4 +250,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {isDeveloper && showDeveloperMenu && <DeveloperMenu />}
     </div>
   );
-}
