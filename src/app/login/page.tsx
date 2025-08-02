@@ -3,31 +3,30 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuth, signInWithPopup, OAuthProvider } from "firebase/auth";
+import { getAuth, signInWithPopup, OAuthProvider, signInWithEmailAndPassword } from "firebase/auth";
 import { app } from "@/lib/firebase"; 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Server, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Server, Loader2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// NOTA DE ARQUITETURA (A Saga do Build):
-// Esta página foi o epicentro de uma longa e complexa depuração de build.
-// O erro original `useSearchParams() should be wrapped in a suspense boundary` ocorria porque
-// o Next.js, ao tentar gerar páginas estáticas (como a /404), acabava precisando analisar
-// esta página. O hook `useSearchParams` só funciona no lado do cliente (no navegador), e sua
-// presença direta no componente da página quebrava o build no lado do servidor.
-//
-// A SOLUÇÃO:
-// 1. O conteúdo original da página foi movido para um componente filho (`LoginContent`).
-// 2. A página principal (`LoginPage`) agora apenas exporta este componente filho, mas
-//    envolvido por um `<Suspense>` do React.
-// 3. Isso diz ao Next.js: "Ignore o conteúdo deste componente durante o build no servidor.
-//    Ele será carregado dinamicamente no cliente."
-// 4. O `fallback` do Suspense garante que algo seja exibido enquanto o JS do cliente carrega.
-//
-// Esta abordagem resolve o erro de build e está alinhada com as melhores práticas do Next.js
-// para lidar com componentes que dependem de informações exclusivas do navegador.
-// - Davidson (depois de muita luta)
+
+const loginSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z.string().min(1, { message: "A senha é obrigatória." }),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
 
 function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -35,7 +34,7 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       width="24"
       height="24"
-      viewBox="0 0 24 24"
+      viewBox="0 0 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -57,12 +56,12 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = getAuth(app);
-  const provider = new OAuthProvider("microsoft.com");
-
-  provider.setCustomParameters({
-    tenant: "common",
-  });
   
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unprovisioned') {
@@ -70,27 +69,49 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  const handleLogin = async () => {
+  const handleMicrosoftLogin = async () => {
     setIsLoading(true);
     setError(null);
+    const provider = new OAuthProvider("microsoft.com");
+    provider.setCustomParameters({ tenant: "common" });
+
     try {
       await signInWithPopup(auth, provider);
-      // O redirecionamento agora é tratado pelo AuthProvider
+      // O AuthProvider cuidará do redirecionamento
     } catch (error: any) {
-      console.error("Erro de autenticação:", error);
-      
-      if (error.code === 'auth/account-exists-with-different-credential') {
-        setError("Uma conta já existe com este e-mail, mas com um método de login diferente.");
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        setError("A janela de login foi fechada. Por favor, tente novamente.");
-      }
-      else {
-        setError("Falha ao autenticar. Verifique sua conexão ou tente novamente mais tarde.");
-      }
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleEmailLogin = async (data: LoginFormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        await signInWithEmailAndPassword(auth, data.email, data.password);
+        // O AuthProvider cuidará do redirecionamento
+    } catch (error: any) {
+        handleAuthError(error);
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+  const handleAuthError = (error: any) => {
+    console.error("Erro de autenticação:", error);
+    if (error.code === 'auth/account-exists-with-different-credential') {
+      setError("Uma conta já existe com este e-mail, mas com um método de login diferente.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      setError("A janela de login foi fechada. Por favor, tente novamente.");
+    } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password') {
+      setError("Credenciais inválidas. Verifique seu e-mail e senha.");
+    } else if (error.code === 'auth/user-not-found') {
+        setError("Nenhum usuário encontrado com este e-mail.");
+    } else {
+      setError("Falha ao autenticar. Verifique sua conexão ou tente novamente mais tarde.");
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
@@ -102,23 +123,75 @@ function LoginContent() {
       </div>
       <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
-          <CardDescription>
-              Faça login com sua conta Microsoft para acessar o painel.
-          </CardDescription>
+            <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
+            <CardDescription>
+                Escolha seu método de login para acessar o painel.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-          <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-              {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-              <>
-                  <MicrosoftIcon className="mr-2 h-5 w-5" />
-                  Entrar com Microsoft
-              </>
-              )}
-          </Button>
-          {error && <p className="text-center text-sm text-destructive">{error}</p>}
+          <CardContent>
+            <Tabs defaultValue="microsoft">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="microsoft">Microsoft</TabsTrigger>
+                    <TabsTrigger value="email">Email</TabsTrigger>
+                    <TabsTrigger value="register">Registrar</TabsTrigger>
+                </TabsList>
+                <TabsContent value="microsoft" className="pt-6">
+                     <Button onClick={handleMicrosoftLogin} disabled={isLoading} className="w-full">
+                        {isLoading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <MicrosoftIcon className="mr-2 h-5 w-5" />
+                        )}
+                        Entrar com Microsoft
+                    </Button>
+                </TabsContent>
+                <TabsContent value="email" className="pt-4">
+                     <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleEmailLogin)} className="space-y-4">
+                           <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="seu.email@provedor.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Senha</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" disabled={isLoading} className="w-full">
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Entrar
+                            </Button>
+                        </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="register" className="pt-6">
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Cadastro de Novos Usuários</AlertTitle>
+                        <AlertDescription>
+                            Para garantir a segurança do sistema, o cadastro de novos usuários é feito manualmente por um administrador através da página de "Usuários".
+                        </AlertDescription>
+                    </Alert>
+                </TabsContent>
+            </Tabs>
+            {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
           </CardContent>
       </Card>
     </div>
@@ -141,3 +214,5 @@ export default function LoginPage() {
         </Suspense>
     )
 }
+
+    
