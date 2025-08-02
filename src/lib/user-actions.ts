@@ -2,7 +2,7 @@
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
-import { _getUsers, _getUserByEmail, _updateUser, User } from "./user-service";
+import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { auth } from './firebase-admin';
 
@@ -92,4 +92,43 @@ export async function updateUser(userData: Partial<User> & ({ email: string } | 
     }
     
     return updatedUser;
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+    if (!userId) {
+        throw new Error("O ID do usuário é obrigatório para a exclusão.");
+    }
+
+    if (!auth) {
+        throw new Error("A autenticação do Firebase Admin não está inicializada.");
+    }
+    
+    const adminUser = await getAdminUser();
+    const userToDelete = await _updateUser({ id: userId }); // Um jeito de pegar o usuário pelo ID
+
+    // Deleta do Firebase Auth
+    try {
+        await auth.deleteUser(userId);
+    } catch (error: any) {
+        // Se o usuário não for encontrado no Firebase Auth, apenas logamos e continuamos para apagar do DB local.
+        if (error.code === 'auth/user-not-found') {
+            console.warn(`Usuário com ID ${userId} não encontrado no Firebase Auth, mas a exclusão prosseguirá no banco de dados local.`);
+        } else {
+            console.error(`Erro ao excluir usuário ${userId} do Firebase Auth:`, error);
+            throw new Error(`Falha ao excluir usuário do Firebase Auth: ${error.message}`);
+        }
+    }
+
+    // Deleta do banco de dados local
+    await _deleteUser(userId);
+
+    // Loga o evento de auditoria
+    if (adminUser && userToDelete) {
+        await logAuditEvent({
+            action: 'USER_DELETED',
+            entityType: 'User',
+            entityId: userId,
+            details: { email: userToDelete.email, displayName: userToDelete.displayName }
+        });
+    }
 }

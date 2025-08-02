@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,7 +13,7 @@ import type { User } from "@/lib/user-service";
 import type { UserRole } from "@/components/permissions-provider";
 import { USER_ROLES, usePermissions } from "@/components/permissions-provider";
 import { PERMISSIONS_REGISTRY, getPermissionsByCategory } from "@/lib/permissions-registry";
-import { updateUser } from "@/lib/user-actions";
+import { updateUser, deleteUser } from "@/lib/user-actions";
 import { getRolePermissions } from "@/lib/role-actions";
 import { getBuildingsList } from "@/lib/building-actions";
 
@@ -26,6 +27,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -90,6 +101,7 @@ const permissionsByCategory = getPermissionsByCategory();
 export function ManageUserButton({ user }: ManageUserButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const router = useRouter();
   const { toast } = useToast();
@@ -149,7 +161,6 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
       await updateUser({ 
           id: user.id, 
           role: data.role,
-          // Garante que as permissões sejam um array de strings e não um objeto complexo.
           permissions: data.permissions ? Array.from(data.permissions) : [],
           accessibleBuildingIds: data.accessibleBuildingIds ? Array.from(data.accessibleBuildingIds) : [],
        });
@@ -171,6 +182,28 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     }
   };
 
+  const handleDeleteUser = async () => {
+    setIsSubmitting(true);
+    try {
+        await deleteUser(user.id);
+        toast({
+            title: "Usuário Excluído",
+            description: `${user.displayName || user.email} foi excluído permanentemente.`,
+        });
+        setConfirmDeleteOpen(false);
+        setIsOpen(false);
+        router.refresh();
+    } catch (error: any) {
+         toast({
+            variant: "destructive",
+            title: "Erro ao Excluir",
+            description: error.message || "Não foi possível excluir o usuário.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
+
   const isRoleManagementDisabled = 
     user.role === 'developer' || // Ninguém pode editar um dev
     adminUser?.id === user.id || // Ninguém pode editar a si mesmo
@@ -184,6 +217,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
@@ -317,9 +351,9 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
             
             <DialogFooter className="justify-between pt-4">
                 <div>
-                  <Button variant="destructive" type="button" disabled>
+                  <Button variant="destructive" type="button" onClick={() => setConfirmDeleteOpen(true)} disabled={isSubmitting}>
                       <Trash2 className="mr-2" />
-                      Desativar Usuário
+                      Excluir Usuário
                   </Button>
                 </div>
                 <div className="flex gap-2">
@@ -335,5 +369,34 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
           </form>
       </DialogContent>
     </Dialog>
+
+     <AlertDialog open={isConfirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário 
+              <span className="font-bold"> {user.displayName || user.email} </span> 
+              e removerá seu acesso ao sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Sim, excluir usuário
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

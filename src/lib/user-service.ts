@@ -623,3 +623,19 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
+
+/**
+ * Exclui um usuário do banco de dados local.
+ * @param userId O ID do usuário a ser excluído.
+ */
+export async function _deleteUser(userId: string): Promise<void> {
+    try {
+        const pool = await getDbPool();
+        await pool.request()
+            .input('id', sql.NVarChar, userId)
+            .query('DELETE FROM Users WHERE id = @id');
+    } catch (error) {
+        console.error(`Erro ao excluir usuário ${userId} do banco de dados local:`, error);
+        throw new Error("Falha ao excluir o registro do usuário do banco de dados.");
+    }
+}
