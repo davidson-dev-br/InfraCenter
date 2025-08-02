@@ -1,23 +1,28 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2 } from 'lucide-react';
-import { getConnectableChildItems, getPortsByChildItemId, EquipmentPort } from '@/lib/connection-actions';
+import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2, Link, Unlink } from 'lucide-react';
+import { getConnectableChildItems, getPortsByChildItemId, EquipmentPort, ConnectionDetail } from '@/lib/connection-actions';
 import type { ConnectableItem } from '@/lib/connection-actions';
 import { ScrollArea } from '../ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from '../ui/badge';
+import { Separator } from '../ui/separator';
 
 
 // Adicionei uns 'console.log' pra seguir a tradição. Se quebrar, eles te ajudarão (ou não).
 
 interface DeParaClientProps {
     items: ConnectableItem[];
+    connections: ConnectionDetail[];
 }
 
 const PortList = ({
@@ -69,7 +74,7 @@ const PortList = ({
     )
 }
 
-export function DeParaClient({ items }: DeParaClientProps) {
+export function DeParaClient({ items, connections }: DeParaClientProps) {
     const [sideA, setSideA] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
     const [sideB, setSideB] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
 
@@ -206,6 +211,61 @@ export function DeParaClient({ items }: DeParaClientProps) {
                         <Cable className="mr-2 h-5 w-5"/>
                         Estabelecer Conexão
                     </Button>
+                </CardContent>
+            </Card>
+
+            <Separator className="my-8" />
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Conexões Ativas</CardTitle>
+                    <CardDescription>
+                       Visualize todas as conexões físicas (De/Para) ativas no seu inventário.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Origem (A)</TableHead>
+                                    <TableHead>Destino (B)</TableHead>
+                                    <TableHead>Tipo</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {connections.length > 0 ? (
+                                    connections.map(conn => (
+                                        <TableRow key={conn.id}>
+                                            <TableCell>
+                                                <div className="font-medium">{conn.itemA_label}</div>
+                                                <div className="text-sm text-muted-foreground">{conn.portA_label}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{conn.itemB_label}</div>
+                                                <div className="text-sm text-muted-foreground">{conn.portB_label}</div>
+                                            </TableCell>
+                                            <TableCell><Badge variant="outline">{conn.connectionType}</Badge></TableCell>
+                                            <TableCell><Badge variant="secondary" className="capitalize">{conn.status}</Badge></TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" disabled>
+                                                    <Unlink className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                           Nenhuma conexão encontrada.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
