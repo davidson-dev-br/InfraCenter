@@ -36,6 +36,18 @@ export interface ConnectionDetail {
     status: string;
 }
 
+export interface EquipmentPortDetail {
+    id: string; // port id
+    label: string; // port label e.g., 'Ethernet-1'
+    portTypeName: string;
+    status: 'up' | 'down' | 'disabled';
+    equipmentName: string; // ChildItem label
+    equipmentId: string; // ChildItem id
+    locationName: string; // ParentItem label
+    connectedToPortLabel: string | null;
+    connectedToEquipmentName: string | null;
+}
+
 
 /**
  * Busca todos os ChildItems que possuem pelo menos uma porta registrada.
@@ -126,6 +138,41 @@ export async function getAllConnections(): Promise<ConnectionDetail[]> {
         return result.recordset as ConnectionDetail[];
     } catch (error) {
         console.error("Erro ao buscar detalhes das conexões:", error);
+        return [];
+    }
+}
+
+/**
+ * Busca todas as portas de todos os equipamentos, com detalhes.
+ */
+export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
+    try {
+        const pool = await getDbPool();
+        // A query foi atualizada para usar LEFT JOIN para a parte da conexão,
+        // garantindo que todas as portas sejam listadas, mesmo as não conectadas.
+        const result = await pool.request().query(`
+            SELECT 
+                ep.id,
+                ep.label,
+                pt.name AS portTypeName,
+                ep.status,
+                ci.label AS equipmentName,
+                ci.id AS equipmentId,
+                pi.label AS locationName,
+                connectedPort.label AS connectedToPortLabel,
+                connectedItem.label AS connectedToEquipmentName
+            FROM EquipmentPorts ep
+            JOIN ChildItems ci ON ep.childItemId = ci.id
+            JOIN PortTypes pt ON ep.portTypeId = pt.id
+            LEFT JOIN ParentItems pi ON ci.parentId = pi.id
+            LEFT JOIN Connections conn ON ep.id = conn.portA_id OR ep.id = conn.portB_id
+            LEFT JOIN EquipmentPorts connectedPort ON (CASE WHEN ep.id = conn.portA_id THEN conn.portB_id ELSE conn.portA_id END) = connectedPort.id
+            LEFT JOIN ChildItems connectedItem ON connectedPort.childItemId = connectedItem.id
+            ORDER BY pi.label, ci.label, ep.label;
+        `);
+        return result.recordset as EquipmentPortDetail[];
+    } catch (error) {
+        console.error("Erro ao buscar todas as portas de equipamentos:", error);
         return [];
     }
 }
