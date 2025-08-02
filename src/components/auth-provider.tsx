@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User as AuthUser, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { AppLayout } from '@/components/app-layout';
+import { AppLayout } from './app-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
 import { updateUser, getUserByEmail } from '@/lib/user-actions';
