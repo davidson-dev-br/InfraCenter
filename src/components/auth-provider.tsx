@@ -119,14 +119,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   
   const isLoginPage = pathname === '/login';
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
+  const isPublicPage = isLoginPage || pathname === '/logout';
   
-  if (!authUser && !isLoginPage) {
+  if (!authUser && !isPublicPage) {
      return <FullPageLoader />;
   }
 
+  // Se for uma página pública (login/logout), renderiza apenas o conteúdo dela, sem layout.
+  if(isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // Se o usuário está autenticado, mas o registro do DB ainda não carregou, espera.
+  if (authUser && !dbUser) {
+    return <FullPageLoader />;
+  }
+
+  // O usuário está autenticado e temos os dados do DB, então renderiza a aplicação com o layout.
   if (authUser && dbUser) {
     return (
       <PermissionsProvider user={dbUser}>
@@ -137,7 +146,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Fallback para o caso de dbUser ainda não estar pronto, mas o authUser sim.
-  // Evita um flash de conteúdo da página de login.
+  // Fallback para qualquer outro caso (ex: usuário deslogado em página não pública)
   return <FullPageLoader />;
 }
