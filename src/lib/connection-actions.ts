@@ -166,7 +166,7 @@ export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
             JOIN PortTypes pt ON ep.portTypeId = pt.id
             LEFT JOIN ParentItems pi ON ci.parentId = pi.id
             LEFT JOIN Connections conn ON ep.id = conn.portA_id OR ep.id = conn.portB_id
-            LEFT JOIN EquipmentPorts connectedPort ON (CASE WHEN ep.id = conn.portA_id THEN conn.portB_id ELSE conn.portA_id END) = connectedPort.id
+            LEFT JOIN EquipmentPorts connectedPort ON (CASE WHEN ep.id = conn.portA_id THEN conn.portB_id ELSE conn.A_id END) = connectedPort.id
             LEFT JOIN ChildItems connectedItem ON connectedPort.childItemId = connectedItem.id
             ORDER BY pi.label, ci.label, ep.label;
         `);
@@ -174,5 +174,77 @@ export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
     } catch (error) {
         console.error("Erro ao buscar todas as portas de equipamentos:", error);
         return [];
+    }
+}
+
+
+export async function createConnection(data: { portA_id: string; portB_id: string; connectionTypeId: string; label?: string }) {
+    const { portA_id, portB_id, connectionTypeId, label } = data;
+
+    if (portA_id === portB_id) {
+        throw new Error("Não é possível conectar uma porta a ela mesma.");
+    }
+    
+    const pool = await getDbPool();
+    const transaction = new sql.Transaction(pool);
+
+    try {
+        await transaction.begin();
+
+        // Verificar se as portas já estão conectadas
+        const checkRequest = new sql.Request(transaction);
+        const portCheckResult = await checkRequest
+            .input('portA', sql.NVarChar, portA_id)
+            .input('portB', sql.NVarChar, portB_id)
+            .query`SELECT connectedToPortId FROM EquipmentPorts WHERE id IN (@portA, @portB)`;
+        
+        for(const record of portCheckResult.recordset) {
+            if (record.connectedToPortId) {
+                throw new Error("Uma ou ambas as portas selecionadas já estão em uso.");
+            }
+        }
+        
+        // 1. Criar a conexão
+        const connectionId = `conn_${Date.now()}`;
+        const connectionRequest = new sql.Request(transaction);
+        await connectionRequest
+            .input('id', sql.NVarChar, connectionId)
+            .input('portA_id', sql.NVarChar, portA_id)
+            .input('portB_id', sql.NVarChar, portB_id)
+            .input('connectionTypeId', sql.NVarChar, connectionTypeId)
+            .input('label', sql.NVarChar, label || null)
+            .query`
+                INSERT INTO Connections (id, portA_id, portB_id, connectionTypeId, label, status)
+                VALUES (@id, @portA_id, @portB_id, @connectionTypeId, @label, 'active')
+            `;
+
+        // 2. Atualizar a porta A
+        const updatePortARequest = new sql.Request(transaction);
+        await updatePortARequest
+            .input('id', sql.NVarChar, portA_id)
+            .input('connectedTo', sql.NVarChar, portB_id)
+            .query`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = @connectedTo WHERE id = @id`;
+
+        // 3. Atualizar a porta B
+        const updatePortBRequest = new sql.Request(transaction);
+        await updatePortBRequest
+            .input('id', sql.NVarChar, portB_id)
+            .input('connectedTo', sql.NVarChar, portA_id)
+            .query`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = @connectedTo WHERE id = @id`;
+
+        await transaction.commit();
+        
+        // Log de auditoria
+        await logAuditEvent({
+            action: 'CONNECTION_CREATED',
+            entityType: 'Connections',
+            entityId: connectionId,
+            details: { from: portA_id, to: portB_id, type: connectionTypeId }
+        });
+
+    } catch (error: any) {
+        await transaction.rollback();
+        console.error("Erro ao criar conexão:", error);
+        throw new Error(error.message || "Falha ao estabelecer a conexão no banco de dados.");
     }
 }

@@ -3,11 +3,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2, Link, Unlink } from 'lucide-react';
-import { getConnectableChildItems, getPortsByChildItemId, EquipmentPort, ConnectionDetail } from '@/lib/connection-actions';
+import { getConnectableChildItems, getPortsByChildItemId, createConnection, EquipmentPort, ConnectionDetail } from '@/lib/connection-actions';
+import { getConnectionTypes, ConnectionType } from '@/lib/connection-types-actions';
 import type { ConnectableItem } from '@/lib/connection-actions';
 import { ScrollArea } from '../ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
@@ -16,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 
 // Adicionei uns 'console.log' pra seguir a tradição. Se quebrar, eles te ajudarão (ou não).
@@ -74,9 +77,19 @@ const PortList = ({
     )
 }
 
-export function DeParaClient({ items, connections }: DeParaClientProps) {
+export function DeParaClient({ items, connections: initialConnections }: DeParaClientProps) {
+    const router = useRouter();
+    const { toast } = useToast();
     const [sideA, setSideA] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
     const [sideB, setSideB] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
+    const [connectionTypeId, setConnectionTypeId] = useState<string | null>(null);
+    const [connectionTypes, setConnectionTypes] = useState<ConnectionType[]>([]);
+    const [isCreating, setIsCreating] = useState(false);
+
+    useEffect(() => {
+        getConnectionTypes().then(setConnectionTypes);
+    }, []);
+
 
     useEffect(() => {
         if (sideA.itemId) {
@@ -105,8 +118,39 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
         setSideB({ ...sideB, itemId, portId: null, ports: [] });
     };
 
+    const handleCreateConnection = async () => {
+        if (!sideA.portId || !sideB.portId || !connectionTypeId) return;
+        setIsCreating(true);
+        try {
+            await createConnection({
+                portA_id: sideA.portId,
+                portB_id: sideB.portId,
+                connectionTypeId,
+            });
+            toast({
+                title: 'Sucesso!',
+                description: 'A conexão foi estabelecida.',
+            });
+            // Reset state
+            setSideA({ itemId: null, portId: null, ports: [], isLoading: false });
+            setSideB({ itemId: null, portId: null, ports: [], isLoading: false });
+            setConnectionTypeId(null);
+            router.refresh(); // Reload server data
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao conectar',
+                description: error.message,
+            });
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+
     const selectedItemA = items.find(i => i.id === sideA.itemId);
     const selectedItemB = items.find(i => i.id === sideB.itemId);
+    const canCreateConnection = sideA.portId && sideB.portId && connectionTypeId && !isCreating;
 
     return (
         <div className="flex flex-col gap-6">
@@ -115,7 +159,7 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                 <CardHeader>
                     <CardTitle>Mapeamento de Conexões Físicas</CardTitle>
                     <CardDescription>
-                        Selecione um equipamento em cada lado para visualizar suas portas e estabelecer uma conexão entre eles.
+                        Selecione um equipamento em cada lado, suas respectivas portas e o tipo de conexão.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-start">
@@ -125,7 +169,7 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                             <CardTitle>Origem (Lado A)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Select onValueChange={handleSelectA}>
+                            <Select onValueChange={handleSelectA} value={sideA.itemId || ''}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o equipamento de origem..." />
                                 </SelectTrigger>
@@ -159,11 +203,21 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                         </CardContent>
                     </Card>
 
-                    {/* Ícone de Conexão */}
-                    <div className="flex items-center justify-center pt-16">
+                    {/* Ícone e Seletor de Conexão */}
+                    <div className="flex flex-col items-center justify-start pt-16 gap-4">
                          <Button variant="ghost" size="icon" className="h-12 w-12" disabled>
                             <ArrowRightLeft className="h-6 w-6 text-muted-foreground" />
                         </Button>
+                         <Select onValueChange={setConnectionTypeId} value={connectionTypeId || ''}>
+                            <SelectTrigger className="w-48">
+                                <SelectValue placeholder="Tipo de Conexão..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {connectionTypes.map(type => (
+                                    <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* Coluna Lado B (Destino) */}
@@ -172,7 +226,7 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                             <CardTitle>Destino (Lado B)</CardTitle>
                         </CardHeader>
                          <CardContent className="space-y-4">
-                            <Select onValueChange={handleSelectB}>
+                            <Select onValueChange={handleSelectB} value={sideB.itemId || ''}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o equipamento de destino..." />
                                 </SelectTrigger>
@@ -207,8 +261,8 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                     </Card>
                 </CardContent>
                 <CardContent className="flex justify-center border-t pt-6">
-                    <Button size="lg" disabled>
-                        <Cable className="mr-2 h-5 w-5"/>
+                    <Button size="lg" disabled={!canCreateConnection} onClick={handleCreateConnection}>
+                        {isCreating ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <Cable className="mr-2 h-5 w-5"/>}
                         Estabelecer Conexão
                     </Button>
                 </CardContent>
@@ -236,8 +290,8 @@ export function DeParaClient({ items, connections }: DeParaClientProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {connections.length > 0 ? (
-                                    connections.map(conn => (
+                                {initialConnections.length > 0 ? (
+                                    initialConnections.map(conn => (
                                         <TableRow key={conn.id}>
                                             <TableCell>
                                                 <div className="font-medium">{conn.itemA_label}</div>
