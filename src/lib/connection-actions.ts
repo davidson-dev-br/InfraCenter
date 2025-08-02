@@ -34,6 +34,8 @@ export interface ConnectionDetail {
     itemB_parentLabel: string;
     connectionType: string;
     status: string;
+    imageUrl: string | null;
+    labelText: string | null;
 }
 
 export interface EquipmentPortDetail {
@@ -123,7 +125,9 @@ export async function getAllConnections(): Promise<ConnectionDetail[]> {
                 portB.label AS portB_label,
                 parentB.label AS itemB_parentLabel,
                 ct.name AS connectionType,
-                c.status
+                c.status,
+                c.imageUrl,
+                c.labelText
             FROM Connections c
             JOIN EquipmentPorts portA ON c.portA_id = portA.id
             JOIN ChildItems itemA ON portA.childItemId = itemA.id
@@ -166,7 +170,7 @@ export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
             JOIN PortTypes pt ON ep.portTypeId = pt.id
             LEFT JOIN ParentItems pi ON ci.parentId = pi.id
             LEFT JOIN Connections conn ON ep.id = conn.portA_id OR ep.id = conn.portB_id
-            LEFT JOIN EquipmentPorts connectedPort ON (CASE WHEN ep.id = conn.portA_id THEN conn.portB_id ELSE conn.A_id END) = connectedPort.id
+            LEFT JOIN EquipmentPorts connectedPort ON (CASE WHEN ep.id = conn.portA_id THEN conn.portB_id ELSE conn.portA_id END) = connectedPort.id
             LEFT JOIN ChildItems connectedItem ON connectedPort.childItemId = connectedItem.id
             ORDER BY pi.label, ci.label, ep.label;
         `);
@@ -178,8 +182,14 @@ export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
 }
 
 
-export async function createConnection(data: { portA_id: string; portB_id: string; connectionTypeId: string; label?: string }) {
-    const { portA_id, portB_id, connectionTypeId, label } = data;
+export async function createConnection(data: { 
+    portA_id: string; 
+    portB_id: string; 
+    connectionTypeId: string; 
+    labelText?: string | null;
+    imageUrl?: string | null;
+}) {
+    const { portA_id, portB_id, connectionTypeId, labelText, imageUrl } = data;
 
     if (portA_id === portB_id) {
         throw new Error("Não é possível conectar uma porta a ela mesma.");
@@ -212,10 +222,11 @@ export async function createConnection(data: { portA_id: string; portB_id: strin
             .input('portA_id', sql.NVarChar, portA_id)
             .input('portB_id', sql.NVarChar, portB_id)
             .input('connectionTypeId', sql.NVarChar, connectionTypeId)
-            .input('label', sql.NVarChar, label || null)
+            .input('labelText', sql.NVarChar, labelText || null)
+            .input('imageUrl', sql.NVarChar, imageUrl || null)
             .query`
-                INSERT INTO Connections (id, portA_id, portB_id, connectionTypeId, label, status)
-                VALUES (@id, @portA_id, @portB_id, @connectionTypeId, @label, 'active')
+                INSERT INTO Connections (id, portA_id, portB_id, connectionTypeId, labelText, imageUrl, status)
+                VALUES (@id, @portA_id, @portB_id, @connectionTypeId, @labelText, @imageUrl, 'active')
             `;
 
         // 2. Atualizar a porta A
@@ -239,7 +250,7 @@ export async function createConnection(data: { portA_id: string; portB_id: strin
             action: 'CONNECTION_CREATED',
             entityType: 'Connections',
             entityId: connectionId,
-            details: { from: portA_id, to: portB_id, type: connectionTypeId }
+            details: { from: portA_id, to: portB_id, type: connectionTypeId, hasEvidence: !!imageUrl }
         });
 
     } catch (error: any) {

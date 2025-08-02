@@ -431,6 +431,8 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
             label NVARCHAR(255),
             status NVARCHAR(50) NOT NULL DEFAULT 'active',
             isTestData BIT NOT NULL DEFAULT 0,
+            imageUrl NVARCHAR(MAX),
+            labelText NVARCHAR(255),
             FOREIGN KEY (portA_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (portB_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id),

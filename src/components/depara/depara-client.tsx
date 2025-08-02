@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2, Link, Unlink } from 'lucide-react';
+import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2, Link, Unlink, Camera, ChevronDown } from 'lucide-react';
 import { getConnectableChildItems, getPortsByChildItemId, createConnection, EquipmentPort, ConnectionDetail } from '@/lib/connection-actions';
 import { getConnectionTypes, ConnectionType } from '@/lib/connection-types-actions';
 import type { ConnectableItem } from '@/lib/connection-actions';
@@ -19,9 +19,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AddConnectionDialog } from './add-connection-dialog';
 
-
-// Adicionei uns 'console.log' pra seguir a tradição. Se quebrar, eles te ajudarão (ou não).
 
 interface DeParaClientProps {
     items: ConnectableItem[];
@@ -85,6 +90,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
     const [connectionTypeId, setConnectionTypeId] = useState<string | null>(null);
     const [connectionTypes, setConnectionTypes] = useState<ConnectionType[]>([]);
     const [isCreating, setIsCreating] = useState(false);
+    const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
 
     useEffect(() => {
         getConnectionTypes().then(setConnectionTypes);
@@ -93,7 +99,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
 
     useEffect(() => {
         if (sideA.itemId) {
-            setSideA(s => ({ ...s, isLoading: true }));
+            setSideA(s => ({ ...s, isLoading: true, portId: null, ports: [] }));
             getPortsByChildItemId(sideA.itemId).then(ports => {
                 setSideA(s => ({ ...s, ports, isLoading: false }));
             });
@@ -102,7 +108,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
 
     useEffect(() => {
         if (sideB.itemId) {
-            setSideB(s => ({ ...s, isLoading: true }));
+            setSideB(s => ({ ...s, isLoading: true, portId: null, ports: [] }));
             getPortsByChildItemId(sideB.itemId).then(ports => {
                 setSideB(s => ({ ...s, ports, isLoading: false }));
             });
@@ -110,15 +116,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
     }, [sideB.itemId]);
 
 
-    const handleSelectA = (itemId: string) => {
-        setSideA({ ...sideA, itemId, portId: null, ports: [] });
-    };
-
-    const handleSelectB = (itemId: string) => {
-        setSideB({ ...sideB, itemId, portId: null, ports: [] });
-    };
-
-    const handleCreateConnection = async () => {
+    const handleQuickConnect = async () => {
         if (!sideA.portId || !sideB.portId || !connectionTypeId) return;
         setIsCreating(true);
         try {
@@ -129,13 +127,10 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
             });
             toast({
                 title: 'Sucesso!',
-                description: 'A conexão foi estabelecida.',
+                description: 'A conexão rápida foi estabelecida.',
             });
-            // Reset state
-            setSideA({ itemId: null, portId: null, ports: [], isLoading: false });
-            setSideB({ itemId: null, portId: null, ports: [], isLoading: false });
-            setConnectionTypeId(null);
-            router.refresh(); // Reload server data
+            resetForm();
+            router.refresh(); 
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -147,12 +142,18 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
         }
     };
 
+    const resetForm = () => {
+        setSideA({ itemId: null, portId: null, ports: [], isLoading: false });
+        setSideB({ itemId: null, portId: null, ports: [], isLoading: false });
+        setConnectionTypeId(null);
+    }
 
     const selectedItemA = items.find(i => i.id === sideA.itemId);
     const selectedItemB = items.find(i => i.id === sideB.itemId);
-    const canCreateConnection = sideA.portId && sideB.portId && connectionTypeId && !isCreating;
+    const canConnect = sideA.portId && sideB.portId && connectionTypeId && !isCreating;
 
     return (
+    <>
         <div className="flex flex-col gap-6">
             <h1 className="text-3xl font-bold font-headline">De/Para de Conexões</h1>
             <Card>
@@ -169,7 +170,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
                             <CardTitle>Origem (Lado A)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Select onValueChange={handleSelectA} value={sideA.itemId || ''}>
+                            <Select onValueChange={(value) => setSideA(s => ({ ...s, itemId: value }))} value={sideA.itemId || ''}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o equipamento de origem..." />
                                 </SelectTrigger>
@@ -226,7 +227,7 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
                             <CardTitle>Destino (Lado B)</CardTitle>
                         </CardHeader>
                          <CardContent className="space-y-4">
-                            <Select onValueChange={handleSelectB} value={sideB.itemId || ''}>
+                            <Select onValueChange={(value) => setSideB(s => ({ ...s, itemId: value }))} value={sideB.itemId || ''}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione o equipamento de destino..." />
                                 </SelectTrigger>
@@ -261,10 +262,29 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
                     </Card>
                 </CardContent>
                 <CardContent className="flex justify-center border-t pt-6">
-                    <Button size="lg" disabled={!canCreateConnection} onClick={handleCreateConnection}>
-                        {isCreating ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <Cable className="mr-2 h-5 w-5"/>}
-                        Estabelecer Conexão
-                    </Button>
+                    <div className="inline-flex rounded-md shadow-sm">
+                        <Button
+                            size="lg"
+                            onClick={() => setIsAdvancedModalOpen(true)}
+                            disabled={!canConnect}
+                            className="rounded-r-none"
+                        >
+                            {isCreating ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <Cable className="mr-2 h-5 w-5"/>}
+                            Conectar com Evidência
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="lg" variant="outline" className="rounded-l-none px-3" disabled={!canConnect}>
+                                    <ChevronDown className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleQuickConnect} disabled={!canConnect}>
+                                    Conexão Rápida
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -302,7 +322,12 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
                                                 <div className="text-sm text-muted-foreground">{conn.portB_label}</div>
                                             </TableCell>
                                             <TableCell><Badge variant="outline">{conn.connectionType}</Badge></TableCell>
-                                            <TableCell><Badge variant="secondary" className="capitalize">{conn.status}</Badge></TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="secondary" className="capitalize">{conn.status}</Badge>
+                                                    {conn.imageUrl && <Camera className="h-4 w-4 text-muted-foreground" title="Possui evidência fotográfica"/>}
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon" disabled>
                                                     <Unlink className="h-4 w-4" />
@@ -323,5 +348,21 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
                 </CardContent>
             </Card>
         </div>
+        
+        {canConnect && (
+            <AddConnectionDialog
+                isOpen={isAdvancedModalOpen}
+                onOpenChange={setIsAdvancedModalOpen}
+                sideA={{ item: selectedItemA!, port: sideA.ports.find(p => p.id === sideA.portId)! }}
+                sideB={{ item: selectedItemB!, port: sideB.ports.find(p => p.id === sideB.portId)! }}
+                connectionTypeId={connectionTypeId!}
+                connectionTypeName={connectionTypes.find(c => c.id === connectionTypeId)?.name || ''}
+                onSuccess={() => {
+                    resetForm();
+                    router.refresh();
+                }}
+            />
+        )}
+    </>
     );
 }
