@@ -25,8 +25,8 @@ import { cn } from '@/lib/utils';
 import { Search, Plus } from 'lucide-react';
 import type { GridItem } from '@/types/datacenter';
 import type { ItemStatus } from '@/lib/status-actions';
-import { ItemDetailDialog } from '../item-detail-dialog';
-import { AddChildItemDialog } from './add-child-item-dialog';
+import { ItemDetailDialog } from '@/components/item-detail-dialog';
+import { AddChildItemDialog } from '@/components/inventory/add-child-item-dialog';
 
 interface ChildItemsTableProps {
   items: GridItem[];

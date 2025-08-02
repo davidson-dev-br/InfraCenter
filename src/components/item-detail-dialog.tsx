@@ -28,12 +28,12 @@ import { uploadImage } from '@/lib/storage-actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Building, Room, GridItem } from '@/types/datacenter';
 import { updateItem } from '@/lib/item-actions';
-import { DeleteItemConfirmationDialog } from './delete-item-confirmation-dialog';
+import { DeleteItemConfirmationDialog } from '@/components/delete-item-confirmation-dialog';
 import { getItemStatuses, ItemStatus } from '@/lib/status-actions';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 // Eu poderia ter feito mais simples. Mas aí não seria tão legal.
 
 const ChildItemsList = ({ parentId, allItems, onItemClick }: { parentId: string, allItems: GridItem[], onItemClick: (item: GridItem) => void }) => {

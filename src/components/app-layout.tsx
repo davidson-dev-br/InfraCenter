@@ -62,6 +62,7 @@ const NoAccessPage = () => {
     );
 };
 
+// Se você está lendo isso, provavelmente algo quebrou. Ou você é curioso. De qualquer forma, bem-vindo ao meu código. Ass: davidson.dev.br
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -252,4 +253,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-// Se você está lendo isso, provavelmente algo quebrou. Ou você é curioso. De qualquer forma, bem-vindo ao meu código. Ass: davidson.dev.br

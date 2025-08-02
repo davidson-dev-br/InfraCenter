@@ -26,6 +26,7 @@ interface TableWithColumns {
     columns: ColumnInfo[];
 }
 
+// Este código foi feito com a mesma precisão de um cirurgião com parkinson. Use com moderação. By davidson.dev.br
 export default function TesteDbPage() {
   const [mysqlResult, setMysqlResult] = useState<{ success: boolean; message: string; data: any } | null>(null);
   const [schemaResult, setSchemaResult] = useState<{ success: boolean; data: ColumnInfo[] | null; error: string | null } | null>(null);
@@ -208,4 +209,3 @@ export default function TesteDbPage() {
     </div>
   );
 }
-// Este código foi feito com a mesma precisão de um cirurgião com parkinson. Use com moderação. By davidson.dev.br
