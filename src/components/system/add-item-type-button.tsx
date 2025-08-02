@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { AddItemTypeDialog } from '../add-item-type-dialog';
+import { AddItemTypeDialog } from '@/components/add-item-type-dialog';
 
 interface AddItemTypeButtonProps {
     isParentType: boolean;

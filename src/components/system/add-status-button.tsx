@@ -2,9 +2,9 @@
 "use client";
 
 import React from 'react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { ManageStatusDialog } from '../manage-status-dialog';
+import { ManageStatusDialog } from '@/components/manage-status-dialog';
 
 export function AddStatusButton() {
     const [isOpen, setIsOpen] = React.useState(false);
