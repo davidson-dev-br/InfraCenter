@@ -45,6 +45,26 @@ export async function updateUser(userData: Partial<User> & ({ email: string } | 
         oldState = await _getUserByEmail(userData.email);
     }
     
+    // Se estiver criando um novo usuário, primeiro cria a conta no Firebase Auth.
+    if (isCreating && 'email' in userData && userData.email && auth) {
+        try {
+            await auth.createUser({
+                email: userData.email,
+                password: 'tim@123456', // Senha padrão para novos usuários
+                displayName: userData.displayName || undefined,
+            });
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-exists') {
+                // Se o usuário já existe no Firebase Auth mas não no nosso DB,
+                // podemos optar por apenas logar ou tentar sincronizar.
+                // Por enquanto, vamos lançar um erro claro.
+                throw new Error('Este e-mail já está registrado no serviço de autenticação.');
+            }
+            console.error("Erro ao criar usuário no Firebase Auth:", error);
+            throw new Error(`Falha ao criar usuário no Firebase Auth: ${error.message}`);
+        }
+    }
+
     const updatedUser = await _updateUser(userData);
 
     if (adminUser) {

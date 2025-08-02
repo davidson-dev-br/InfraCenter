@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, Info } from "lucide-react";
 
 import type { UserRole } from "@/components/permissions-provider";
 import { USER_ROLES } from "@/components/permissions-provider";
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const roleLabels: Record<UserRole, string> = {
   developer: "Desenvolvedor",
@@ -178,6 +179,15 @@ export function AddUserDialog() {
                 </FormItem>
               )}
             />
+
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Senha Padrão</AlertTitle>
+                <AlertDescription>
+                    O novo usuário será criado com a senha padrão: <strong>tim@123456</strong>. Por favor, instrua o usuário a alterá-la no primeiro acesso.
+                </AlertDescription>
+            </Alert>
+            
             <DialogFooter>
               <Button
                 type="button"
