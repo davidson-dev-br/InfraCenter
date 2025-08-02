@@ -52,18 +52,18 @@ Expansão da página `/system` com a criação e gerenciamento de Fabricantes e 
 
 ### Fase 7: Fundações de Conectividade
 **Status:** `Concluído`
-Construir os blocos fundamentais para o mapeamento de conexões físicas e lógicas.
+Construção dos blocos fundamentais para o mapeamento de conexões físicas e lógicas.
 
 1.  **7.1. Gerenciar Tipos de Porta:**
-    *   **Descrição:** Criar a tabela `PortTypes` no banco de dados e implementar o CRUD completo na aba "Gerenciamento de Conexões" da página de Sistema.
+    *   **Descrição:** Criar a tabela `PortTypes` e implementar o CRUD na página de Sistema.
     *   **Status:** `Concluído`.
 
 2.  **7.2. Gerenciar Tipos de Conexão:**
-    *   **Descrição:** Implementar o CRUD para `ConnectionTypes`, que definirá a natureza da conexão.
+    *   **Descrição:** Implementar o CRUD para `ConnectionTypes`.
     *   **Status:** `Concluído`.
 
 3.  **7.3. Gerenciar Portas de Equipamentos:**
-    *   **Descrição:** Criar a tabela `EquipmentPorts` no banco de dados para armazenar cada porta individual de um equipamento.
+    *   **Descrição:** Criar a tabela `EquipmentPorts` para armazenar cada porta individual.
     *   **Status:** `Concluído`.
 
 ### Fase 8: Mapeamento Avançado e Inteligência Proativa
@@ -71,16 +71,20 @@ Construir os blocos fundamentais para o mapeamento de conexões físicas e lógi
 Módulo central para mapear conexões e garantir a integridade dos dados de forma proativa.
 
 1.  **8.1. Geração Automática de Portas:**
-    *   **Descrição:** Modificar a criação de `ChildItems` para que, ao adicionar um equipamento baseado em um `Modelo` com portas pré-configuradas, o sistema crie automaticamente as instâncias dessas portas no banco de dados.
+    *   **Descrição:** Modificar a criação de `ChildItems` para gerar automaticamente as instâncias de portas com base no modelo do equipamento.
     *   **Status:** `Concluído`.
 
-2.  **8.2. Desenvolver Interface De/Para:**
-    *   **Descrição:** Construir a interface visual na página `/depara` para permitir que os usuários conectem `Porta A` à `Porta B`.
+2.  **8.2. Inventário Central de Portas:**
+    *   **Descrição:** Transformar a página `/connections` em um "Inventário de Portas" centralizado, listando todas as portas de todos os equipamentos, seu status e onde estão conectadas.
+    *   **Status:** `Concluído`.
+
+3.  **8.3. Desenvolver Interface De/Para:**
+    *   **Descrição:** Construir a interface visual na página `/depara` para permitir que os usuários conectem `Porta A` à `Porta B`, com suporte a conexão rápida e conexão com evidência (foto e texto da etiqueta). Implementar o fluxo de "conexão não resolvida" (lado único).
     *   **Status:** `Próximo Passo`.
 
-3.  **8.3. Central de Incidentes de Integridade:**
-    *   **Descrição:** Desenvolver a página `/incidents`. O sistema irá gerar "incidentes" automaticamente para inconsistências de dados (ex: uma porta de uplink de switch que não está conectada, um servidor sem TAG).
-    *   **Status:** A fazer.
+4.  **8.4. Central de Incidentes de Integridade:**
+    *   **Descrição:** Desenvolver a página `/incidents`. O sistema irá gerar "incidentes" automaticamente para inconsistências de dados, como conexões não resolvidas.
+    *   **Status:** Em Andamento (geração automática de incidentes implementada; visualização a fazer).
 
 ### Fase 9: Logs, Aprovações e Visualizações Avançadas
 **Status:** `A Fazer`

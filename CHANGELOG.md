@@ -4,6 +4,44 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 
+## [2024-08-07]
+
+### Adicionado
+- Implementado o fluxo completo de criação de conexões na página `/depara`.
+- Adicionado suporte para "Conexão Rápida" e "Conexão com Evidência".
+- Criado o modal de evidência com upload de imagem e campo para texto da etiqueta.
+- Implementado o fluxo de "conexão não resolvida" (lado único), que gera um incidente de integridade automaticamente.
+- Página `/connections` foi transformada em um "Inventário de Portas" centralizado.
+
+### Corrigido
+- Corrigida a estrutura da tabela `Connections` no banco de dados, que estava incorreta.
+- Resolvidos bugs de build e de execução relacionados a colunas ausentes no banco de dados.
+
+## [2024-08-06]
+
+### Adicionado
+- Criada a tabela `EquipmentPorts` no banco de dados para armazenar as portas individuais dos equipamentos.
+- Adicionada a capacidade do sistema de gerar automaticamente as portas de um equipamento quando ele é criado com base em um `Modelo` que possui uma `portConfig` definida.
+
+## [2024-08-05]
+
+### Adicionado
+- CRUD completo para "Tipos de Porta" (`PortTypes`) na página de Sistema.
+- CRUD completo para "Tipos de Conexão" (`ConnectionTypes`) na página de Sistema.
+- Adicionada página de erro global (`error.tsx`) e página `404 Not Found` personalizada.
+
+### Melhorado
+- Aumentado o timeout da conexão com o banco de dados para 30 segundos, melhorando a resiliência.
+
+## [2024-08-02]
+
+### Adicionado
+- Implementado o CRUD completo para a entidade "Modelos", vinculando cada modelo a um "Fabricante".
+- Adicionada a capacidade de definir uma configuração de portas padrão para cada modelo.
+
+### Corrigido
+- Revertida a tentativa de implementação de SQLite, estabilizando o ambiente de desenvolvimento de volta ao Azure SQL.
+
 ## [2024-08-01]
 
 ### Adicionado

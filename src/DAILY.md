@@ -1,5 +1,27 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-07]
+
+### O que foi feito hoje?
+- **Finalizada a Interface De/Para (`/depara`):**
+  - Implementada a lógica de "Conexão Rápida" e "Conexão com Evidência".
+  - Criado o modal para upload de imagem e texto da etiqueta.
+- **Implementado o Fluxo de "Conexão Não Resolvida":**
+  - Modificado o banco de dados e a `server action` `createConnection` para permitir o registro de apenas um lado da conexão.
+  - Implementada a geração automática de um "incidente de integridade" quando uma conexão é salva como não resolvida.
+- **Alinhamento Estratégico:**
+  - Redefinimos o propósito da página `/connections` para ser um "Inventário de Portas" central.
+  - A página `/depara` foi confirmada como a "Central de Conexões" para criar e visualizar ligações.
+- **Correção de Bugs:** Resolvidos erros de schema no banco de dados relacionados à tabela `Connections`.
+
+### Foco do Dia
+- **Avançar na Interface De/Para:** Implementar a lógica para criar e visualizar conexões na página `/depara`.
+
+### Impedimentos
+- Nenhum. O alinhamento sobre o propósito das páginas de conexões e de/para foi crucial e nos colocou no caminho certo.
+
+---
+
 ## [2024-08-06]
 
 ### O que foi feito hoje?
@@ -79,38 +101,6 @@
 
 ### Impedimentos
 - O imprevisto com o banco de dados foi contornado e agora serve como um importante aprendizado de arquitetura.
-
----
-
-## [2024-08-01]
-
-### O que foi feito?
-- Separada a lógica de tipos de item em duas tabelas distintas: `ItemTypes` (para a planta baixa) e `ItemTypesEqp` (para equipamentos aninhados), tornando o sistema mais robusto.
-- Criado o gerenciador completo (CRUD) para a entidade "Fabricantes" na nova aba "Atributos" da página `/system`.
-- Reorganizada a UI da página `/system` com abas para melhor navegação.
-- Corrigidos bugs na exibição e atualização da tabela de tipos de item.
-
-### Foco do Dia
-- Implementar o gerenciador de "Fabricantes" e corrigir bugs da interface.
-
-### Impedimentos
-- A lógica de exibição dos tipos de item estava incorreta após a refatoração, o que foi resolvido.
-
----
-
-## [2024-07-31]
-
-### O que foi feito?
-- Atualizada a documentação (`ARCHITECTURE.md`) para refletir o progresso e os novos planos.
-- Esclarecida a separação entre itens da planta baixa e itens aninhados.
-- Discutida a necessidade de criar listas de atributos (Fabricantes, Modelos) para padronizar a entrada de dados.
-
-### Foco do Dia
-- Alinhar a comunicação e a documentação.
-- Planejar os próximos passos para a página `/system`.
-
-### Impedimentos
-- Havia uma pequena confusão sobre a estratégia para os modais e a página de sistema, que foi esclarecida.
 ---
 
 ## Desenvolvedor Principal
