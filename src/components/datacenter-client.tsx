@@ -35,7 +35,29 @@ import { getItemStatuses, ItemStatus } from '@/lib/status-actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from './ui/card';
 
-// Funciona na minha máquina.
+// NOTA DE ARQUITETURA: DATA CENTER CLIENT
+// Este é o componente mais complexo da aplicação, agindo como o "cérebro" da planta baixa.
+//
+// RESPONSABILIDADES:
+// 1. Gerenciamento de Estado: Controla a sala ativa, os itens no grid, transformações de visualização (zoom/pan),
+//    e o estado de arrastar/soltar itens.
+// 2. Renderização do Grid: Calcula as dimensões do grid com base nos dados da sala (metros, tamanho do piso)
+//    e desenha as células, eixos e os itens na posição correta.
+// 3. Interatividade:
+//    - Zoom: `handleWheel` ajusta a escala (`viewTransform.scale`) com base no scroll do mouse.
+//    - Pan (Mover o "mapa"): `handleMouseDown`, `handleMouseMove` e `handleMouseUp` trabalham juntos para
+//      mover o mapa (`viewTransform.x`, `viewTransform.y`) quando o usuário clica e arrasta o fundo.
+//    - Drag & Drop de Itens: `handleItemMouseDown` e `handleItemDrag` gerenciam o arraste de um item.
+//      Ao soltar (`handleMouseUp`), a nova posição é salva no banco de dados via Server Action.
+// 4. Diálogos e Modais: Controla a abertura dos modais de "Adicionar Item", "Editar Item" e "Editar Sala".
+// 5. Sincronização de Dados: Usa `useEffect` para reagir a mudanças no contexto (`activeBuildingId`, `activeRoomId`)
+//    e atualizar o estado local dos itens exibidos.
+//
+// O uso de `React.useRef` é crucial para `floorPlanRef` (para obter dimensões e posição do container)
+// e `panStartRef` (para calcular o delta do movimento de pan sem causar re-renderizações).
+//
+// O estado `draggingItem` armazena não só o ID do item, mas também o offset do clique do mouse dentro
+// do item, garantindo que o arraste seja suave e natural.
 
 const colorStyles: Record<typeof statusColors[number], string> = {
     gray: "fill-gray-500", red: "fill-red-500", orange: "fill-orange-500",
@@ -188,7 +210,6 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
 
 
   const handleWheel = (e: React.WheelEvent) => {
-    // Este código foi abençoado por davidson.dev.br. Amém.
     if (!floorPlanRef.current) return;
     e.preventDefault();
     const rect = floorPlanRef.current.getBoundingClientRect();
@@ -421,7 +442,6 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Dragões dormem aqui. Não os acorde. */}
         <div 
           className="absolute top-0 left-0"
           style={{ transform: `translate(${viewTransform.x}px, ${viewTransform.y}px) scale(${viewTransform.scale})`, transformOrigin: 'top left' }}
@@ -480,5 +500,3 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
     </div>
   );
 }
-
-// Propriedade de davidson.dev.br. Cópia não autorizada resultará em bugs inexplicáveis no seu próprio código.

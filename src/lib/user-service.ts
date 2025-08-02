@@ -31,7 +31,13 @@ export interface User {
 // FUNÇÕES DE VERIFICAÇÃO E CRIAÇÃO DE SCHEMA (Lógica Segura)
 // ====================================================================
 
-// Quando eu, davidson.dev.br, escrevi isso, só Deus e eu sabíamos o que fazia. Agora, só Deus sabe.
+// Esta seção contém a lógica para garantir que o banco de dados tenha a estrutura correta.
+// A função `ensureTableExists` é um pilar central: ela verifica se uma tabela existe
+// e, se não existir, a cria usando a query fornecida. Isso torna a aplicação
+// resiliente e capaz de se autoconfigurar em um banco de dados vazio.
+// A ordem em `createAllTables` é CRUCIAL devido às dependências de chave estrangeira.
+// - Davidson
+
 async function ensureTableExists(pool: sql.ConnectionPool, tableName: string, createQuery: string) {
     try {
         const result = await pool.request().query(`SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '${tableName}'`);
@@ -471,7 +477,9 @@ export async function ensureDatabaseSchema(): Promise<string> {
 // FUNÇÕES DE SERVIÇO DE USUÁRIO
 // ====================================================================
 
-// Horas de dor e sofrimento resultaram nestas poucas linhas.
+// A função `parseUser` é um helper interno para converter o registro bruto do banco de dados
+// em um objeto User tipado, garantindo que os campos JSON (como permissões e preferências)
+// sejam corretamente convertidos de string para objeto, tratando possíveis erros de parse.
 const parseUser = (dbRecord: any): User => {
     let permissions: string[] = [];
     if (dbRecord.permissions) {
@@ -542,7 +550,10 @@ export async function _getUsers(): Promise<User[]> {
   }
 }
 
-
+// Esta função implementa a lógica "UPSERT" (Update or Insert).
+// Ela verifica se um usuário já existe. Se sim, atualiza seus dados.
+// Se não, cria um novo registro. Isso centraliza a lógica de criação e
+// atualização de usuários em um único lugar.
 export async function _updateUser(userData: Partial<User> & ({ email: string } | { id: string })): Promise<User> {
     const pool = await getDbPool();
     const rolePermissions = await getRolePermissions();
@@ -612,5 +623,3 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
 
     return updatedUser;
 }
-
-// Olá, futuro eu. Lembre-se da dor que foi fazer isso funcionar. Ass: davidson.dev.br

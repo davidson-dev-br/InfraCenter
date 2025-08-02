@@ -1,17 +1,35 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, signInWithPopup, OAuthProvider } from "firebase/auth";
 import { app } from "@/lib/firebase"; 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Server, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Função para o ícone da Microsoft
+// NOTA DE ARQUITETURA (A Saga do Build):
+// Esta página foi o epicentro de uma longa e complexa depuração de build.
+// O erro original `useSearchParams() should be wrapped in a suspense boundary` ocorria porque
+// o Next.js, ao tentar gerar páginas estáticas (como a /404), acabava precisando analisar
+// esta página. O hook `useSearchParams` só funciona no lado do cliente (no navegador), e sua
+// presença direta no componente da página quebrava o build no lado do servidor.
+//
+// A SOLUÇÃO:
+// 1. O conteúdo original da página foi movido para um componente filho (`LoginContent`).
+// 2. A página principal (`LoginPage`) agora apenas exporta este componente filho, mas
+//    envolvido por um `<Suspense>` do React.
+// 3. Isso diz ao Next.js: "Ignore o conteúdo deste componente durante o build no servidor.
+//    Ele será carregado dinamicamente no cliente."
+// 4. O `fallback` do Suspense garante que algo seja exibido enquanto o JS do cliente carrega.
+//
+// Esta abordagem resolve o erro de build e está alinhada com as melhores práticas do Next.js
+// para lidar com componentes que dependem de informações exclusivas do navegador.
+// - Davidson (depois de muita luta)
+
 function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
-  // Feito com ódio e cafeína por davidson.dev.br.
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -33,16 +51,24 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = getAuth(app);
   const provider = new OAuthProvider("microsoft.com");
 
   provider.setCustomParameters({
     tenant: "common",
   });
+  
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'unprovisioned') {
+        setError("Sua conta foi autenticada, mas não está liberada no sistema. Fale com um administrador.");
+    }
+  }, [searchParams]);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -67,36 +93,51 @@ export default function LoginPage() {
   };
 
   return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-        <div className="absolute top-8 left-8 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary">
-                <Server className="text-primary-foreground size-6" />
-            </div>
-            <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
-        </div>
-        <Card className="w-full max-w-sm">
-            <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
-            <CardDescription>
-                Faça login com sua conta Microsoft para acessar o painel.
-            </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-            <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                <>
-                    <MicrosoftIcon className="mr-2 h-5 w-5" />
-                    Entrar com Microsoft
-                </>
-                )}
-            </Button>
-            {error && <p className="text-center text-sm text-destructive">{error}</p>}
-            </CardContent>
-        </Card>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      <div className="absolute top-8 left-8 flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary">
+              <Server className="text-primary-foreground size-6" />
+          </div>
+          <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
       </div>
+      <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
+          <CardDescription>
+              Faça login com sua conta Microsoft para acessar o painel.
+          </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+          <Button onClick={handleLogin} disabled={isLoading} className="w-full">
+              {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+              <>
+                  <MicrosoftIcon className="mr-2 h-5 w-5" />
+                  Entrar com Microsoft
+              </>
+              )}
+          </Button>
+          {error && <p className="text-center text-sm text-destructive">{error}</p>}
+          </CardContent>
+      </Card>
+    </div>
   );
 }
 
-// Mais uma noite salva por davidson.dev.br e Stack Overflow.
+const LoginPageSkeleton = () => (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <Skeleton className="h-12 w-12 rounded-lg" />
+        <Skeleton className="h-8 w-48 mt-4" />
+        <Skeleton className="h-4 w-64 mt-2" />
+        <Skeleton className="h-10 w-full max-w-sm mt-6" />
+    </div>
+);
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<LoginPageSkeleton />}>
+            <LoginContent />
+        </Suspense>
+    )
+}

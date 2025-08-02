@@ -1,7 +1,7 @@
 
 "use client";
 
-import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState, useCallback, Suspense } from 'react';
 import { getAuth, onAuthStateChanged, User as AuthUser, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
@@ -13,7 +13,29 @@ import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
 import { AppLayout } from './app-layout';
 
-// Aquele momento de silêncio antes de rodar o código pela primeira vez. Pura fé.
+// COMENTÁRIO DE ARQUITETURA:
+// Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
+// os dados do usuário, permissões e o layout geral.
+//
+// FLUXO DE EXECUÇÃO:
+// 1. `onAuthStateChanged` (Firebase): Ouve mudanças no estado de login do Firebase.
+// 2. `handleUserAuth`: Quando um usuário é detectado, esta função é chamada.
+//    a. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
+//    b. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
+//       para o login com uma mensagem de erro. Isso garante que apenas usuários provisionados
+//       possam acessar.
+//    c. Se o usuário EXISTE, atualizamos seus dados (último login, foto) e buscamos os
+//       dados essenciais da aplicação (prédios, permissões).
+//    d. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
+// 3. Renderização Condicional:
+//    - Enquanto `loading` for `true`, exibe um loader de página inteira.
+//    - Se o usuário não estiver logado (`!authUser`) e a página não for pública, redireciona para `/login`.
+//    - Se o usuário estiver logado e na página de login, redireciona para a página principal.
+//    - Se tudo estiver OK, ele renderiza o `<AppLayout>`, envolvendo o conteúdo da página
+//      com os Providers de contexto necessários (`PermissionsProvider`, `BuildingProvider`).
+//
+// O uso do `useCallback` em `handleUserAuth` otimiza o processo, evitando recriações
+// desnecessárias da função em cada renderização.
 
 const FullPageLoader = () => (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -82,7 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signOut(auth);
         setAuthUser(null);
         setDbUser(null);
-        router.push('/login'); // Removido o parâmetro de erro
+        // Adiciona um parâmetro de erro para a página de login exibir uma mensagem útil.
+        router.push('/login?error=unprovisioned'); 
       }
     } else {
       // Nenhum usuário logado no Firebase
