@@ -4,8 +4,8 @@
 import sql from 'mssql';
 import { revalidatePath } from 'next/cache';
 import * as z from 'zod';
-import { getDbPool } from './db';
-import { logAuditEvent } from './audit-actions';
+import { getDbPool } from '@/lib/db';
+import { logAuditEvent } from '@/lib/audit-actions';
 
 // Interface para ambos os tipos de item, com propriedades opcionais
 export interface ItemType {

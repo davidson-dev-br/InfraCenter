@@ -11,8 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Manufacturer } from "@/lib/manufacturer-actions";
-import { ManageManufacturerDialog } from "./manage-manufacturer-dialog";
-import { DeleteManufacturerDialog } from "./delete-manufacturer-dialog";
+import { ManageManufacturerDialog } from "@/components/system/manage-manufacturer-dialog";
+import { DeleteManufacturerDialog } from "@/components/system/delete-manufacturer-dialog";
 
 interface ManageManufacturerMenuProps {
   manufacturer: Manufacturer;
@@ -32,12 +32,10 @@ export function ManageManufacturerMenu({ manufacturer }: ManageManufacturerMenuP
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-            <ManageManufacturerDialog mode="edit" manufacturer={manufacturer}>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-            </ManageManufacturerDialog>
+            <DropdownMenuItem onSelect={(e) => {e.preventDefault(); setIsEditDialogOpen(true)}}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -47,6 +45,11 @@ export function ManageManufacturerMenu({ manufacturer }: ManageManufacturerMenuP
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      
+       <ManageManufacturerDialog mode="edit" manufacturer={manufacturer} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            {/* O trigger está no DropdownMenuItem, então o children aqui pode ser vazio */}
+            <></>
+       </ManageManufacturerDialog>
 
       <DeleteManufacturerDialog
         manufacturer={manufacturer}

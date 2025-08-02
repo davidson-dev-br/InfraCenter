@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PortType } from "@/lib/port-types-actions";
-import { ManagePortTypeDialog } from "./manage-port-type-dialog";
-import { DeletePortTypeDialog } from "./delete-port-type-dialog";
+import { ManagePortTypeDialog } from "@/components/system/manage-port-type-dialog";
+import { DeletePortTypeDialog } from "@/components/system/delete-port-type-dialog";
 
 interface ManagePortTypeMenuProps {
   portType: PortType;
@@ -49,12 +49,10 @@ export function ManagePortTypeMenu({ portType }: ManagePortTypeMenuProps) {
           <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
         )}
         <DropdownMenuContent align="end">
-            <ManagePortTypeDialog mode="edit" portType={portType}>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-            </ManagePortTypeDialog>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -65,6 +63,11 @@ export function ManagePortTypeMenu({ portType }: ManagePortTypeMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ManagePortTypeDialog mode="edit" portType={portType} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          {/* O trigger está no DropdownMenuItem, então o children aqui pode ser vazio */}
+          <></>
+      </ManagePortTypeDialog>
 
       <DeletePortTypeDialog
         portType={portType}

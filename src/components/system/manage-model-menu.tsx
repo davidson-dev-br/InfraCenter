@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Model, deleteModel } from "@/lib/models-actions";
-import { ManageModelDialog } from "./manage-model-dialog";
+import { ManageModelDialog } from "@/components/system/manage-model-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,12 +62,10 @@ export function ManageModelMenu({ model }: ManageModelMenuProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <ManageModelDialog mode="edit" model={model}>
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
-          </ManageModelDialog>
+          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Editar
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -77,6 +75,11 @@ export function ManageModelMenu({ model }: ManageModelMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ManageModelDialog mode="edit" model={model} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          {/* O trigger está no DropdownMenuItem, então o children aqui pode ser vazio */}
+          <></>
+      </ManageModelDialog>
       
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

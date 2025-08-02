@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConnectionType } from "@/lib/connection-types-actions";
-import { ManageConnectionTypeDialog } from "./manage-connection-type-dialog";
-import { DeleteConnectionTypeDialog } from "./delete-connection-type-dialog";
+import { ManageConnectionTypeDialog } from "@/components/system/manage-connection-type-dialog";
+import { DeleteConnectionTypeDialog } from "@/components/system/delete-connection-type-dialog";
 
 interface ManageConnectionTypeMenuProps {
   connectionType: ConnectionType;
@@ -49,12 +49,10 @@ export function ManageConnectionTypeMenu({ connectionType }: ManageConnectionTyp
           <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
         )}
         <DropdownMenuContent align="end">
-          <ManageConnectionTypeDialog mode="edit" connectionType={connectionType}>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-          </ManageConnectionTypeDialog>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditDialogOpen(true); }}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
             onSelect={() => setIsDeleteDialogOpen(true)}
@@ -65,6 +63,11 @@ export function ManageConnectionTypeMenu({ connectionType }: ManageConnectionTyp
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ManageConnectionTypeDialog mode="edit" connectionType={connectionType} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        {/* O trigger está no DropdownMenuItem, então o children aqui pode ser vazio */}
+        <></>
+      </ManageConnectionTypeDialog>
 
       <DeleteConnectionTypeDialog
         connectionType={connectionType}
