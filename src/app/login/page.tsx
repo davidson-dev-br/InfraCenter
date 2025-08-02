@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getAuth, signInWithPopup, OAuthProvider } from "firebase/auth";
 import { app } from "@/lib/firebase"; 
 import { Button } from "@/components/ui/button";
@@ -33,23 +33,12 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-// Componente interno para isolar o uso de hooks de cliente como useSearchParams
-function LoginContent() {
+export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const auth = getAuth(app);
   const provider = new OAuthProvider("microsoft.com");
-
-  useEffect(() => {
-    const errorCode = searchParams.get('error');
-    if (errorCode === 'unprovisioned') {
-        setError("Sua conta não foi provisionada. Entre em contato com um administrador para obter acesso.");
-    } else if (errorCode === 'db_error') {
-        setError("Ocorreu um erro crítico ao sincronizar sua conta. Tente novamente mais tarde.");
-    }
-  }, [searchParams]);
 
   provider.setCustomParameters({
     tenant: "common",
@@ -78,47 +67,35 @@ function LoginContent() {
   };
 
   return (
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
-          <CardDescription>
-            Faça login com sua conta Microsoft para acessar o painel.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <MicrosoftIcon className="mr-2 h-5 w-5" />
-                Entrar com Microsoft
-              </>
-            )}
-          </Button>
-          {error && <p className="text-center text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
-  );
-}
-
-
-export default function LoginPage() {
-  // A página em si é apenas um container.
-  // O Suspense boundary é crucial para o Next.js não tentar pré-renderizar
-  // o conteúdo que usa hooks como useSearchParams no servidor.
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-       <div className="absolute top-8 left-8 flex items-center gap-2">
-         <div className="p-1.5 rounded-lg bg-primary">
-            <Server className="text-primary-foreground size-6" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <div className="absolute top-8 left-8 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary">
+                <Server className="text-primary-foreground size-6" />
+            </div>
+            <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
         </div>
-        <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
+        <Card className="w-full max-w-sm">
+            <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
+            <CardDescription>
+                Faça login com sua conta Microsoft para acessar o painel.
+            </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+            <Button onClick={handleLogin} disabled={isLoading} className="w-full">
+                {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                <>
+                    <MicrosoftIcon className="mr-2 h-5 w-5" />
+                    Entrar com Microsoft
+                </>
+                )}
+            </Button>
+            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+            </CardContent>
+        </Card>
       </div>
-      <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
-        <LoginContent />
-      </Suspense>
-    </div>
   );
 }
 

@@ -4,7 +4,7 @@
 import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User as AuthUser, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
 import { updateUser, getUserByEmail } from '@/lib/user-actions';
@@ -53,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = getAuth(app);
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     createAuthorizedFetch(() => auth.currentUser?.getIdToken() ?? Promise.resolve(null));
@@ -83,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signOut(auth);
         setAuthUser(null);
         setDbUser(null);
-        router.push('/login?error=unprovisioned');
+        router.push('/login'); // Removido o parâmetro de erro
       }
     } else {
       // Nenhum usuário logado no Firebase
@@ -109,10 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!authUser && !isAuthPage) {
       router.push('/login');
-    } else if (authUser && dbUser && isAuthPage && !searchParams.get('error')) {
+    } else if (authUser && dbUser && isAuthPage) {
       router.push('/datacenter');
     }
-  }, [authUser, dbUser, loading, pathname, router, searchParams]);
+  }, [authUser, dbUser, loading, pathname, router]);
 
   if (loading) {
     return <FullPageLoader />;

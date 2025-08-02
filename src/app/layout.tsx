@@ -4,7 +4,6 @@ import './globals.css';
 import { AuthProvider } from '@/components/auth-provider';
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransitionLoader } from '@/components/page-transition-loader';
-import { AppLayout } from '@/components/app-layout';
 
 // Olá, futuro eu. Lembre-se da dor que foi fazer isso funcionar. Ass: davidson.dev.br
 export const metadata: Metadata = {
