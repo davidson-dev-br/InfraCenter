@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, signInWithPopup, OAuthProvider } from "firebase/auth";
 import { app } from "@/lib/firebase"; 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Server } from "lucide-react";
+import { Server, Loader2 } from "lucide-react";
 
 // Função para o ícone da Microsoft
 function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -33,15 +33,14 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = getAuth(app);
   const provider = new OAuthProvider("microsoft.com");
-  
+
   useEffect(() => {
     const errorCode = searchParams.get('error');
     if (errorCode === 'unprovisioned') {
@@ -51,13 +50,9 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-
-  // A configuração 'common' para o tenant permite que tanto contas pessoais (MSA)
-  // quanto contas corporativas/de estudante (Azure AD) façam o login.
   provider.setCustomParameters({
     tenant: "common",
   });
-
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -82,13 +77,6 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-       <div className="absolute top-8 left-8 flex items-center gap-2">
-         <div className="p-1.5 rounded-lg bg-primary">
-            <Server className="text-primary-foreground size-6" />
-        </div>
-        <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
-      </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
@@ -110,6 +98,22 @@ export default function LoginPage() {
           {error && <p className="text-center text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
+  );
+}
+
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+       <div className="absolute top-8 left-8 flex items-center gap-2">
+         <div className="p-1.5 rounded-lg bg-primary">
+            <Server className="text-primary-foreground size-6" />
+        </div>
+        <h1 className="text-xl font-headline font-semibold text-primary">InfraVision</h1>
+      </div>
+      <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
+        <LoginContent />
+      </Suspense>
     </div>
   );
 }
