@@ -33,6 +33,7 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+// Componente interno para isolar o uso de hooks de cliente como useSearchParams
 function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +88,7 @@ function LoginContent() {
         <CardContent className="flex flex-col gap-4">
           <Button onClick={handleLogin} disabled={isLoading} className="w-full">
             {isLoading ? (
-              "Aguarde..."
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <>
                 <MicrosoftIcon className="mr-2 h-5 w-5" />
@@ -103,6 +104,9 @@ function LoginContent() {
 
 
 export default function LoginPage() {
+  // A página em si é apenas um container.
+  // O Suspense boundary é crucial para o Next.js não tentar pré-renderizar
+  // o conteúdo que usa hooks como useSearchParams no servidor.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
        <div className="absolute top-8 left-8 flex items-center gap-2">
