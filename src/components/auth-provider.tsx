@@ -12,6 +12,9 @@ import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
 import { AppLayout } from './app-layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { AlertTriangle, WifiOff } from 'lucide-react';
+import { Button } from './ui/button';
 
 // COMENTÁRIO DE ARQUITETURA:
 // Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
@@ -47,6 +50,37 @@ const FullPageLoader = () => (
     </div>
 );
 
+const ConnectionErrorScreen = ({ error, onRetry }: { error: string, onRetry: () => void }) => (
+     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-lg text-center">
+            <CardHeader>
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                    <WifiOff className="h-6 w-6 text-destructive" />
+                </div>
+              <CardTitle className="mt-4 text-2xl">Falha de Conexão</CardTitle>
+              <CardDescription>
+                Não foi possível conectar ao banco de dados da aplicação.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                    Isso geralmente ocorre por uma regra de firewall bloqueando o acesso. Verifique as configurações de rede do seu servidor SQL.
+                </p>
+                <div className="rounded-md border bg-muted p-3 text-left text-sm">
+                    <p className="font-semibold">Detalhes do Erro:</p>
+                    <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-destructive">
+                        {error}
+                    </pre>
+                </div>
+              <Button onClick={onRetry}>
+                Tentar Novamente
+              </Button>
+            </CardContent>
+        </Card>
+    </div>
+)
+
+
 type Building = {
     id: string;
     name: string;
@@ -72,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const auth = getAuth(app);
   const router = useRouter();
   const pathname = usePathname();
@@ -81,34 +116,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   const handleUserAuth = useCallback(async (user: AuthUser | null) => {
+    setLoading(true);
+    setConnectionError(null);
     if (user && user.email) {
-      const userRecord = await getUserByEmail(user.email);
+      try {
+        const userRecord = await getUserByEmail(user.email);
 
-      if (userRecord) {
-        // Usuário existe no DB, pode prosseguir
-        const [updatedUser, buildingsData] = await Promise.all([
-          updateUser({
-            id: userRecord.id, // Usar o ID do DB para garantir a atualização correta
-            email: user.email.toLowerCase(),
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            lastLoginAt: new Date().toISOString(),
-          }),
-          getBuildingsList()
-        ]);
-        setAuthUser(user);
-        setDbUser(updatedUser);
-        setBuildings(buildingsData);
-      } else {
-        // Usuário não existe no DB, deslogar e redirecionar
-        await signOut(auth);
-        setAuthUser(null);
-        setDbUser(null);
-        // Adiciona um parâmetro de erro para a página de login exibir uma mensagem útil.
-        router.push('/login?error=unprovisioned'); 
+        if (userRecord) {
+          const [updatedUser, buildingsData] = await Promise.all([
+            updateUser({
+              id: userRecord.id,
+              email: user.email.toLowerCase(),
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              lastLoginAt: new Date().toISOString(),
+            }),
+            getBuildingsList()
+          ]);
+          setAuthUser(user);
+          setDbUser(updatedUser);
+          setBuildings(buildingsData);
+        } else {
+          await signOut(auth);
+          setAuthUser(null);
+          setDbUser(null);
+          router.push('/login?error=unprovisioned'); 
+        }
+      } catch (error: any) {
+         console.error("Erro de conexão durante a autenticação:", error);
+         setConnectionError(error.message || "Erro desconhecido ao conectar ao banco de dados.");
       }
     } else {
-      // Nenhum usuário logado no Firebase
       setAuthUser(null);
       setDbUser(null);
       setBuildings([]);
@@ -123,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
-    if (loading) {
+    if (loading || connectionError) {
       return; 
     }
 
@@ -134,7 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (authUser && dbUser && isAuthPage) {
       router.push('/datacenter');
     }
-  }, [authUser, dbUser, loading, pathname, router]);
+  }, [authUser, dbUser, loading, connectionError, pathname, router]);
+  
+  if (connectionError) {
+      return <ConnectionErrorScreen error={connectionError} onRetry={() => handleUserAuth(auth.currentUser)} />
+  }
 
   if (loading) {
     return <FullPageLoader />;
