@@ -132,11 +132,10 @@ export async function getAllConnections(): Promise<ConnectionDetail[]> {
             JOIN EquipmentPorts portA ON c.portA_id = portA.id
             JOIN ChildItems itemA ON portA.childItemId = itemA.id
             LEFT JOIN ParentItems parentA ON itemA.parentId = parentA.id
-            JOIN EquipmentPorts portB ON c.portB_id = portB.id
-            JOIN ChildItems itemB ON portB.childItemId = itemB.id
+            LEFT JOIN EquipmentPorts portB ON c.portB_id = portB.id
+            LEFT JOIN ChildItems itemB ON portB.childItemId = itemB.id
             LEFT JOIN ParentItems parentB ON itemB.parentId = parentB.id
             JOIN ConnectionTypes ct ON c.connectionTypeId = ct.id
-            WHERE c.status = 'active'
             ORDER BY itemA_label, portA_label;
         `);
         return result.recordset as ConnectionDetail[];
@@ -184,7 +183,7 @@ export async function getAllEquipmentPorts(): Promise<EquipmentPortDetail[]> {
 
 export async function createConnection(data: { 
     portA_id: string; 
-    portB_id: string; 
+    portB_id?: string | null; // portB é opcional agora
     connectionTypeId: string; 
     labelText?: string | null;
     imageUrl?: string | null;
@@ -200,48 +199,73 @@ export async function createConnection(data: {
 
     try {
         await transaction.begin();
-
-        // Verificar se as portas já estão conectadas
-        const checkRequest = new sql.Request(transaction);
-        const portCheckResult = await checkRequest
-            .input('portA', sql.NVarChar, portA_id)
-            .input('portB', sql.NVarChar, portB_id)
-            .query`SELECT connectedToPortId FROM EquipmentPorts WHERE id IN (@portA, @portB)`;
         
+        const isFullConnection = !!portB_id;
+        const status = isFullConnection ? 'active' : 'unresolved';
+
+        // 1. Verificar se as portas já estão conectadas
+        const portsToCheck = [portA_id];
+        if (isFullConnection) portsToCheck.push(portB_id!);
+
+        const portCheckResult = await new sql.Request(transaction)
+            .query(`SELECT id, connectedToPortId FROM EquipmentPorts WHERE id IN ('${portsToCheck.join("','")}')`);
+
         for(const record of portCheckResult.recordset) {
             if (record.connectedToPortId) {
-                throw new Error("Uma ou ambas as portas selecionadas já estão em uso.");
+                throw new Error(`A porta com ID ${record.id} já está em uso.`);
             }
         }
         
-        // 1. Criar a conexão
+        // 2. Criar a conexão
         const connectionId = `conn_${Date.now()}`;
-        const connectionRequest = new sql.Request(transaction);
-        await connectionRequest
+        await new sql.Request(transaction)
             .input('id', sql.NVarChar, connectionId)
             .input('portA_id', sql.NVarChar, portA_id)
-            .input('portB_id', sql.NVarChar, portB_id)
+            .input('portB_id', sql.NVarChar, portB_id || null) // Permite NULL
             .input('connectionTypeId', sql.NVarChar, connectionTypeId)
             .input('labelText', sql.NVarChar, labelText || null)
             .input('imageUrl', sql.NVarChar, imageUrl || null)
+            .input('status', sql.NVarChar, status)
             .query`
                 INSERT INTO Connections (id, portA_id, portB_id, connectionTypeId, labelText, imageUrl, status)
-                VALUES (@id, @portA_id, @portB_id, @connectionTypeId, @labelText, @imageUrl, 'active')
+                VALUES (@id, @portA_id, @portB_id, @connectionTypeId, @labelText, @imageUrl, @status)
             `;
 
-        // 2. Atualizar a porta A
-        const updatePortARequest = new sql.Request(transaction);
-        await updatePortARequest
+        // 3. Atualizar as portas
+        await new sql.Request(transaction)
             .input('id', sql.NVarChar, portA_id)
-            .input('connectedTo', sql.NVarChar, portB_id)
+            .input('connectedTo', sql.NVarChar, portB_id || null)
             .query`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = @connectedTo WHERE id = @id`;
 
-        // 3. Atualizar a porta B
-        const updatePortBRequest = new sql.Request(transaction);
-        await updatePortBRequest
-            .input('id', sql.NVarChar, portB_id)
-            .input('connectedTo', sql.NVarChar, portA_id)
-            .query`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = @connectedTo WHERE id = @id`;
+        if (isFullConnection) {
+            await new sql.Request(transaction)
+                .input('id', sql.NVarChar, portB_id)
+                .input('connectedTo', sql.NVarChar, portA_id)
+                .query`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = @connectedTo WHERE id = @id`;
+        }
+
+        // 4. (NOVO) Se a conexão não for resolvida, criar um incidente
+        if (!isFullConnection) {
+            const incidentId = `inc_${Date.now()}`;
+            const portAResult = await new sql.Request(transaction).input('portId', sql.NVarChar, portA_id).query(`
+                SELECT e.label as equipmentLabel, p.label as portLabel FROM EquipmentPorts p
+                JOIN ChildItems e ON p.childItemId = e.id WHERE p.id = @portId
+            `);
+            const { equipmentLabel, portLabel } = portAResult.recordset[0];
+            
+            await new sql.Request(transaction)
+                .input('id', sql.NVarChar, incidentId)
+                .input('description', sql.NVarChar, `Conexão da porta '${portLabel}' no equipamento '${equipmentLabel}' precisa ser resolvida.`)
+                .input('severity', sql.NVarChar, 'medium')
+                .input('status', sql.NVarChar, 'open')
+                .input('detectedAt', sql.DateTime2, new Date())
+                .input('entityType', sql.NVarChar, 'Connection')
+                .input('entityId', sql.NVarChar, connectionId)
+                .query`
+                    INSERT INTO Incidents (id, description, severity, status, detectedAt, entityType, entityId)
+                    VALUES (@id, @description, @severity, @status, @detectedAt, @entityType, @entityId)
+                `;
+        }
 
         await transaction.commit();
         
@@ -250,7 +274,7 @@ export async function createConnection(data: {
             action: 'CONNECTION_CREATED',
             entityType: 'Connections',
             entityId: connectionId,
-            details: { from: portA_id, to: portB_id, type: connectionTypeId, hasEvidence: !!imageUrl }
+            details: { from: portA_id, to: portB_id, type: connectionTypeId, status }
         });
 
     } catch (error: any) {

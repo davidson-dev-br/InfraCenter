@@ -431,17 +431,11 @@ async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
 }
 
 async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
-    // Drop the old incorrect table if it exists
-    try {
-        await pool.request().query(`DROP TABLE IF EXISTS Connections`);
-        console.log("Tabela 'Connections' antiga foi removida para recriação.");
-    } catch(e) { /* Ignore drop errors */ }
-
     await ensureTableExists(pool, 'Connections', `
         CREATE TABLE Connections (
             id NVARCHAR(50) PRIMARY KEY,
             portA_id NVARCHAR(50) NOT NULL,
-            portB_id NVARCHAR(50) NOT NULL,
+            portB_id NVARCHAR(50), -- Can be NULL for unresolved connections
             connectionTypeId NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'active',
             isTestData BIT NOT NULL DEFAULT 0,
