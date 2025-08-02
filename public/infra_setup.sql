@@ -1,6 +1,6 @@
--- InfraVision - Script de Setup de Infraestrutura
--- Gerado por davidson.dev.br
--- Este script cria todas as tabelas necessárias para uma nova instância da aplicação.
+-- Arquivo de Setup de Infraestrutura para InfraVision
+-- Gerado por davidson.dev.br via Firebase Studio
+-- Versão: 2024-08-06
 
 -- Tabela de Usuários
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
@@ -49,19 +49,6 @@ BEGIN
         backgroundPosY FLOAT,
         isTestData BIT NOT NULL DEFAULT 0,
         FOREIGN KEY (buildingId) REFERENCES Buildings(id) ON DELETE CASCADE
-    );
-END;
-
--- Tabela de Status dos Itens
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ItemStatuses')
-BEGIN
-    CREATE TABLE ItemStatuses (
-        id NVARCHAR(50) PRIMARY KEY,
-        name NVARCHAR(100) NOT NULL UNIQUE,
-        description NVARCHAR(255),
-        color NVARCHAR(20) NOT NULL,
-        isArchived BIT NOT NULL DEFAULT 0,
-        isDefault BIT NOT NULL DEFAULT 0
     );
 END;
 
@@ -152,7 +139,7 @@ BEGIN
         potenciaW INT,
         color NVARCHAR(50),
         isTestData BIT NOT NULL DEFAULT 0,
-        FOREIGN KEY (roomId) REFERENCES Rooms(id) ON DELETE SET NULL
+        FOREIGN KEY (roomId) REFERENCES Rooms(id) ON DELETE CASCADE
     );
 END;
 
@@ -183,6 +170,19 @@ BEGIN
     );
 END;
 
+-- Tabela de Status de Itens
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ItemStatuses')
+BEGIN
+    CREATE TABLE ItemStatuses (
+        id NVARCHAR(50) PRIMARY KEY,
+        name NVARCHAR(100) NOT NULL UNIQUE,
+        description NVARCHAR(255),
+        color NVARCHAR(20) NOT NULL,
+        isArchived BIT NOT NULL DEFAULT 0,
+        isDefault BIT NOT NULL DEFAULT 0
+    );
+END;
+
 -- Tabela de Tipos de Porta
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PortTypes')
 BEGIN
@@ -194,7 +194,18 @@ BEGIN
     );
 END;
 
--- Tabela de Portas de Equipamento
+-- Tabela de Tipos de Conexão
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ConnectionTypes')
+BEGIN
+    CREATE TABLE ConnectionTypes (
+        id NVARCHAR(50) PRIMARY KEY,
+        name NVARCHAR(100) NOT NULL UNIQUE,
+        description NVARCHAR(255),
+        isDefault BIT NOT NULL DEFAULT 0
+    );
+END;
+
+-- Tabela de Portas de Equipamentos
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'EquipmentPorts')
 BEGIN
     CREATE TABLE EquipmentPorts (
@@ -207,19 +218,7 @@ BEGIN
         notes NVARCHAR(MAX),
         FOREIGN KEY (childItemId) REFERENCES ChildItems(id) ON DELETE CASCADE,
         FOREIGN KEY (portTypeId) REFERENCES PortTypes(id),
-        FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id) -- Auto-relacionamento
-    );
-END;
-
-
--- Tabela de Tipos de Conexão
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ConnectionTypes')
-BEGIN
-    CREATE TABLE ConnectionTypes (
-        id NVARCHAR(50) PRIMARY KEY,
-        name NVARCHAR(100) NOT NULL UNIQUE,
-        description NVARCHAR(255),
-        isDefault BIT NOT NULL DEFAULT 0
+        FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id)
     );
 END;
 
@@ -238,57 +237,32 @@ BEGIN
     );
 END;
 
--- Tabela de Incidentes
-IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Incidents')
+-- Inserção de Dados Iniciais --
+
+-- Status Padrão
+IF (SELECT COUNT(*) FROM ItemStatuses) = 0
 BEGIN
-    CREATE TABLE Incidents (
-        id NVARCHAR(50) PRIMARY KEY,
-        description NVARCHAR(MAX) NOT NULL,
-        severity NVARCHAR(50) NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
-        status NVARCHAR(50) NOT NULL CHECK (status IN ('open', 'investigating', 'closed')),
-        detectedAt DATETIME2 NOT NULL,
-        resolvedAt DATETIME2,
-        entityType NVARCHAR(50),
-        entityId NVARCHAR(100)
-    );
+    INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES 
+    ('draft', 'Rascunho', 'Item recém-criado, aguardando submissão.', 'amber', 0, 1),
+    ('pending_approval', 'Pendente', 'Item submetido, aguardando aprovação.', 'yellow', 0, 1),
+    ('active', 'Ativo', 'Item aprovado e operacional.', 'green', 0, 1),
+    ('maintenance', 'Manutenção', 'Item em manutenção, temporariamente indisponível.', 'orange', 0, 1),
+    ('decommissioned', 'Descomissionado', 'Item removido e movido para a lixeira.', 'gray', 1, 1);
 END;
 
-
--- Inserir dados iniciais (padrão)
+-- Usuário Padrão de Desenvolvimento
+IF NOT EXISTS (SELECT 1 FROM Users WHERE email = 'dev@dev.com')
 BEGIN
-    -- Inserir Status Padrão
-    IF NOT EXISTS (SELECT 1 FROM ItemStatuses WHERE id = 'active')
-        INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES ('active', 'Ativo', 'Item aprovado e operacional.', 'green', 0, 1);
-    IF NOT EXISTS (SELECT 1 FROM ItemStatuses WHERE id = 'draft')
-        INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES ('draft', 'Rascunho', 'Item recém-criado, aguardando submissão.', 'amber', 0, 1);
-    IF NOT EXISTS (SELECT 1 FROM ItemStatuses WHERE id = 'maintenance')
-        INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES ('maintenance', 'Manutenção', 'Item em manutenção, temporariamente indisponível.', 'orange', 0, 1);
-    IF NOT EXISTS (SELECT 1 FROM ItemStatuses WHERE id = 'pending_approval')
-        INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES ('pending_approval', 'Pendente', 'Item submetido, aguardando aprovação.', 'yellow', 0, 1);
-    IF NOT EXISTS (SELECT 1 FROM ItemStatuses WHERE id = 'decommissioned')
-        INSERT INTO ItemStatuses (id, name, description, color, isArchived, isDefault) VALUES ('decommissioned', 'Descomissionado', 'Item removido e movido para a lixeira.', 'gray', 1, 1);
-
-    -- Inserir Tipos de Porta Padrão
-    IF NOT EXISTS (SELECT 1 FROM PortTypes WHERE id = 'port_rj45')
-        INSERT INTO PortTypes (id, name, description, isDefault) VALUES ('port_rj45', 'RJ45', 'Conector de rede padrão para cabos UTP (par trançado).', 1);
-    IF NOT EXISTS (SELECT 1 FROM PortTypes WHERE id = 'port_sfp')
-        INSERT INTO PortTypes (id, name, description, isDefault) VALUES ('port_sfp', 'SFP/SFP+', 'Conector para transceptores ópticos ou de cobre de pequena dimensão.', 1);
-
-    -- Inserir Tipos de Conexão Padrão
-    IF NOT EXISTS (SELECT 1 FROM ConnectionTypes WHERE id = 'conn_utp')
-        INSERT INTO ConnectionTypes (id, name, description, isDefault) VALUES ('conn_utp', 'Dados UTP', 'Conexão de dados via cabo de par trançado.', 1);
-    IF NOT EXISTS (SELECT 1 FROM ConnectionTypes WHERE id = 'conn_fibra')
-        INSERT INTO ConnectionTypes (id, name, description, isDefault) VALUES ('conn_fibra', 'Fibra Óptica', 'Conexão de dados via fibra óptica monomodo ou multimodo.', 1);
-
-    -- Inserir Usuário Desenvolvedor Padrão
-    IF NOT EXISTS (SELECT 1 FROM Users WHERE email = 'dev@dev.com')
-        INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData) 
-        VALUES ('dev_user', 'dev@dev.com', 'Desenvolvedor Padrão', NULL, 'developer', '[]', '[]', GETUTCDATE(), '{}', 1);
-
-    -- Inserir Prédio e Sala de Teste
-    IF NOT EXISTS (SELECT 1 FROM Buildings WHERE name = 'DC-TESTE')
-        INSERT INTO Buildings (id, name, address, isTestData) VALUES ('B_TEST', 'DC-TESTE', 'Endereço de Teste', 1);
-    IF NOT EXISTS (SELECT 1 FROM Rooms WHERE name = 'SALA-TESTE')
-        INSERT INTO Rooms (id, name, buildingId, isTestData) VALUES ('R_TEST', 'SALA-TESTE', 'B_TEST', 1);
-
+    -- O hash da senha 'davidson' deve ser gerado pelo sistema de autenticação, aqui apenas criamos o registro.
+    INSERT INTO Users (id, email, displayName, role, lastLoginAt, permissions, accessibleBuildingIds, preferences)
+    VALUES ('dev_user_01', 'dev@dev.com', 'Desenvolvedor Padrão', 'developer', GETUTCDATE(), '["*"]', '[]', '{}');
 END;
+
+-- Prédio e Sala Iniciais
+IF NOT EXISTS (SELECT 1 FROM Buildings WHERE name = 'DC-TESTE')
+BEGIN
+    INSERT INTO Buildings (id, name, address) VALUES ('B-001', 'DC-TESTE', 'Infraestrutura Inicial');
+    INSERT INTO Rooms (id, name, buildingId) VALUES ('S-001', 'SALA-TESTE', 'B-001');
+END;
+
+PRINT 'Script de infraestrutura concluído com sucesso.';
