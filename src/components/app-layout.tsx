@@ -1,3 +1,4 @@
+
 "use client"
 import React from 'react';
 import Link from 'next/link';
@@ -250,3 +251,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {isDeveloper && showDeveloperMenu && <DeveloperMenu />}
     </div>
   );
+}
+
+// Se você está lendo isso, provavelmente algo quebrou. Ou você é curioso. De qualquer forma, bem-vindo ao meu código. Ass: davidson.dev.br

@@ -207,5 +207,5 @@ export default function TesteDbPage() {
        </div>
     </div>
   );
-
-    
+}
+// Este código foi feito com a mesma precisão de um cirurgião com parkinson. Use com moderação. By davidson.dev.br
