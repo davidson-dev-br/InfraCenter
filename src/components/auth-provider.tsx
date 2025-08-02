@@ -6,11 +6,11 @@ import { getAuth, onAuthStateChanged, User as AuthUser, signOut } from 'firebase
 import { app } from '@/lib/firebase';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/app-layout';
-import { Skeleton } from './ui/skeleton';
-import { PermissionsProvider } from './permissions-provider';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PermissionsProvider } from '@/components/permissions-provider';
 import { updateUser, getUserByEmail } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
-import { BuildingProvider } from './building-provider';
+import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
 
 // Aquele momento de silêncio antes de rodar o código pela primeira vez. Pura fé.

@@ -12,18 +12,18 @@ import {
   ShieldCheck,
   Building,
   Settings,
+  Lock,
 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem } from './ui/dropdown-menu';
-import { usePermissions, USER_ROLES } from './permissions-provider';
-import type { UserRole } from './permissions-provider';
-import { useBuilding } from './building-provider';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
+import { usePermissions, USER_ROLES } from '@/components/permissions-provider';
+import type { UserRole } from '@/components/permissions-provider';
+import { useBuilding } from '@/components/building-provider';
 import { NAV_SECTIONS } from '@/lib/menu-config';
 import { useKonamiCode } from '@/hooks/use-konami-code';
-import { DeveloperMenu } from './developer-menu';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Lock } from 'lucide-react';
+import { DeveloperMenu } from '@/components/developer-menu';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NoAccessPage = () => {
@@ -252,5 +252,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
 // Se você está lendo isso, provavelmente algo quebrou. Ou você é curioso. De qualquer forma, bem-vindo ao meu código. Ass: davidson.dev.br

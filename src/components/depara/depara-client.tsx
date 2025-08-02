@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,13 +10,13 @@ import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2, Link, Unlink, Camera
 import { getConnectableChildItems, getPortsByChildItemId, createConnection, EquipmentPort, ConnectionDetail } from '@/lib/connection-actions';
 import { getConnectionTypes, ConnectionType } from '@/lib/connection-types-actions';
 import type { ConnectableItem } from '@/lib/connection-actions';
-import { ScrollArea } from '../ui/scroll-area';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Label } from '../ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
@@ -25,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AddConnectionDialog } from './add-connection-dialog';
+import { AddConnectionDialog } from '@/components/depara/add-connection-dialog';
 
 
 interface DeParaClientProps {

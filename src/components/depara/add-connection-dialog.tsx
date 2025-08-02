@@ -30,8 +30,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { ConnectableItem, EquipmentPort } from '@/lib/connection-actions';
 import { createConnection } from '@/lib/connection-actions';
 import { uploadImage } from '@/lib/storage-actions';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   labelText: z.string().optional().nullable(),
