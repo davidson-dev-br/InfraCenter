@@ -28,7 +28,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
             <PageTransitionLoader />
-            <AppLayout>{children}</AppLayout>
+            {children}
         </AuthProvider>
         <Toaster />
       </body>

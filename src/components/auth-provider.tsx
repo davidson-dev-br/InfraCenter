@@ -11,6 +11,7 @@ import { updateUser, getUserByEmail } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
+import { AppLayout } from './app-layout';
 
 // Aquele momento de silêncio antes de rodar o código pela primeira vez. Pura fé.
 
@@ -130,11 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (
       <PermissionsProvider user={dbUser}>
         <BuildingProvider initialBuildings={buildings}>
-          {children}
+          <AppLayout>{children}</AppLayout>
         </BuildingProvider>
       </PermissionsProvider>
     );
   }
 
+  // Fallback para o caso de dbUser ainda não estar pronto, mas o authUser sim.
+  // Evita um flash de conteúdo da página de login.
   return <FullPageLoader />;
 }
