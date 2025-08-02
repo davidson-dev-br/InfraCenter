@@ -5,7 +5,6 @@ import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User as AuthUser, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-// import { AppLayout } from './app-layout'; // << TESTE DE ISOLAMENTO: Comentado
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
 import { updateUser, getUserByEmail } from '@/lib/user-actions';
@@ -131,8 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (
       <PermissionsProvider user={dbUser}>
         <BuildingProvider initialBuildings={buildings}>
-           {/* TESTE DE ISOLAMENTO: Renderizando um div simples em vez do AppLayout */}
-          <div>{children}</div>
+          {children}
         </BuildingProvider>
       </PermissionsProvider>
     );
