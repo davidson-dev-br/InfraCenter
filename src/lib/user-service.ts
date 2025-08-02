@@ -72,9 +72,10 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
     await ensureEquipmentPortsTableExists(pool); 
-    await ensureConnectionsTableExists(pool); // <-- Garantir que esta seja chamada após suas dependências
+    await ensureConnectionsTableExists(pool); 
     await ensureAuditLogTableExists(pool);
     await ensureIncidentsTableExists(pool);
+    await ensureApprovalsTableExists(pool); // <-- NOVA TABELA
     await ensureEvidenceTableExists(pool);
     await ensureSensorsTableExists(pool);
 }
@@ -399,6 +400,26 @@ async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
         );
     `);
 }
+
+async function ensureApprovalsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Approvals', `
+        CREATE TABLE Approvals (
+            id NVARCHAR(50) PRIMARY KEY,
+            entityType NVARCHAR(50) NOT NULL,
+            entityId NVARCHAR(100) NOT NULL,
+            requestedByUserId NVARCHAR(100) NOT NULL,
+            requestedByUserDisplayName NVARCHAR(255),
+            requestedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+            status NVARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+            details NVARCHAR(MAX),
+            resolvedByUserId NVARCHAR(100),
+            resolvedByUserDisplayName NVARCHAR(255),
+            resolvedAt DATETIME2,
+            resolverNotes NVARCHAR(MAX)
+        );
+    `);
+}
+
 
 async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
     // This table seems to have been created with an incorrect purpose before.

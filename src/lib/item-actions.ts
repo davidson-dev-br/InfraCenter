@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import sql from 'mssql';
@@ -8,22 +9,48 @@ import type { GridItem, Room } from '@/types/datacenter';
 import type { ItemType } from './item-types-actions';
 import { getModelsByManufacturerId } from './models-actions';
 import { getPortTypes, PortType } from './port-types-actions';
+import { _getUserByEmail, User } from './user-service';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/firebase-admin';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
+async function getCurrentUser(): Promise<User | null> {
+    if (!auth) return null;
+    const authorization = headers().get('Authorization');
+    if (authorization?.startsWith('Bearer ')) {
+        const idToken = authorization.split('Bearer ')[1];
+        try {
+            const decodedToken = await auth.verifyIdToken(idToken);
+            if (decodedToken.email) {
+                return await _getUserByEmail(decodedToken.email);
+            }
+        } catch (error) {
+            console.error("Erro ao verificar o token de autenticação:", error);
+        }
+    }
+    return null;
+}
+
+async function createApprovalRequest(pool: sql.ConnectionPool, entityId: string, entityType: string, oldStatus: string, newStatus: string, user: User) {
+    const approvalId = `appr_${Date.now()}`;
+    await pool.request()
+        .input('id', sql.NVarChar, approvalId)
+        .input('entityType', sql.NVarChar, entityType)
+        .input('entityId', sql.NVarChar, entityId)
+        .input('requestedByUserId', sql.NVarChar, user.id)
+        .input('requestedByUserDisplayName', sql.NVarChar, user.displayName)
+        .input('details', sql.NVarChar, JSON.stringify({ from: oldStatus, to: newStatus }))
+        .query`
+            INSERT INTO Approvals (id, entityType, entityId, requestedByUserId, requestedByUserDisplayName, details, status, requestedAt)
+            VALUES (@id, @entityType, @entityId, @requestedByUserId, @requestedByUserDisplayName, @details, 'pending', GETUTCDATE())
+        `;
+}
+
 function getTableName(itemData: Partial<GridItem>): 'ParentItems' | 'ChildItems' {
-  // Se o item tem roomId, é um ParentItem. Se tem parentId, é um ChildItem.
-  // Esta função é a prova de que com fé, tudo funciona.
-  if (itemData.roomId) {
-    return 'ParentItems';
-  }
-  if (itemData.parentId) {
-    return 'ChildItems';
-  }
-  // Fallback para novos itens onde o parentId é a chave
-  if ('parentId' in itemData && itemData.parentId !== undefined) {
-      return 'ChildItems';
-  }
+  if (itemData.roomId) return 'ParentItems';
+  if (itemData.parentId) return 'ChildItems';
+  if ('parentId' in itemData && itemData.parentId !== undefined) return 'ChildItems';
   return 'ParentItems';
 }
 
@@ -35,17 +62,17 @@ function getTableName(itemData: Partial<GridItem>): 'ParentItems' | 'ChildItems'
 export async function updateItem(itemData: UpdateItemData): Promise<void> {
   const { id, ...fieldsToUpdate } = itemData;
 
-  if (!id) {
-    throw new Error('O ID do item é obrigatório para a operação.');
-  }
+  if (!id) throw new Error('O ID do item é obrigatório para a operação.');
   
   const pool = await getDbPool();
-  
   const tableName = getTableName(itemData);
   
-  const existingItemResult = await pool.request().input('id', sql.NVarChar, id).query(`SELECT id FROM ${tableName} WHERE id = @id`);
+  const existingItemResult = await pool.request().input('id', sql.NVarChar, id).query(`SELECT id, status FROM ${tableName} WHERE id = @id`);
+  const existingItem = existingItemResult.recordset[0];
+  const user = await getCurrentUser();
 
-  // Função auxiliar para definir o tipo SQL correto para cada campo.
+  if (!user) throw new Error("Usuário não autenticado.");
+
   const addInput = (request: sql.Request, key: string, value: any) => {
     if (value === null || value === undefined) {
         if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, null);
@@ -63,12 +90,14 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
   };
 
 
-  if (existingItemResult.recordset.length > 0) {
-    // UPDATE
-    const validFields = Object.entries(fieldsToUpdate)
-      .filter(([_, value]) => value !== undefined)
-      .map(([key]) => key);
+  if (existingItem) {
+    // --- Lógica de Aprovação ---
+    if (fieldsToUpdate.status && fieldsToUpdate.status === 'active' && existingItem.status === 'draft') {
+        await createApprovalRequest(pool, id, tableName, 'draft', 'active', user);
+        fieldsToUpdate.status = 'pending_approval'; // Muda o status para pendente
+    }
 
+    const validFields = Object.keys(fieldsToUpdate).filter(key => (fieldsToUpdate as any)[key] !== undefined);
     if (validFields.length === 0) return;
 
     try {
@@ -89,14 +118,9 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
     // INSERT - Lógica de criação de item
      try {
         const allDataForInsert = { id, ...fieldsToUpdate };
-        const columns = Object.keys(allDataForInsert)
-            .filter(key => (allDataForInsert as any)[key] !== undefined);
-
+        const columns = Object.keys(allDataForInsert).filter(key => (allDataForInsert as any)[key] !== undefined);
         const request = pool.request();
-        
-        for (const col of columns) {
-            addInput(request, col, (allDataForInsert as any)[col]);
-        }
+        for (const col of columns) addInput(request, col, (allDataForInsert as any)[col]);
         
         const finalValues = columns.map(col => `@${col}`);
         const query = `INSERT INTO ${tableName} (${columns.join(',')}) VALUES (${finalValues.join(',')})`;
@@ -105,25 +129,18 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
         await transaction.begin();
         try {
             const transactionRequest = new sql.Request(transaction);
-            
-            // Adicionar inputs à requisição da transação
-            for (const col of columns) {
-                addInput(transactionRequest, col, (allDataForInsert as any)[col]);
-            }
+            for (const col of columns) addInput(transactionRequest, col, (allDataForInsert as any)[col]);
             await transactionRequest.query(query);
 
-            // Se for um ChildItem e tiver um modelo, tenta criar as portas
             if (tableName === 'ChildItems' && allDataForInsert.modelo) {
                 await createPortsForModel(transaction, id, allDataForInsert.modelo);
             }
             
             await transaction.commit();
-
         } catch (err) {
             await transaction.rollback();
-            throw err; // Re-lança o erro para ser pego pelo bloco catch externo
+            throw err;
         }
-
     } catch (error: any) {
         console.error(`Erro de banco de dados ao CRIAR item ${id} na tabela ${tableName}:`, error);
         throw new Error(`Falha ao criar o item ${itemData.label || id} no banco de dados. Detalhe: ${error.message}`);
@@ -133,6 +150,7 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
   revalidatePath('/datacenter');
   revalidatePath('/mapa-teste');
   revalidatePath('/inventory');
+  revalidatePath('/approvals');
 }
 
 /**
@@ -141,30 +159,24 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
  */
 async function createPortsForModel(transaction: sql.Transaction, childItemId: string, modelName: string) {
     console.log(`Iniciando criação de portas para ${childItemId} baseado no modelo ${modelName}`);
-
-    // 1. Encontrar o modelo e sua configuração de portas
-    // Esta é uma simplificação. Em um sistema real, você pode precisar de uma forma mais robusta de encontrar o modelo.
-    // Assumindo que o nome do modelo é único por enquanto.
     const modelResult = await new sql.Request(transaction).input('modelName', sql.NVarChar, modelName).query`SELECT portConfig FROM Models WHERE name = @modelName`;
 
     if (modelResult.recordset.length === 0 || !modelResult.recordset[0].portConfig) {
         console.log(`Nenhuma configuração de porta encontrada para o modelo ${modelName}. Pulando criação de portas.`);
-        return; // Nenhuma configuração de porta, então não faz nada
+        return;
     }
 
     const portConfig = modelResult.recordset[0].portConfig;
     console.log(`Configuração de portas encontrada: ${portConfig}`);
 
-    // 2. Buscar todos os tipos de porta para mapeamento (evita múltiplas queries)
     const portTypesResult = await new sql.Request(transaction).query`SELECT id, name FROM PortTypes`;
     const portTypesMap = new Map<string, string>(portTypesResult.recordset.map(pt => [pt.name.toUpperCase(), pt.id]));
     
-    // 3. Analisar a string de configuração e criar as portas
-    const portGroups = portConfig.split(';').filter(Boolean); // ex: ["24xRJ45", "4xSFP+"]
+    const portGroups = portConfig.split(';').filter(Boolean);
     let portCounter = 1;
 
     for (const group of portGroups) {
-        const parts = group.toLowerCase().split('x'); // ex: ["24", "rj45"]
+        const parts = group.toLowerCase().split('x');
         if (parts.length !== 2) continue;
 
         const quantity = parseInt(parts[0], 10);
@@ -215,8 +227,6 @@ export async function addItem({ label, itemType, room }: AddItemParams): Promise
   try {
     const pool = await getDbPool();
     const newId = `pitem_${Date.now()}`;
-    
-    // Define uma posição inicial para o novo item (canto superior esquerdo)
     const initialX = 0;
     const initialY = 0;
 
@@ -228,7 +238,7 @@ export async function addItem({ label, itemType, room }: AddItemParams): Promise
         width: itemType.defaultWidthM,
         height: itemType.defaultHeightM,
         type: itemType.name,
-        status: 'draft', // Começa como rascunho
+        status: 'draft',
         roomId: room.id,
         color: itemType.defaultColor,
     };
@@ -279,10 +289,8 @@ export async function deleteItem({ item, hardDelete }: { item: GridItem; hardDel
     const request = pool.request().input('id', sql.NVarChar, item.id);
     
     if (hardDelete) {
-      // Exclusão permanente - geralmente para rascunhos.
       await request.query(`DELETE FROM ${tableName} WHERE id = @id`);
     } else {
-      // Exclusão lógica (soft delete) - para itens ativos.
       await request.query`
         UPDATE ${tableName} 
         SET status = 'decommissioned' 
