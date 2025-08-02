@@ -65,12 +65,12 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureItemStatusesTableExists(pool);
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
-    await ensureEquipmentPortsTableExists(pool); // Adicionada nova tabela
+    await ensureEquipmentPortsTableExists(pool); 
+    await ensureConnectionsTableExists(pool); // <-- Garantir que esta seja chamada após suas dependências
     await ensureAuditLogTableExists(pool);
     await ensureIncidentsTableExists(pool);
     await ensureEvidenceTableExists(pool);
     await ensureSensorsTableExists(pool);
-    await ensureConnectionsTableExists(pool);
 }
 
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
@@ -424,15 +424,17 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Connections', `
         CREATE TABLE Connections (
             id NVARCHAR(50) PRIMARY KEY,
-            fromItemId NVARCHAR(50) NOT NULL,
-            fromPortId NVARCHAR(50) NOT NULL,
-            toItemId NVARCHAR(50) NOT NULL,
-            toPortId NVARCHAR(50) NOT NULL,
+            portA_id NVARCHAR(50) NOT NULL,
+            portB_id NVARCHAR(50) NOT NULL,
             connectionTypeId NVARCHAR(50) NOT NULL,
-            status NVARCHAR(50),
-            FOREIGN KEY (fromItemId) REFERENCES ParentItems(id), -- ou ChildItems, requer lógica mais complexa
-            FOREIGN KEY (toItemId) REFERENCES ParentItems(id),   -- ou ChildItems
-            FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id)
+            label NVARCHAR(255),
+            status NVARCHAR(50) NOT NULL DEFAULT 'active',
+            isTestData BIT NOT NULL DEFAULT 0,
+            FOREIGN KEY (portA_id) REFERENCES EquipmentPorts(id),
+            FOREIGN KEY (portB_id) REFERENCES EquipmentPorts(id),
+            FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id),
+            UNIQUE (portA_id),
+            UNIQUE (portB_id)
         );
     `);
 }
