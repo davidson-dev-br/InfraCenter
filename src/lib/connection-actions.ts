@@ -131,10 +131,10 @@ export async function getAllConnections(): Promise<ConnectionDetail[]> {
             FROM Connections c
             JOIN EquipmentPorts portA ON c.portA_id = portA.id
             JOIN ChildItems itemA ON portA.childItemId = itemA.id
-            JOIN ParentItems parentA ON itemA.parentId = parentA.id
+            LEFT JOIN ParentItems parentA ON itemA.parentId = parentA.id
             JOIN EquipmentPorts portB ON c.portB_id = portB.id
             JOIN ChildItems itemB ON portB.childItemId = itemB.id
-            JOIN ParentItems parentB ON itemB.parentId = parentB.id
+            LEFT JOIN ParentItems parentB ON itemB.parentId = parentB.id
             JOIN ConnectionTypes ct ON c.connectionTypeId = ct.id
             WHERE c.status = 'active'
             ORDER BY itemA_label, portA_label;

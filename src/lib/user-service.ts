@@ -428,7 +428,6 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
             portA_id NVARCHAR(50) NOT NULL,
             portB_id NVARCHAR(50) NOT NULL,
             connectionTypeId NVARCHAR(50) NOT NULL,
-            label NVARCHAR(255),
             status NVARCHAR(50) NOT NULL DEFAULT 'active',
             isTestData BIT NOT NULL DEFAULT 0,
             imageUrl NVARCHAR(MAX),
