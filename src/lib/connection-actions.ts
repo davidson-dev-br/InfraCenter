@@ -13,6 +13,15 @@ export interface ConnectableItem {
     parentName: string | null;
 }
 
+export interface EquipmentPort {
+    id: string;
+    label: string;
+    portTypeName: string;
+    status: string;
+    connectedToPortId: string | null;
+}
+
+
 /**
  * Busca todos os ChildItems que possuem pelo menos uma porta registrada.
  */
@@ -33,6 +42,37 @@ export async function getConnectableChildItems(): Promise<ConnectableItem[]> {
         return result.recordset;
     } catch (error) {
         console.error("Erro ao buscar itens conectáveis:", error);
+        return [];
+    }
+}
+
+/**
+ * Busca todas as portas de um equipamento específico.
+ * @param childItemId O ID do ChildItem cujas portas serão buscadas.
+ */
+export async function getPortsByChildItemId(childItemId: string | null): Promise<EquipmentPort[]> {
+    if (!childItemId) return [];
+    try {
+        const pool = await getDbPool();
+        const result = await pool.request()
+            .input('childItemId', sql.NVarChar, childItemId)
+            .query(`
+                SELECT 
+                    ep.id,
+                    ep.label,
+                    pt.name as portTypeName,
+                    ep.status,
+                    ep.connectedToPortId
+                FROM EquipmentPorts ep
+                JOIN PortTypes pt ON ep.portTypeId = pt.id
+                WHERE ep.childItemId = @childItemId
+                ORDER BY 
+                    CAST(SUBSTRING(ep.label, PATINDEX('%[0-9]%', ep.label), LEN(ep.label)) AS INT),
+                    ep.label;
+            `);
+        return result.recordset as EquipmentPort[];
+    } catch (error) {
+        console.error(`Erro ao buscar portas para o item ${childItemId}:`, error);
         return [];
     }
 }

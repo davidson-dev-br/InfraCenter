@@ -1,12 +1,18 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { ArrowRightLeft, Cable, HardDrive, Puzzle } from 'lucide-react';
+import { ArrowRightLeft, Cable, HardDrive, Puzzle, Loader2 } from 'lucide-react';
+import { getConnectableChildItems, getPortsByChildItemId, EquipmentPort } from '@/lib/connection-actions';
 import type { ConnectableItem } from '@/lib/connection-actions';
+import { ScrollArea } from '../ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
+
 
 // Adicionei uns 'console.log' pra seguir a tradição. Se quebrar, eles te ajudarão (ou não).
 
@@ -14,16 +20,84 @@ interface DeParaClientProps {
     items: ConnectableItem[];
 }
 
+const PortList = ({
+    ports,
+    selectedPortId,
+    onPortSelect,
+    isLoading,
+    side
+}: {
+    ports: EquipmentPort[];
+    selectedPortId: string | null;
+    onPortSelect: (portId: string) => void;
+    isLoading: boolean;
+    side: 'A' | 'B';
+}) => {
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+    if (ports.length === 0) {
+        return (
+            <p className="text-center text-muted-foreground text-sm py-8">
+                Nenhuma porta encontrada para este equipamento.
+            </p>
+        );
+    }
+
+    return (
+        <ScrollArea className="h-56 pr-3">
+             <RadioGroup value={selectedPortId || ""} onValueChange={onPortSelect} className="space-y-2">
+                {ports.map(port => {
+                    const isDisabled = !!port.connectedToPortId;
+                    const id = `port-${side}-${port.id}`;
+                    return (
+                        <div key={id} className="flex items-center">
+                            <RadioGroupItem value={port.id} id={id} disabled={isDisabled} />
+                             <Label htmlFor={id} className={cn("ml-2 flex justify-between items-center w-full p-2 rounded-md", isDisabled ? "cursor-not-allowed text-muted-foreground/50 bg-muted/20" : "cursor-pointer hover:bg-muted/50")}>
+                                <span>{port.label} <span className="text-xs text-muted-foreground">({port.portTypeName})</span></span>
+                                {isDisabled && <span className="text-xs text-red-500/70">Ocupada</span>}
+                            </Label>
+                        </div>
+                    )
+                })}
+            </RadioGroup>
+        </ScrollArea>
+    )
+}
+
 export function DeParaClient({ items }: DeParaClientProps) {
-    const [sideA, setSideA] = useState<{ itemId: string | null; portId: string | null }>({ itemId: null, portId: null });
-    const [sideB, setSideB] = useState<{ itemId: string | null; portId: string | null }>({ itemId: null, portId: null });
+    const [sideA, setSideA] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
+    const [sideB, setSideB] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
+
+    useEffect(() => {
+        if (sideA.itemId) {
+            setSideA(s => ({ ...s, isLoading: true }));
+            getPortsByChildItemId(sideA.itemId).then(ports => {
+                setSideA(s => ({ ...s, ports, isLoading: false }));
+            });
+        }
+    }, [sideA.itemId]);
+
+    useEffect(() => {
+        if (sideB.itemId) {
+            setSideB(s => ({ ...s, isLoading: true }));
+            getPortsByChildItemId(sideB.itemId).then(ports => {
+                setSideB(s => ({ ...s, ports, isLoading: false }));
+            });
+        }
+    }, [sideB.itemId]);
+
 
     const handleSelectA = (itemId: string) => {
-        setSideA({ itemId, portId: null });
+        setSideA({ ...sideA, itemId, portId: null, ports: [] });
     };
 
     const handleSelectB = (itemId: string) => {
-        setSideB({ itemId, portId: null });
+        setSideB({ ...sideB, itemId, portId: null, ports: [] });
     };
 
     const selectedItemA = items.find(i => i.id === sideA.itemId);
@@ -60,7 +134,7 @@ export function DeParaClient({ items }: DeParaClientProps) {
                             </Select>
                             
                             {selectedItemA && (
-                                <div className="p-4 border rounded-md bg-muted/50 min-h-[200px]">
+                                <div className="p-4 border rounded-md bg-muted/50 min-h-[250px]">
                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                                         <HardDrive className="h-4 w-4" />
                                         <span>{selectedItemA.label}</span>
@@ -68,9 +142,13 @@ export function DeParaClient({ items }: DeParaClientProps) {
                                         <Puzzle className="h-4 w-4" />
                                         <span>{selectedItemA.parentName}</span>
                                    </div>
-                                    <p className="text-center text-muted-foreground text-sm py-8">
-                                        (Lista de portas aparecerá aqui)
-                                    </p>
+                                    <PortList 
+                                        ports={sideA.ports} 
+                                        isLoading={sideA.isLoading} 
+                                        selectedPortId={sideA.portId} 
+                                        onPortSelect={(portId) => setSideA(s => ({...s, portId}))}
+                                        side="A"
+                                    />
                                 </div>
                             )}
                         </CardContent>
@@ -103,7 +181,7 @@ export function DeParaClient({ items }: DeParaClientProps) {
                             </Select>
 
                              {selectedItemB && (
-                                <div className="p-4 border rounded-md bg-muted/50 min-h-[200px]">
+                                <div className="p-4 border rounded-md bg-muted/50 min-h-[250px]">
                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                                         <HardDrive className="h-4 w-4" />
                                         <span>{selectedItemB.label}</span>
@@ -111,9 +189,13 @@ export function DeParaClient({ items }: DeParaClientProps) {
                                         <Puzzle className="h-4 w-4" />
                                         <span>{selectedItemB.parentName}</span>
                                    </div>
-                                    <p className="text-center text-muted-foreground text-sm py-8">
-                                        (Lista de portas aparecerá aqui)
-                                    </p>
+                                    <PortList 
+                                        ports={sideB.ports} 
+                                        isLoading={sideB.isLoading} 
+                                        selectedPortId={sideB.portId} 
+                                        onPortSelect={(portId) => setSideB(s => ({...s, portId}))}
+                                        side="B"
+                                    />
                                 </div>
                             )}
                         </CardContent>
