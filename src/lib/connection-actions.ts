@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getDbPool } from './db';
@@ -19,6 +20,20 @@ export interface EquipmentPort {
     portTypeName: string;
     status: string;
     connectedToPortId: string | null;
+}
+
+export interface ConnectionDetail {
+    id: string;
+    portA_id: string;
+    portB_id: string;
+    itemA_label: string;
+    portA_label: string;
+    itemA_parentLabel: string;
+    itemB_label: string;
+    portB_label: string;
+    itemB_parentLabel: string;
+    connectionType: string;
+    status: string;
 }
 
 
@@ -73,6 +88,44 @@ export async function getPortsByChildItemId(childItemId: string | null): Promise
         return result.recordset as EquipmentPort[];
     } catch (error) {
         console.error(`Erro ao buscar portas para o item ${childItemId}:`, error);
+        return [];
+    }
+}
+
+
+/**
+ * Busca todos os detalhes de todas as conexões estabelecidas.
+ */
+export async function getAllConnections(): Promise<ConnectionDetail[]> {
+    try {
+        const pool = await getDbPool();
+        const result = await pool.request().query(`
+            SELECT 
+                c.id,
+                c.portA_id,
+                c.portB_id,
+                itemA.label AS itemA_label,
+                portA.label AS portA_label,
+                parentA.label AS itemA_parentLabel,
+                itemB.label AS itemB_label,
+                portB.label AS portB_label,
+                parentB.label AS itemB_parentLabel,
+                ct.name AS connectionType,
+                c.status
+            FROM Connections c
+            JOIN EquipmentPorts portA ON c.portA_id = portA.id
+            JOIN ChildItems itemA ON portA.childItemId = itemA.id
+            JOIN ParentItems parentA ON itemA.parentId = parentA.id
+            JOIN EquipmentPorts portB ON c.portB_id = portB.id
+            JOIN ChildItems itemB ON portB.childItemId = itemB.id
+            JOIN ParentItems parentB ON itemB.parentId = parentB.id
+            JOIN ConnectionTypes ct ON c.connectionTypeId = ct.id
+            WHERE c.status = 'active'
+            ORDER BY itemA_label, portA_label;
+        `);
+        return result.recordset as ConnectionDetail[];
+    } catch (error) {
+        console.error("Erro ao buscar detalhes das conexões:", error);
         return [];
     }
 }

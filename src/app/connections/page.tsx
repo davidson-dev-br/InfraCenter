@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -9,13 +10,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Cable, ArrowRight } from "lucide-react";
+import { getAllConnections, ConnectionDetail } from "@/lib/connection-actions";
 
 // Aqui é onde o spaghetti de cabos se transforma em uma lasanha organizada.
 
+export const dynamic = 'force-dynamic';
+
 export default async function ConnectionsPage() {
-  // Por enquanto, usaremos dados estáticos.
-  // No futuro, esta função buscará os dados da tabela 'Connections'.
-  const connections = [];
+  const connections: ConnectionDetail[] = await getAllConnections();
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,8 +42,27 @@ export default async function ConnectionsPage() {
             </TableHeader>
             <TableBody>
               {connections.length > 0 ? (
-                // O mapeamento dos dados reais virá aqui no futuro
-                <TableRow><TableCell>Exemplo</TableCell></TableRow>
+                connections.map(conn => (
+                  <TableRow key={conn.id}>
+                    <TableCell>
+                      <div className="font-medium">{conn.itemA_label}</div>
+                      <div className="text-sm text-muted-foreground">{conn.portA_label} ({conn.itemA_parentLabel})</div>
+                    </TableCell>
+                    <TableCell>
+                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </TableCell>
+                     <TableCell>
+                      <div className="font-medium">{conn.itemB_label}</div>
+                      <div className="text-sm text-muted-foreground">{conn.portB_label} ({conn.itemB_parentLabel})</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant="outline">{conn.connectionType}</Badge>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant="secondary" className="capitalize">{conn.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-48 text-center">

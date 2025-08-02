@@ -60,9 +60,9 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureItemTypesEqpTableExists(pool);
     await ensureManufacturersTableExists(pool);
     await ensureModelsTableExists(pool);
+    await ensureItemStatusesTableExists(pool);
     await ensureParentItemsTableExists(pool);
     await ensureChildItemsTableExists(pool);
-    await ensureItemStatusesTableExists(pool);
     await ensurePortTypesTableExists(pool);
     await ensureConnectionTypesTableExists(pool);
     await ensureEquipmentPortsTableExists(pool); 
@@ -209,7 +209,7 @@ async function ensureParentItemsTableExists(pool: sql.ConnectionPool) {
             potenciaW INT,
             color NVARCHAR(50),
             isTestData BIT NOT NULL DEFAULT 0,
-            FOREIGN KEY (roomId) REFERENCES Rooms(id) ON DELETE CASCADE
+            FOREIGN KEY (roomId) REFERENCES Rooms(id) ON DELETE SET NULL
         );
     `);
 }
@@ -357,7 +357,8 @@ async function ensureEquipmentPortsTableExists(pool: sql.ConnectionPool) {
             notes NVARCHAR(MAX),
             FOREIGN KEY (childItemId) REFERENCES ChildItems(id) ON DELETE CASCADE,
             FOREIGN KEY (portTypeId) REFERENCES PortTypes(id),
-            FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id)
+            FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id),
+            UNIQUE(connectedToPortId)
         );
     `);
 }
