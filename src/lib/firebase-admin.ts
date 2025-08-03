@@ -1,4 +1,5 @@
 
+'use server';
 
 import { config } from 'dotenv';
 config();
@@ -20,30 +21,21 @@ function initializeFirebaseAdmin() {
         return admin.app();
     }
 
-    // Tenta usar as credenciais de serviço do ambiente (padrão em Cloud Functions, App Engine, etc.)
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        return admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-            databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
-        });
+    const serviceAccount = {
+      projectId: firebaseConfig.projectId,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    };
+    
+    if (!serviceAccount.privateKey || !serviceAccount.clientEmail) {
+      console.error('Credenciais de serviço do Firebase (FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) não encontradas no ambiente.');
+      throw new Error('As credenciais de serviço do Firebase estão ausentes. Verifique suas variáveis de ambiente.');
     }
 
-    // Fallback para credenciais manuais (ambiente de desenvolvimento local)
-    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-         return admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId: firebaseConfig.projectId,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            }),
-            databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
-        });
-    }
-
-    // Último recurso: inicialização sem credenciais explícitas (pode funcionar em alguns ambientes)
     return admin.initializeApp({
-        projectId: firebaseConfig.projectId,
-        storageBucket: firebaseConfig.storageBucket,
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
+      storageBucket: firebaseConfig.storageBucket,
     });
 }
 
