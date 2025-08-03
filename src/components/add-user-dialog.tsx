@@ -53,8 +53,8 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const formSchema = z.object({
-  id: z.string().min(10, "O UID do Firebase é obrigatório e geralmente tem mais de 10 caracteres."),
   email: z.string().email("Por favor, insira um e-mail válido."),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
   role: z.enum(USER_ROLES, { required_error: "Selecione um cargo." }),
 });
@@ -69,23 +69,22 @@ export function AddUserDialog() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { id: "", email: "", displayName: "", role: "technician_2" },
+    defaultValues: { email: "", password: "", displayName: "", role: "technician_2" },
   });
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       await updateUser({
-        id: data.id,
-        email: data.email, 
+        email: data.email,
+        password: data.password, 
         displayName: data.displayName, 
         role: data.role,
-        lastLoginAt: new Date().toISOString(),
       });
 
       toast({
         title: "Sucesso!",
-        description: `Usuário ${data.displayName} foi provisionado. Eles já podem fazer login.`,
+        description: `Usuário ${data.displayName} foi criado. Eles já podem fazer login.`,
       });
       
       form.reset();
@@ -96,7 +95,7 @@ export function AddUserDialog() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível adicionar o usuário. Verifique se o e-mail ou UID já existem.",
+        description: "Não foi possível adicionar o usuário. Verifique se o e-mail já existe.",
       });
     } finally {
       setIsSubmitting(false);
@@ -115,31 +114,11 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Crie um novo usuário no Firebase Auth primeiro, depois preencha os detalhes aqui para provisioná-lo no sistema.
+            Crie um novo usuário com e-mail, senha e cargo para acessar o sistema.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>Importante!</AlertTitle>
-              <AlertDescription>
-                Primeiro, crie o usuário no <strong>Firebase Authentication</strong>. Depois, copie e cole o <strong>Email</strong> e o <strong>Firebase UID</strong> nos campos abaixo.
-              </AlertDescription>
-            </Alert>
-            <FormField
-              control={form.control}
-              name="id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Firebase UID</FormLabel>
-                   <FormControl>
-                      <Input placeholder="Cole o UID do Firebase aqui" {...field} />
-                    </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
              <FormField
               control={form.control}
               name="displayName"
@@ -161,6 +140,19 @@ export function AddUserDialog() {
                   <FormLabel>Email</FormLabel>
                    <FormControl>
                       <Input type="email" placeholder="Ex: joao.silva@empresa.com" {...field} />
+                    </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                   <FormControl>
+                      <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} />
                     </FormControl>
                   <FormMessage />
                 </FormItem>

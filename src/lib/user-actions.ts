@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getAuth } from 'firebase-admin/auth';
+import { getAuth, UserRecord } from 'firebase-admin/auth';
 import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema, _getUserById } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { getFirebaseAuth } from './firebase-admin';
@@ -12,7 +12,7 @@ async function getAdminUser() {
     if (authorization?.startsWith('Bearer ')) {
         const idToken = authorization.split('Bearer ')[1];
         try {
-            const auth = getFirebaseAuth();
+            const auth = await getFirebaseAuth();
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
                 return await _getUserByEmail(decodedToken.email);
@@ -38,16 +38,38 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     return _getUserByEmail(email);
 }
 
-export async function updateUser(userData: Partial<User> & { id: string }): Promise<User> {
+export async function updateUser(userData: Partial<User>): Promise<User> {
     const adminUser = await getAdminUser();
-    
-    // A lógica agora é mais simples: ela sempre espera um ID (Firebase UID).
-    // Se o usuário com esse ID não existe, ele cria. Se existe, atualiza.
-    const userToUpdate = await _getUserById(userData.id);
-    const isCreating = !userToUpdate;
-    
-    const updatedUser = await _updateUser(userData);
+    const isCreating = !userData.id;
+    let authRecord: UserRecord | undefined = undefined;
 
+    if (isCreating && userData.email && userData.password) {
+        // Fluxo de criação de usuário
+        try {
+            const auth = getFirebaseAuth();
+            authRecord = await auth.createUser({
+                email: userData.email,
+                password: userData.password,
+                displayName: userData.displayName || undefined,
+            });
+            // O UID do Firebase se torna o ID no nosso banco de dados
+            userData.id = authRecord.uid;
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-exists') {
+                throw new Error('Este e-mail já está em uso por outro usuário.');
+            }
+            throw new Error(`Falha ao criar usuário na autenticação: ${error.message}`);
+        }
+    } else if (!isCreating && userData.id) {
+        // Fluxo de atualização de usuário existente
+    } else {
+        throw new Error('Dados insuficientes para criar ou atualizar usuário.');
+    }
+    
+    // Atualiza/Cria o registro no banco de dados SQL
+    const updatedUser = await _updateUser(userData as User);
+
+    // Log de auditoria
     if (adminUser) {
         if (isCreating) {
              await logAuditEvent({
@@ -60,13 +82,14 @@ export async function updateUser(userData: Partial<User> & { id: string }): Prom
                 }
             });
         } else {
+             const userBeforeUpdate = await _getUserById(userData.id!);
              await logAuditEvent({
                 action: 'USER_UPDATED',
                 entityType: 'User',
                 entityId: updatedUser.id,
                 details: {
-                    old: userToUpdate ? { role: userToUpdate.role, permissions: userToUpdate.permissions, accessibleBuildingIds: userToUpdate.accessibleBuildingIds, preferences: userToUpdate.preferences } : {},
-                    new: { role: updatedUser.role, permissions: updatedUser.permissions, accessibleBuildingIds: updatedUser.accessibleBuildingIds, preferences: updatedUser.preferences }
+                    old: userBeforeUpdate ? { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds } : {},
+                    new: { role: updatedUser.role, permissions: updatedUser.permissions, accessibleBuildingIds: updatedUser.accessibleBuildingIds }
                 }
             });
         }
@@ -74,6 +97,7 @@ export async function updateUser(userData: Partial<User> & { id: string }): Prom
     
     return updatedUser;
 }
+
 
 export async function deleteUser(userId: string): Promise<void> {
     if (!userId) {
@@ -84,19 +108,27 @@ export async function deleteUser(userId: string): Promise<void> {
     const userToDelete = await _getUserById(userId); 
 
     if (userToDelete) {
-        // Agora, apenas deletamos do banco de dados local.
+        // Deleta do Firebase Auth
+        try {
+            const auth = getFirebaseAuth();
+            await auth.deleteUser(userId);
+        } catch (error: any) {
+            console.error(`Falha ao deletar usuário ${userId} do Firebase Auth: ${error.message}`);
+            // Continuamos para deletar do DB local mesmo se falhar aqui, para evitar registros órfãos
+        }
+        
+        // Deleta do banco de dados local
         await _deleteUser(userToDelete.id);
     }
 
     if (adminUser && userToDelete) {
         await logAuditEvent({
-            action: 'USER_DELETED_FROM_DB',
+            action: 'USER_DELETED',
             entityType: 'User',
             entityId: userId,
             details: { 
               email: userToDelete.email, 
-              displayName: userToDelete.displayName, 
-              note: 'Usuário removido da aplicação. A remoção do Firebase Auth deve ser manual.' 
+              displayName: userToDelete.displayName
             }
         });
     }
