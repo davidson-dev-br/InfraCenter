@@ -9,7 +9,7 @@ let app: admin.app.App | null = null;
 
 function initializeFirebaseAdmin() {
     // Se o aplicativo já estiver inicializado, retorne-o.
-    if (admin.apps.length > 0) {
+    if (admin.apps.length > 0 && admin.apps[0]) {
         app = admin.apps[0];
         return app;
     }
