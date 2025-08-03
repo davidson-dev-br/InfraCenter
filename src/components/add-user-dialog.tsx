@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { UserPlus, Loader2, Info } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 
 import type { UserRole } from "@/components/permissions-provider";
 import { USER_ROLES, usePermissions } from "@/components/permissions-provider";
@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const roleLabels: Record<UserRole, string> = {
   developer: "Desenvolvedor",
@@ -53,9 +52,9 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const formSchema = z.object({
-  id: z.string().min(10, "O UID do Firebase é necessário."),
-  email: z.string().email("Por favor, insira um e-mail válido."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+  email: z.string().email("Por favor, insira um e-mail válido."),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   role: z.enum(USER_ROLES, { required_error: "Selecione um cargo." }),
 });
 
@@ -70,35 +69,33 @@ export function AddUserDialog() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { id: "", email: "", displayName: "", role: "technician_2" },
+    defaultValues: { email: "", displayName: "", password: "", role: "technician_2" },
   });
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // A action agora só precisa do UID (como 'id') e dos outros dados.
-      // A senha não é mais manipulada aqui.
       await updateUser({
-        id: data.id,
         email: data.email,
         displayName: data.displayName, 
+        password: data.password,
         role: data.role,
       });
 
       toast({
         title: "Sucesso!",
-        description: `Usuário ${data.displayName} foi registrado no sistema.`,
+        description: `Usuário ${data.displayName} foi criado e registrado no sistema.`,
       });
       
       form.reset();
       setIsOpen(false);
       router.refresh(); 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Falha ao adicionar usuário:", error);
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível registrar o usuário. Verifique se o UID ou e-mail já existem.",
+        title: "Erro ao Criar Usuário",
+        description: error.message || "Não foi possível registrar o usuário.",
       });
     } finally {
       setIsSubmitting(false);
@@ -117,11 +114,11 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Primeiro, crie o usuário no painel do Firebase Authentication (com e-mail/senha ou Microsoft). Depois, copie o UID gerado e preencha os campos abaixo.
+            Preencha os detalhes abaixo para criar uma nova conta de usuário no sistema de autenticação e no banco de dados local.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
              <FormField
               control={form.control}
               name="displayName"
@@ -150,12 +147,12 @@ export function AddUserDialog() {
             />
              <FormField
               control={form.control}
-              name="id"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Firebase UID</FormLabel>
+                  <FormLabel>Senha</FormLabel>
                    <FormControl>
-                      <Input placeholder="Copie e cole o UID do Firebase Auth aqui" {...field} />
+                      <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} />
                     </FormControl>
                   <FormMessage />
                 </FormItem>

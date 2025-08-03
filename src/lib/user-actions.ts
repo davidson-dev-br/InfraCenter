@@ -39,40 +39,58 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 
-export async function updateUser(userData: Partial<User>): Promise<User> {
+export async function updateUser(userData: Partial<User> & { password?: string }): Promise<User> {
     const adminUser = await getAdminUser();
     
-    // Agora a ação updateUser serve tanto para criar um novo registro (se o ID não existir)
-    // quanto para atualizar um existente. O UID do Firebase é a chave.
-    if (!userData.id) {
-        throw new Error('O UID do Firebase (como id) é obrigatório para criar ou atualizar um usuário.');
-    }
-    
-    // Log de auditoria antes da atualização para capturar o estado antigo
-    if (adminUser) {
-        const userBeforeUpdate = await _getUserById(userData.id);
-        
-        if (!userBeforeUpdate) {
-            await logAuditEvent({
-                action: 'USER_CREATED',
-                entityType: 'User',
-                entityId: userData.id,
-                details: { email: userData.email, role: userData.role }
+    // Se uma senha for fornecida, significa que estamos criando um novo usuário.
+    if (userData.password && userData.email && userData.displayName) {
+        try {
+            const auth = await getFirebaseAuth();
+            const newUserRecord = await auth.createUser({
+                email: userData.email,
+                password: userData.password,
+                displayName: userData.displayName,
             });
-        } else {
-             await logAuditEvent({
-                action: 'USER_UPDATED',
-                entityType: 'User',
-                entityId: userData.id,
-                details: {
-                    old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
-                    new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
-                }
-            });
+            // Usamos o UID retornado pelo Firebase como nosso ID primário.
+            userData.id = newUserRecord.uid;
+
+            // Log de auditoria para criação
+             if (adminUser) {
+                await logAuditEvent({
+                    action: 'USER_CREATED',
+                    entityType: 'User',
+                    entityId: userData.id,
+                    details: { email: userData.email, role: userData.role }
+                });
+            }
+
+        } catch (error: any) {
+            console.error("Erro ao criar usuário no Firebase Auth:", error);
+            if (error.code === 'auth/email-already-exists') {
+                throw new Error('Este e-mail já está em uso no sistema de autenticação.');
+            }
+            throw new Error('Falha ao criar o usuário no serviço de autenticação.');
         }
+    } else if (userData.id) { // Se não tem senha, é uma atualização de usuário existente
+         if (adminUser) {
+            const userBeforeUpdate = await _getUserById(userData.id);
+            if (userBeforeUpdate) { // Apenas loga se o usuário já existia
+                await logAuditEvent({
+                    action: 'USER_UPDATED',
+                    entityType: 'User',
+                    entityId: userData.id,
+                    details: {
+                        old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
+                        new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
+                    }
+                });
+            }
+        }
+    } else {
+         throw new Error('Dados insuficientes para criar ou atualizar usuário. ID (para atualização) ou E-mail/Senha (para criação) são necessários.');
     }
 
-    // Atualiza/Cria o registro no banco de dados SQL
+    // A função _updateUser funciona como um "upsert", criando ou atualizando o registro no DB.
     const updatedUser = await _updateUser(userData as User);
     
     return updatedUser;
