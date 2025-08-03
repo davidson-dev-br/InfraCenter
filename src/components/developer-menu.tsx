@@ -9,7 +9,7 @@ import { Button } from './ui/button';
 import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle, FileCode } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { populateTestData, cleanTestData } from '@/lib/dev-actions';
-import { ensureDatabaseSchema } from '@/lib/user-service';
+import { ensureDatabaseSchema } from '@/lib/user-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 
