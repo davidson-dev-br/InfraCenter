@@ -1,5 +1,36 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-08]
+
+### Foco do Dia
+- **Reunião de Alinhamento sobre Autenticação:**
+  - Discutir a questão levantada sobre a unificação de logins (Microsoft e E-mail/Senha) para o mesmo endereço de e-mail.
+  - Definir a arquitetura final do sistema de login e criação de usuários.
+
+### Planos e Possibilidades para Discussão
+- **Cenário 1: Unificação de Contas (Account Linking)**
+  - **O que é?** Permitir que um usuário com o mesmo e-mail possa logar com diferentes "provedores" (Microsoft, Google, E-mail/Senha) e acessar a mesma conta no sistema.
+  - **Como funciona?** O Firebase permite vincular múltiplas credenciais a uma única conta de usuário. Quando um usuário tenta fazer login com um novo método (ex: senha) e o Firebase detecta que o e-mail já existe (ex: de um login Microsoft), ele retorna um erro específico. Podemos capturar esse erro e guiar o usuário para "vincular" a nova forma de login à sua conta existente.
+  - **Vantagens:** Experiência de usuário fluida e flexível. Um único registro de usuário no nosso sistema para múltiplos métodos de login.
+  - **Complexidade:** Requer uma lógica mais elaborada na tela de login para tratar o erro de "conta já existe" e guiar o usuário na vinculação.
+
+- **Cenário 2: Login Único Dedicado (E-mail/Senha)**
+  - **O que é?** Manter apenas o sistema de E-mail/Senha, removendo completamente a opção de login via Microsoft.
+  - **Como funciona?** Um administrador cria o usuário (nome, e-mail, senha, cargo) diretamente no InfraVision. A aplicação, por baixo dos panos, cria o usuário tanto no Firebase Auth quanto no nosso banco de dados.
+  - **Vantagens:** Simplicidade e controle total do ciclo de vida do usuário dentro da aplicação, alinhado com outras aplicações da TIM.
+  - **Complexidade:** Menor complexidade de implementação no frontend, mas maior responsabilidade na gestão de senhas (criação, reset, etc.).
+
+- **Cenário 3: Manter Ambos, mas Separados**
+  - **O que é?** Manter os dois métodos de login, mas tratá-los como contas completamente separadas, mesmo que usem o mesmo e-mail.
+  - **Como funciona?** O estado atual. Um usuário que se cadastra com Microsoft é diferente de um usuário que se cadastra com e-mail/senha, mesmo com e-mails idênticos.
+  - **Vantagens:** Simples de manter.
+  - **Complexidade:** Pode ser confuso para o usuário e levar a dados duplicados ou problemas de acesso como o que foi observado. **(Não recomendado)**
+
+### Impedimentos
+- A falta de uma decisão final sobre a arquitetura de login está gerando retrabalho. Esta reunião é crucial para definir o caminho e avançar com confiança.
+
+---
+
 ## [2024-08-07]
 
 ### O que foi feito hoje?

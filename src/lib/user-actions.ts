@@ -48,37 +48,32 @@ export async function updateUser(userData: Partial<User>): Promise<User> {
         throw new Error('O UID do Firebase (como id) é obrigatório para criar ou atualizar um usuário.');
     }
     
-    // Atualiza/Cria o registro no banco de dados SQL
-    const updatedUser = await _updateUser(userData as User);
-
-    // Log de auditoria
+    // Log de auditoria antes da atualização para capturar o estado antigo
     if (adminUser) {
-        // Verifica se é uma criação (o usuário não existia antes da chamada)
-        const userExisted = !!(await _getUserById(userData.id)); 
+        const userBeforeUpdate = await _getUserById(userData.id);
         
-        if (!userExisted) {
-             await logAuditEvent({
+        if (!userBeforeUpdate) {
+            await logAuditEvent({
                 action: 'USER_CREATED',
                 entityType: 'User',
-                entityId: updatedUser.id,
-                details: {
-                    email: updatedUser.email,
-                    role: updatedUser.role,
-                }
+                entityId: userData.id,
+                details: { email: userData.email, role: userData.role }
             });
         } else {
-             const userBeforeUpdate = await _getUserById(userData.id!);
              await logAuditEvent({
                 action: 'USER_UPDATED',
                 entityType: 'User',
-                entityId: updatedUser.id,
+                entityId: userData.id,
                 details: {
-                    old: userBeforeUpdate ? { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds } : {},
-                    new: { role: updatedUser.role, permissions: updatedUser.permissions, accessibleBuildingIds: updatedUser.accessibleBuildingIds }
+                    old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
+                    new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
                 }
             });
         }
     }
+
+    // Atualiza/Cria o registro no banco de dados SQL
+    const updatedUser = await _updateUser(userData as User);
     
     return updatedUser;
 }

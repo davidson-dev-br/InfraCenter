@@ -608,6 +608,7 @@ export async function _updateUser(userData: Partial<User> & { id: string }): Pro
 
         await pool.request()
             .input('id', sql.NVarChar, mergedData.id)
+            .input('email', sql.NVarChar, mergedData.email)
             .input('displayName', sql.NVarChar, mergedData.displayName)
             .input('photoURL', sql.NVarChar, mergedData.photoURL)
             .input('role', sql.NVarChar, mergedData.role)
@@ -616,7 +617,7 @@ export async function _updateUser(userData: Partial<User> & { id: string }): Pro
             .input('accessibleBuildingIds', sql.NVarChar, JSON.stringify(mergedData.accessibleBuildingIds || []))
             .input('preferences', sql.NVarChar, JSON.stringify(mergedData.preferences || {}))
             .query`UPDATE Users 
-                    SET displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
+                    SET email = @email, displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
                         permissions = @permissions, accessibleBuildingIds = @accessibleBuildingIds, preferences = @preferences
                     WHERE id = @id`;
     } else {

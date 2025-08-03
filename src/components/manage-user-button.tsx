@@ -81,6 +81,8 @@ const roleHierarchy: Record<UserRole, number> = {
 
 const formSchema = z.object({
   id: z.string().min(1, "O UID do Firebase é obrigatório."),
+  displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+  email: z.string().email("Por favor, insira um e-mail válido."),
   role: z.enum(USER_ROLES),
   permissions: z.array(z.string()),
   accessibleBuildingIds: z.array(z.string()),
@@ -121,6 +123,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       id: user.id,
+      email: user.email,
+      displayName: user.displayName || '',
       role: user.role,
       permissions: user.permissions || [],
       accessibleBuildingIds: user.accessibleBuildingIds || [],
@@ -133,6 +137,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     if (isOpen) {
         form.reset({
             id: user.id,
+            email: user.email,
+            displayName: user.displayName || '',
             role: user.role,
             permissions: user.permissions || defaultPermissions[user.role] || [],
             accessibleBuildingIds: user.accessibleBuildingIds || [],
@@ -163,14 +169,15 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     try {
       await updateUser({ 
           id: data.id,
-          email: user.email, // O email não deve ser editável aqui
+          email: data.email,
+          displayName: data.displayName,
           role: data.role,
           permissions: data.permissions ? Array.from(data.permissions) : [],
           accessibleBuildingIds: data.accessibleBuildingIds ? Array.from(data.accessibleBuildingIds) : [],
        });
       toast({
         title: "Sucesso!",
-        description: `As permissões de ${user.displayName || user.email} foram atualizadas.`,
+        description: `As permissões de ${data.displayName || data.email} foram atualizadas.`,
       });
       setIsOpen(false);
       router.refresh(); 
@@ -213,7 +220,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
 
   const getDisabledReason = () => {
     if (adminUser?.id === user.id) return "Não é possível gerenciar a si mesmo.";
-    if (isManagementDisabled) return "Você não pode gerenciar um usuário de nível igual ou superior.";
+    if (adminUser?.role !== 'developer' && roleHierarchy[adminUser?.role ?? 'guest'] < roleHierarchy[user.role]) return "Você não pode gerenciar um usuário de nível superior.";
     return "Gerenciar Usuário";
   }
 
@@ -233,24 +240,41 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Gerenciar Permissões</DialogTitle>
+          <DialogTitle>Gerenciar Usuário</DialogTitle>
           <DialogDescription>
-            Altere o cargo e ajuste as permissões individuais para {user.displayName || user.email}.
+            Edite os detalhes, cargo e permissões para {user.displayName || user.email}.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Controller
-                control={form.control}
-                name="id"
-                render={({ field }) => (
-                    <div>
-                        <Label htmlFor="uid">Firebase UID (ID do Usuário)</Label>
-                        <Input id="uid" {...field} disabled={!isDeveloper} />
-                        <p className="text-xs text-muted-foreground mt-1">O UID do Firebase não pode ser alterado, exceto por um Desenvolvedor.</p>
-                    </div>
-                )}
-            />
+            <div>
+                <Label htmlFor="uid">Firebase UID (ID do Usuário)</Label>
+                <Input id="uid" value={user.id} readOnly disabled />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <Controller
+                    control={form.control}
+                    name="displayName"
+                    render={({ field }) => (
+                        <div>
+                            <Label htmlFor="displayName">Nome Completo</Label>
+                            <Input id="displayName" {...field} />
+                        </div>
+                    )}
+                />
+                 <Controller
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" {...field} />
+                        </div>
+                    )}
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <Label>Cargo</Label>
