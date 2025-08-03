@@ -54,9 +54,9 @@ const roleLabels: Record<UserRole, string> = {
 
 
 const formSchema = z.object({
-  id: z.string().min(10, { message: "O UID do Firebase é obrigatório e deve ser válido." }),
   email: z.string().email("Por favor, insira um e-mail válido."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   role: z.enum(USER_ROLES, {
     required_error: "Selecione um cargo.",
   }),
@@ -73,10 +73,10 @@ export function AddUserDialog() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: "",
       email: "",
       displayName: "",
-      role: "technician_2", // Cargo padrão sugerido
+      password: "",
+      role: "technician_2",
     },
   });
 
@@ -84,9 +84,9 @@ export function AddUserDialog() {
     setIsSubmitting(true);
     try {
       await updateUser({ 
-        id: data.id,
         email: data.email, 
         displayName: data.displayName, 
+        password: data.password,
         role: data.role 
       });
 
@@ -103,7 +103,7 @@ export function AddUserDialog() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível adicionar o usuário. Verifique se o e-mail ou UID já existe.",
+        description: "Não foi possível adicionar o usuário. Verifique se o e-mail já existe.",
       });
     } finally {
       setIsSubmitting(false);
@@ -122,24 +122,11 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Para adicionar um usuário, primeiro crie a conta no painel do Firebase Authentication e depois preencha os dados abaixo.
+            Crie uma nova conta de usuário, definindo o e-mail, nome, senha inicial e cargo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-             <FormField
-              control={form.control}
-              name="id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Firebase UID</FormLabel>
-                   <FormControl>
-                      <Input placeholder="Cole o UID do Firebase aqui" {...field} />
-                    </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
              <FormField
               control={form.control}
               name="displayName"
@@ -160,7 +147,20 @@ export function AddUserDialog() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                    <FormControl>
-                      <Input placeholder="Ex: joao.silva@empresa.com" {...field} />
+                      <Input type="email" placeholder="Ex: joao.silva@empresa.com" {...field} />
+                    </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha Temporária</FormLabel>
+                   <FormControl>
+                      <Input type="password" {...field} />
                     </FormControl>
                   <FormMessage />
                 </FormItem>

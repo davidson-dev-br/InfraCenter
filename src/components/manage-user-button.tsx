@@ -191,8 +191,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     try {
         await deleteUser(user.id);
         toast({
-            title: "Usuário Removido do Sistema",
-            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision, mas a conta de autenticação ainda precisa ser removida manually no Firebase.`,
+            title: "Usuário Removido",
+            description: `${user.displayName || user.email} foi removido da autenticação e do banco de dados.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -208,13 +208,13 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     }
   }
   
-  const isRoleManagementDisabled = 
+  const isManagementDisabled = 
     adminUser?.id === user.id || 
     (adminUser?.role !== 'developer' && roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]);
 
   const getDisabledReason = () => {
     if (adminUser?.id === user.id) return "Não é possível gerenciar a si mesmo.";
-    if (isRoleManagementDisabled) return "Você não pode gerenciar um usuário de nível igual ou superior.";
+    if (isManagementDisabled) return "Você não pode gerenciar um usuário de nível igual ou superior.";
     return "Gerenciar Usuário";
   }
 
@@ -225,7 +225,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         <Button 
           variant="ghost" 
           size="icon" 
-          disabled={isRoleManagementDisabled} 
+          disabled={isManagementDisabled} 
           title={getDisabledReason()}
         >
           <MoreVertical className="h-4 w-4" />
@@ -247,8 +247,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                 render={({ field }) => (
                     <div>
                         <Label htmlFor="uid">Firebase UID (ID do Usuário)</Label>
-                        <Input id="uid" {...field} disabled={!isDeveloper} />
-                        {!isDeveloper && <p className="text-xs text-muted-foreground mt-1">O UID não pode ser alterado por não-desenvolvedores.</p>}
+                        <Input id="uid" {...field} disabled={true} />
+                        <p className="text-xs text-muted-foreground mt-1">O UID do Firebase não pode ser alterado.</p>
                     </div>
                 )}
             />
@@ -388,12 +388,9 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão de Usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-                Esta ação removerá o usuário 
+                Esta ação é <span className="font-bold">permanente</span> e removerá o usuário 
                 <span className="font-bold"> {user.displayName || user.email} </span> 
-                do banco de dados do <span className="font-bold">InfraVision</span>, mas 
-                <span className="font-bold text-destructive"> não removerá a conta do serviço de autenticação do Firebase.</span>
-                <br /><br />
-                Para revogar completamente o acesso, você deve excluir o usuário manualmente no painel do Firebase Authentication.
+                tanto do sistema de autenticação quanto do banco de dados do InfraVision.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -408,7 +405,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Entendi, excluir do sistema
+              Entendi, excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
@@ -44,14 +43,33 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     return _getUserByEmail(email);
 }
 
-export async function updateUser(userData: Partial<User> & { id: string }): Promise<User> {
+export async function updateUser(userData: Partial<User> & { id?: string }): Promise<User> {
     const adminUser = await getAdminUser();
-
+    
     // Determina se é uma operação de criação ou atualização
-    const userToUpdate = await _getUserByEmail(userData.email);
+    const userToUpdate = userData.email ? await _getUserByEmail(userData.email) : null;
     const isCreating = !userToUpdate;
 
-    const updatedUser = await _updateUser(userData);
+    if (isCreating && userData.email && userData.password) {
+        // --- Fluxo de Criação ---
+        const auth = getFirebaseAuth();
+        const userRecord = await auth.createUser({
+            email: userData.email,
+            password: userData.password,
+            displayName: userData.displayName,
+            photoURL: userData.photoURL,
+        });
+        
+        userData.id = userRecord.uid; // Garante que o ID do DB seja o UID do Firebase
+
+    } else if (!isCreating && userToUpdate) {
+        // --- Fluxo de Atualização ---
+        userData.id = userToUpdate.id; // Garante que o ID seja o correto
+    } else {
+        throw new Error("Dados do usuário incompletos para a operação.");
+    }
+    
+    const updatedUser = await _updateUser(userData as User);
 
     if (adminUser) {
         if (isCreating) {
@@ -88,8 +106,15 @@ export async function deleteUser(userId: string): Promise<void> {
     const adminUser = await getAdminUser();
     const userToDelete = await _getUserById(userId); 
 
-    // Deleta apenas do banco de dados local. A exclusão no Firebase Auth deve ser manual.
-    await _deleteUser(userId);
+    if (userToDelete) {
+        // Deleta do Firebase Auth
+        const auth = getFirebaseAuth();
+        await auth.deleteUser(userToDelete.id);
+        
+        // Deleta do banco de dados local
+        await _deleteUser(userToDelete.id);
+    }
+
 
     if (adminUser && userToDelete) {
         await logAuditEvent({
@@ -99,7 +124,7 @@ export async function deleteUser(userId: string): Promise<void> {
             details: { 
               email: userToDelete.email, 
               displayName: userToDelete.displayName, 
-              note: 'Usuário removido apenas do banco de dados da aplicação. A conta de autenticação permanece.' 
+              note: 'Usuário removido da autenticação e do banco de dados da aplicação.' 
             }
         });
     }
