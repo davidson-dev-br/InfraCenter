@@ -1,20 +1,23 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 
-// Your web app's Firebase configuration
-// This configuration is now hardcoded as provided from the Firebase console
-// to ensure it matches the linked hosting project.
+// Esta configuração agora lê das variáveis de ambiente com prefixo NEXT_PUBLIC_,
+// que são seguras para serem expostas no lado do cliente.
 const firebaseConfig = {
-  apiKey: "AIzaSyDqbq-lRz-uU9vh3-lH21_6c4n-7gjAaT4",
-  authDomain: "infravision-vjb5j.firebaseapp.com",
-  projectId: "infravision-vjb5j",
-  storageBucket: "infravision-vjb5j.appspot.com",
-  messagingSenderId: "755095501327",
-  appId: "1:755095501327:web:b93a7ec480649cef87817a"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+// Verifica se todas as variáveis de configuração do cliente estão presentes.
+if (Object.values(firebaseConfig).some(value => !value)) {
+    console.error("Firebase client configuration is missing or incomplete. Check your .env file for NEXT_PUBLIC_FIREBASE_* variables.");
+}
 
-// Initialize Firebase
+// Inicializa o Firebase, garantindo que não seja inicializado mais de uma vez.
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export { app };
