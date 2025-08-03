@@ -89,7 +89,7 @@ export function AddUserDialog() {
 
       toast({
         title: "Sucesso!",
-        description: `Usuário ${data.displayName} foi adicionado. Eles poderão fazer login agora.`,
+        description: `Usuário ${data.displayName} foi provisionado. Eles já podem fazer login.`,
       });
       
       form.reset();
@@ -119,7 +119,7 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Preencha os dados abaixo para criar um novo usuário. Eles receberão acesso ao sistema assim que forem adicionados.
+            Preencha os dados abaixo para liberar o acesso de um novo usuário ao sistema.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -142,7 +142,7 @@ export function AddUserDialog() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email (o mesmo da conta Microsoft)</FormLabel>
                    <FormControl>
                       <Input placeholder="Ex: joao.silva@empresa.com" {...field} />
                     </FormControl>
@@ -182,9 +182,9 @@ export function AddUserDialog() {
 
             <Alert>
                 <Info className="h-4 w-4" />
-                <AlertTitle>Senha Padrão</AlertTitle>
+                <AlertTitle>Como funciona o login?</AlertTitle>
                 <AlertDescription>
-                    O novo usuário será criado com a senha padrão: <strong>tim@123456</strong>. Por favor, instrua o usuário a alterá-la no primeiro acesso.
+                    O usuário fará login usando sua própria conta (Ex: Microsoft). A senha padrão <strong>tim@123456</strong> só é usada se você criar uma conta de "Email/Senha" manualmente no Firebase.
                 </AlertDescription>
             </Alert>
             
