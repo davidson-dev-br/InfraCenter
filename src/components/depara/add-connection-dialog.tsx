@@ -185,7 +185,8 @@ export function AddConnectionDialog({
             closeCamera();
             form.reset();
         }
-    }, [isOpen, form]);
+    }, [isOpen, form, onOpenChange]);
+
 
   return (
     <>

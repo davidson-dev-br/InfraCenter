@@ -91,17 +91,19 @@ export async function deleteUser(userId: string): Promise<void> {
         // A remoção da autenticação do Firebase é manual pelo console.
         // Apenas deletamos do nosso banco de dados.
         await _deleteUser(userToDelete.id);
-    }
 
-    if (adminUser && userToDelete) {
-        await logAuditEvent({
-            action: 'USER_DELETED',
-            entityType: 'User',
-            entityId: userId,
-            details: { 
-              email: userToDelete.email, 
-              displayName: userToDelete.displayName
-            }
-        });
+        if (adminUser) {
+            await logAuditEvent({
+                action: 'USER_DELETED',
+                entityType: 'User',
+                entityId: userId,
+                details: { 
+                  email: userToDelete.email, 
+                  displayName: userToDelete.displayName
+                }
+            });
+        }
+    } else {
+        console.warn(`Tentativa de exclusão de usuário não encontrado no banco de dados: ${userId}`);
     }
 }
