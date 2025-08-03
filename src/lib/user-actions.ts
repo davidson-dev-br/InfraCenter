@@ -42,26 +42,29 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function updateUser(userData: Partial<User> & { password?: string }): Promise<User> {
     const adminUser = await getAdminUser();
     
-    // O fluxo agora é: verificar se é uma atualização primeiro.
     // Se um ID for fornecido, é uma atualização.
     if (userData.id) {
-        if (adminUser) {
-           const userBeforeUpdate = await _getUserById(userData.id);
-           if (userBeforeUpdate) { // Apenas loga se o usuário já existia
-               await logAuditEvent({
-                   action: 'USER_UPDATED',
-                   entityType: 'User',
-                   entityId: userData.id,
-                   details: {
-                       old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
-                       new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
-                   }
-               });
-           }
+       const userToUpdate = await _getUserById(userData.id);
+       if (userToUpdate) {
+            // Log de auditoria antes da atualização
+             if (adminUser) {
+                 await logAuditEvent({
+                    action: 'USER_UPDATED',
+                    entityType: 'User',
+                    entityId: userData.id,
+                    details: {
+                        old: { role: userToUpdate.role, permissions: userToUpdate.permissions, accessibleBuildingIds: userToUpdate.accessibleBuildingIds, email: userToUpdate.email, displayName: userToUpdate.displayName },
+                        new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
+                    }
+                });
+             }
+             // A função _updateUser fará a mesclagem e salvará no banco.
+             return await _updateUser({ ...userToUpdate, ...userData });
        }
     }
-    // Se não for uma atualização, é uma criação.
-    else if (userData.password && userData.email && userData.displayName) {
+    
+    // Se não for uma atualização (sem ID ou usuário não encontrado), é uma criação.
+    if (userData.password && userData.email && userData.displayName) {
         try {
             const auth = await getFirebaseAuth();
             const newUserRecord = await auth.createUser({
@@ -81,6 +84,9 @@ export async function updateUser(userData: Partial<User> & { password?: string }
                     details: { email: userData.email, role: userData.role }
                 });
             }
+            
+            // A função _updateUser criará o registro no nosso banco de dados.
+            return await _updateUser(userData as User);
 
         } catch (error: any) {
             console.error("Erro ao criar usuário no Firebase Auth:", error);
@@ -89,14 +95,9 @@ export async function updateUser(userData: Partial<User> & { password?: string }
             }
             throw new Error(`Falha ao criar o usuário no serviço de autenticação: ${error.message}`);
         }
-    } else {
-         throw new Error('Dados insuficientes para criar ou atualizar usuário. ID (para atualização) ou E-mail/Senha (para criação) são necessários.');
     }
 
-    // A função _updateUser funciona como um "upsert", criando ou atualizando o registro no DB.
-    const updatedUser = await _updateUser(userData as User);
-    
-    return updatedUser;
+    throw new Error('Dados insuficientes para criar ou atualizar usuário. ID (para atualização) ou E-mail/Senha (para criação) são necessários.');
 }
 
 
