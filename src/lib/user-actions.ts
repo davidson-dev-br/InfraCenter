@@ -51,7 +51,7 @@ export async function updateUser(userData: Partial<User> & ({ email: string } | 
     // Se estiver criando um novo usuário, primeiro cria a conta no Firebase Auth.
     if (isCreating && 'email' in userData && userData.email) {
         try {
-            const auth = await getFirebaseAuth();
+            const auth = getFirebaseAuth();
             await auth.createUser({
                 email: userData.email,
                 password: 'tim@123456', // Senha padrão para novos usuários
@@ -108,8 +108,8 @@ export async function deleteUser(userId: string): Promise<void> {
 
     // Deleta do Firebase Auth
     try {
-        const auth = await getFirebaseAuth();
-        await auth.deleteUser(userId);
+        const auth = getFirebaseAuth();
+        await auth.deleteUser(userToDelete.id);
     } catch (error: any) {
         // Se o usuário não for encontrado no Firebase Auth, apenas logamos e continuamos para apagar do DB local.
         if (error.code === 'auth/user-not-found') {
