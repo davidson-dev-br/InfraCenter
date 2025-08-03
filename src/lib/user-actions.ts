@@ -13,9 +13,13 @@ async function getAdminUser() {
     // For now, let's assume a mock admin for logging purposes.
     // In a server action, there is no direct concept of "the user" without passing it in.
     // This is a limitation we'll work around for now.
-    const mockAdminEmail = "davidson.php@outlook.com";
-    const user = await _getUserByEmail(mockAdminEmail);
-    return user;
+    const mockAdminEmail = "dconceicao_fundamentos@timbrasil.com";
+    try {
+        const user = await _getUserByEmail(mockAdminEmail);
+        return user;
+    } catch(e){
+        return null;
+    }
 }
 
 export async function ensureDatabaseSchema(): Promise<string> {
