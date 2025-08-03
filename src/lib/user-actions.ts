@@ -42,8 +42,26 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function updateUser(userData: Partial<User> & { password?: string }): Promise<User> {
     const adminUser = await getAdminUser();
     
-    // Se uma senha for fornecida, significa que estamos criando um novo usuário.
-    if (userData.password && userData.email && userData.displayName) {
+    // O fluxo agora é: verificar se é uma atualização primeiro.
+    // Se um ID for fornecido, é uma atualização.
+    if (userData.id) {
+        if (adminUser) {
+           const userBeforeUpdate = await _getUserById(userData.id);
+           if (userBeforeUpdate) { // Apenas loga se o usuário já existia
+               await logAuditEvent({
+                   action: 'USER_UPDATED',
+                   entityType: 'User',
+                   entityId: userData.id,
+                   details: {
+                       old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
+                       new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
+                   }
+               });
+           }
+       }
+    }
+    // Se não for uma atualização, é uma criação.
+    else if (userData.password && userData.email && userData.displayName) {
         try {
             const auth = await getFirebaseAuth();
             const newUserRecord = await auth.createUser({
@@ -70,21 +88,6 @@ export async function updateUser(userData: Partial<User> & { password?: string }
                 throw new Error('Este e-mail já está em uso no sistema de autenticação.');
             }
             throw new Error(`Falha ao criar o usuário no serviço de autenticação: ${error.message}`);
-        }
-    } else if (userData.id) { // Se não tem senha, é uma atualização de usuário existente
-         if (adminUser) {
-            const userBeforeUpdate = await _getUserById(userData.id);
-            if (userBeforeUpdate) { // Apenas loga se o usuário já existia
-                await logAuditEvent({
-                    action: 'USER_UPDATED',
-                    entityType: 'User',
-                    entityId: userData.id,
-                    details: {
-                        old: { role: userBeforeUpdate.role, permissions: userBeforeUpdate.permissions, accessibleBuildingIds: userBeforeUpdate.accessibleBuildingIds, email: userBeforeUpdate.email, displayName: userBeforeUpdate.displayName },
-                        new: { role: userData.role, permissions: userData.permissions, accessibleBuildingIds: userData.accessibleBuildingIds, email: userData.email, displayName: userData.displayName }
-                    }
-                });
-            }
         }
     } else {
          throw new Error('Dados insuficientes para criar ou atualizar usuário. ID (para atualização) ou E-mail/Senha (para criação) são necessários.');
