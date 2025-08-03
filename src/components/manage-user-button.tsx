@@ -187,8 +187,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     try {
         await deleteUser(user.id);
         toast({
-            title: "Usuário Excluído",
-            description: `${user.displayName || user.email} foi excluído permanentemente.`,
+            title: "Usuário Removido do Sistema",
+            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -373,11 +373,14 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
      <AlertDialog open={isConfirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Exclusão de Usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário 
-              <span className="font-bold"> {user.displayName || user.email} </span> 
-              e removerá seu acesso ao sistema.
+                Esta ação removerá o usuário 
+                <span className="font-bold"> {user.displayName || user.email} </span> 
+                do banco de dados do <span className="font-bold">InfraVision</span>, mas 
+                <span className="font-bold text-destructive"> não removerá a conta do serviço de autenticação do Firebase.</span>
+                <br /><br />
+                Para revogar completamente o acesso, você deve excluir o usuário manualmente no painel do Firebase Authentication.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -392,7 +395,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Sim, excluir usuário
+              Entendi, excluir do sistema
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
