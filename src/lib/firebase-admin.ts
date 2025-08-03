@@ -4,7 +4,7 @@ config();
 
 import * as admin from 'firebase-admin';
 
-// Your web app's Firebase configuration
+// Configuração do App Web do Firebase, usada como fallback se as credenciais de serviço não forem encontradas.
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -15,21 +15,32 @@ const firebaseConfig = {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Adiciona uma verificação para garantir que as variáveis de ambiente existam antes de inicializar.
-const hasAdminConfig = process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL;
+// Em um ambiente do Google Cloud (como o App Hosting), as credenciais são detectadas automaticamente.
+// Para desenvolvimento local, usamos as variáveis de ambiente.
+const hasLocalCredentials = process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL;
 
-if (!admin.apps.length && hasAdminConfig) {
+// Só inicializamos o app se ele ainda não tiver sido inicializado.
+if (!admin.apps.length) {
     try {
-        admin.initializeApp({
-            credential: admin.credential.cert({
+        if (hasLocalCredentials) {
+            // Ambiente de Desenvolvimento Local: Usa as credenciais do .env
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: firebaseConfig.projectId,
+                    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                }),
+                databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
+            });
+        } else {
+            // Ambiente de Produção (Google Cloud): Usa as credenciais padrão do ambiente.
+            admin.initializeApp({
                 projectId: firebaseConfig.projectId,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            }),
-            databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
-        });
+                storageBucket: firebaseConfig.storageBucket
+            });
+        }
     } catch (error) {
-        console.error("Erro ao inicializar o Firebase Admin:", error);
+        console.error("Erro CRÍTICO ao inicializar o Firebase Admin:", error);
     }
 }
 
