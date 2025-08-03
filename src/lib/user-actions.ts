@@ -7,11 +7,7 @@ import { logAuditEvent } from './audit-actions';
 import { getFirebaseAuth } from './firebase-admin';
 import { headers } from 'next/headers';
 
-
-// Com grandes poderes vêm grandes responsabilidades. Esta função tem grandes poderes.
 async function getAdminUser() {
-    // Esta função busca o usuário que está realizando a ação.
-    // Em um cenário de produção, isso seria derivado de uma sessão validada.
     const authorization = headers().get('Authorization');
     if (authorization?.startsWith('Bearer ')) {
         const idToken = authorization.split('Bearer ')[1];
@@ -23,7 +19,6 @@ async function getAdminUser() {
             }
         } catch (error) {
             console.error("Erro ao verificar o token de autenticação do administrador:", error);
-            // Retorna null se o token for inválido, para que a operação falhe de forma segura.
             return null;
         }
     }
@@ -43,33 +38,15 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     return _getUserByEmail(email);
 }
 
-export async function updateUser(userData: Partial<User> & { id?: string }): Promise<User> {
+export async function updateUser(userData: Partial<User> & { id: string }): Promise<User> {
     const adminUser = await getAdminUser();
     
-    // Determina se é uma operação de criação ou atualização
-    const userToUpdate = userData.email ? await _getUserByEmail(userData.email) : null;
+    // A lógica agora é mais simples: ela sempre espera um ID (Firebase UID).
+    // Se o usuário com esse ID não existe, ele cria. Se existe, atualiza.
+    const userToUpdate = await _getUserById(userData.id);
     const isCreating = !userToUpdate;
-
-    if (isCreating && userData.email && userData.password) {
-        // --- Fluxo de Criação ---
-        const auth = getFirebaseAuth();
-        const userRecord = await auth.createUser({
-            email: userData.email,
-            password: userData.password,
-            displayName: userData.displayName,
-            photoURL: userData.photoURL,
-        });
-        
-        userData.id = userRecord.uid; // Garante que o ID do DB seja o UID do Firebase
-
-    } else if (!isCreating && userToUpdate) {
-        // --- Fluxo de Atualização ---
-        userData.id = userToUpdate.id; // Garante que o ID seja o correto
-    } else {
-        throw new Error("Dados do usuário incompletos para a operação.");
-    }
     
-    const updatedUser = await _updateUser(userData as User);
+    const updatedUser = await _updateUser(userData);
 
     if (adminUser) {
         if (isCreating) {
@@ -107,14 +84,9 @@ export async function deleteUser(userId: string): Promise<void> {
     const userToDelete = await _getUserById(userId); 
 
     if (userToDelete) {
-        // Deleta do Firebase Auth
-        const auth = getFirebaseAuth();
-        await auth.deleteUser(userToDelete.id);
-        
-        // Deleta do banco de dados local
+        // Agora, apenas deletamos do banco de dados local.
         await _deleteUser(userToDelete.id);
     }
-
 
     if (adminUser && userToDelete) {
         await logAuditEvent({
@@ -124,7 +96,7 @@ export async function deleteUser(userId: string): Promise<void> {
             details: { 
               email: userToDelete.email, 
               displayName: userToDelete.displayName, 
-              note: 'Usuário removido da autenticação e do banco de dados da aplicação.' 
+              note: 'Usuário removido da aplicação. A remoção do Firebase Auth deve ser manual.' 
             }
         });
     }

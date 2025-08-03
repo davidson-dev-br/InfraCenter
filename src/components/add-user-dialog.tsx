@@ -52,14 +52,11 @@ const roleLabels: Record<UserRole, string> = {
   guest: "Convidado",
 };
 
-
 const formSchema = z.object({
+  id: z.string().min(10, "O UID do Firebase é obrigatório e geralmente tem mais de 10 caracteres."),
   email: z.string().email("Por favor, insira um e-mail válido."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
-  role: z.enum(USER_ROLES, {
-    required_error: "Selecione um cargo.",
-  }),
+  role: z.enum(USER_ROLES, { required_error: "Selecione um cargo." }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -72,22 +69,18 @@ export function AddUserDialog() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      displayName: "",
-      password: "",
-      role: "technician_2",
-    },
+    defaultValues: { id: "", email: "", displayName: "", role: "technician_2" },
   });
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await updateUser({ 
+      await updateUser({
+        id: data.id,
         email: data.email, 
         displayName: data.displayName, 
-        password: data.password,
-        role: data.role 
+        role: data.role,
+        lastLoginAt: new Date().toISOString(),
       });
 
       toast({
@@ -103,7 +96,7 @@ export function AddUserDialog() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível adicionar o usuário. Verifique se o e-mail já existe.",
+        description: "Não foi possível adicionar o usuário. Verifique se o e-mail ou UID já existem.",
       });
     } finally {
       setIsSubmitting(false);
@@ -122,11 +115,31 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Crie uma nova conta de usuário, definindo o e-mail, nome, senha inicial e cargo.
+            Crie um novo usuário no Firebase Auth primeiro, depois preencha os detalhes aqui para provisioná-lo no sistema.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Importante!</AlertTitle>
+              <AlertDescription>
+                Primeiro, crie o usuário no <strong>Firebase Authentication</strong>. Depois, copie e cole o <strong>Email</strong> e o <strong>Firebase UID</strong> nos campos abaixo.
+              </AlertDescription>
+            </Alert>
+            <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Firebase UID</FormLabel>
+                   <FormControl>
+                      <Input placeholder="Cole o UID do Firebase aqui" {...field} />
+                    </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
              <FormField
               control={form.control}
               name="displayName"
@@ -153,19 +166,6 @@ export function AddUserDialog() {
                 </FormItem>
               )}
             />
-             <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha Temporária</FormLabel>
-                   <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="role"
@@ -183,7 +183,7 @@ export function AddUserDialog() {
                     </FormControl>
                     <SelectContent>
                       {USER_ROLES.map((role) => (
-                        (role !== 'guest' && role !== 'developer') && (
+                        (role !== 'guest') && (
                           <SelectItem key={role} value={role}>
                             {roleLabels[role]}
                           </SelectItem>
