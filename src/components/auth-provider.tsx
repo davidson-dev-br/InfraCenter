@@ -7,7 +7,7 @@ import { app } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
-import { updateUser, getUserByEmail } from '@/lib/user-actions';
+import { updateUser, getUserByEmail, ensureDatabaseSchema } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
@@ -23,22 +23,19 @@ import { Button } from './ui/button';
 // FLUXO DE EXECUÇÃO:
 // 1. `onAuthStateChanged` (Firebase): Ouve mudanças no estado de login do Firebase.
 // 2. `handleUserAuth`: Quando um usuário é detectado, esta função é chamada.
-//    a. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
-//    b. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
-//       para o login com uma mensagem de erro. Isso garante que apenas usuários provisionados
-//       possam acessar.
-//    c. Se o usuário EXISTE, atualizamos seus dados (último login, foto) e buscamos os
-//       dados essenciais da aplicação (prédios, permissões).
-//    d. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
+//    a. A primeira coisa que ele faz é chamar `ensureDatabaseSchema()`. Isso garante que
+//       todas as tabelas do banco de dados existam. Se uma tabela como 'Approvals'
+//       estiver faltando, ela é criada aqui, tornando o sistema auto-corrigível.
+//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
+//    c. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
+//       para o login com uma mensagem de erro.
+//    d. Se o usuário EXISTE, atualizamos seus dados e buscamos os dados da aplicação.
+//    e. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
 // 3. Renderização Condicional:
 //    - Enquanto `loading` for `true`, exibe um loader de página inteira.
 //    - Se o usuário não estiver logado (`!authUser`) e a página não for pública, redireciona para `/login`.
-//    - Se o usuário estiver logado e na página de login, redireciona para a página principal.
 //    - Se tudo estiver OK, ele renderiza o `<AppLayout>`, envolvendo o conteúdo da página
 //      com os Providers de contexto necessários (`PermissionsProvider`, `BuildingProvider`).
-//
-// O uso do `useCallback` em `handleUserAuth` otimiza o processo, evitando recriações
-// desnecessárias da função em cada renderização.
 
 const FullPageLoader = () => (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -87,7 +84,6 @@ type Building = {
 };
 
 // Esta função injeta o token de autenticação em todas as requisições fetch.
-// Alterar isto é como trocar o pneu do carro em movimento.
 const createAuthorizedFetch = (getAuthToken: () => Promise<string | null>) => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
@@ -120,6 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConnectionError(null);
     if (user && user.email) {
       try {
+        // GARANTE QUE O SCHEMA DO BANCO DE DADOS ESTÁ ATUALIZADO
+        await ensureDatabaseSchema();
+
         const userRecord = await getUserByEmail(user.email);
 
         if (userRecord) {
@@ -189,17 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      return <FullPageLoader />;
   }
 
-  // Se for uma página pública (login/logout), renderiza apenas o conteúdo dela, sem layout.
   if(isPublicPage) {
     return <>{children}</>;
   }
 
-  // Se o usuário está autenticado, mas o registro do DB ainda não carregou, espera.
   if (authUser && !dbUser) {
     return <FullPageLoader />;
   }
 
-  // O usuário está autenticado e temos os dados do DB, então renderiza a aplicação com o layout.
   if (authUser && dbUser) {
     return (
       <PermissionsProvider user={dbUser}>
@@ -210,6 +206,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Fallback para qualquer outro caso (ex: usuário deslogado em página não pública)
   return <FullPageLoader />;
 }

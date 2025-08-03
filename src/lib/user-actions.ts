@@ -2,7 +2,7 @@
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
-import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser } from "./user-service";
+import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { auth } from './firebase-admin';
 
@@ -18,6 +18,9 @@ async function getAdminUser() {
     return user;
 }
 
+export async function ensureDatabaseSchema(): Promise<string> {
+    return _ensureDatabaseSchema();
+}
 
 export async function getUsers(): Promise<User[]> {
     return _getUsers();
