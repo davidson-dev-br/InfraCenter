@@ -69,7 +69,7 @@ export async function updateUser(userData: Partial<User> & { password?: string }
             if (error.code === 'auth/email-already-exists') {
                 throw new Error('Este e-mail já está em uso no sistema de autenticação.');
             }
-            throw new Error('Falha ao criar o usuário no serviço de autenticação.');
+            throw new Error(`Falha ao criar o usuário no serviço de autenticação: ${error.message}`);
         }
     } else if (userData.id) { // Se não tem senha, é uma atualização de usuário existente
          if (adminUser) {
