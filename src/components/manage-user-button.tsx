@@ -192,7 +192,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         await deleteUser(user.id);
         toast({
             title: "Usuário Removido",
-            description: `${user.displayName || user.email} foi removido da autenticação e do banco de dados.`,
+            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -208,8 +208,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     }
   }
   
-  const isManagementDisabled = 
-    adminUser?.id === user.id || 
+  const isManagementDisabled = adminUser?.id === user.id || 
     (adminUser?.role !== 'developer' && roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]);
 
   const getDisabledReason = () => {
@@ -247,8 +246,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                 render={({ field }) => (
                     <div>
                         <Label htmlFor="uid">Firebase UID (ID do Usuário)</Label>
-                        <Input id="uid" {...field} disabled={true} />
-                        <p className="text-xs text-muted-foreground mt-1">O UID do Firebase não pode ser alterado.</p>
+                        <Input id="uid" {...field} disabled={!isDeveloper} />
+                        <p className="text-xs text-muted-foreground mt-1">O UID do Firebase não pode ser alterado, exceto por um Desenvolvedor.</p>
                     </div>
                 )}
             />
@@ -265,7 +264,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                 {USER_ROLES.map((role) => (
-                                    (role !== 'guest' && roleHierarchy[role] < roleHierarchy[adminUser?.role ?? 'guest']) && (
+                                    (role !== 'guest' && (isDeveloper || roleHierarchy[role] < roleHierarchy[adminUser?.role ?? 'guest'])) && (
                                     <SelectItem key={role} value={role}>
                                         {roleLabels[role]}
                                     </SelectItem>
@@ -388,9 +387,9 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão de Usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-                Esta ação é <span className="font-bold">permanente</span> e removerá o usuário 
-                <span className="font-bold"> {user.displayName || user.email} </span> 
-                tanto do sistema de autenticação quanto do banco de dados do InfraVision.
+                Esta ação removerá o usuário <span className="font-bold">{user.displayName || user.email}</span> do banco de dados do InfraVision, mas 
+                <span className="font-bold text-destructive"> não</span> o removerá do sistema de autenticação (Firebase). 
+                Você precisará remover o usuário do painel do Firebase Auth manualmente para revogar completamente o acesso.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -405,7 +404,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Entendi, excluir permanentemente
+              Entendi, remover do sistema
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

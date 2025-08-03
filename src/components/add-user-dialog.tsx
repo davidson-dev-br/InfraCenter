@@ -9,7 +9,7 @@ import { z } from "zod";
 import { UserPlus, Loader2, Info } from "lucide-react";
 
 import type { UserRole } from "@/components/permissions-provider";
-import { USER_ROLES } from "@/components/permissions-provider";
+import { USER_ROLES, usePermissions } from "@/components/permissions-provider";
 import { updateUser } from "@/lib/user-actions";
 
 import { Button } from "@/components/ui/button";
@@ -53,8 +53,8 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const formSchema = z.object({
+  id: z.string().min(10, "O UID do Firebase é necessário."),
   email: z.string().email("Por favor, insira um e-mail válido."),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
   role: z.enum(USER_ROLES, { required_error: "Selecione um cargo." }),
 });
@@ -66,25 +66,28 @@ export function AddUserDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { isDeveloper } = usePermissions();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: "", password: "", displayName: "", role: "technician_2" },
+    defaultValues: { id: "", email: "", displayName: "", role: "technician_2" },
   });
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      // A action agora só precisa do UID (como 'id') e dos outros dados.
+      // A senha não é mais manipulada aqui.
       await updateUser({
+        id: data.id,
         email: data.email,
-        password: data.password, 
         displayName: data.displayName, 
         role: data.role,
       });
 
       toast({
         title: "Sucesso!",
-        description: `Usuário ${data.displayName} foi criado. Eles já podem fazer login.`,
+        description: `Usuário ${data.displayName} foi registrado no sistema.`,
       });
       
       form.reset();
@@ -95,7 +98,7 @@ export function AddUserDialog() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível adicionar o usuário. Verifique se o e-mail já existe.",
+        description: "Não foi possível registrar o usuário. Verifique se o UID ou e-mail já existem.",
       });
     } finally {
       setIsSubmitting(false);
@@ -114,7 +117,7 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Crie um novo usuário com e-mail, senha e cargo para acessar o sistema.
+            Primeiro, crie o usuário no painel do Firebase Authentication (com e-mail/senha ou Microsoft). Depois, copie o UID gerado e preencha os campos abaixo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -145,14 +148,14 @@ export function AddUserDialog() {
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="password"
+              name="id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Senha</FormLabel>
+                  <FormLabel>Firebase UID</FormLabel>
                    <FormControl>
-                      <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} />
+                      <Input placeholder="Copie e cole o UID do Firebase Auth aqui" {...field} />
                     </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -175,7 +178,7 @@ export function AddUserDialog() {
                     </FormControl>
                     <SelectContent>
                       {USER_ROLES.map((role) => (
-                        (role !== 'guest') && (
+                        (role !== 'guest' && (isDeveloper || role !== 'developer')) && (
                           <SelectItem key={role} value={role}>
                             {roleLabels[role]}
                           </SelectItem>

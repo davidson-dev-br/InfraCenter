@@ -4,7 +4,7 @@
 import { getAuth, UserRecord } from 'firebase-admin/auth';
 import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema, _getUserById } from "./user-service";
 import { logAuditEvent } from './audit-actions';
-import { getFirebaseAuth } from './firebase-admin';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 import { headers } from 'next/headers';
 
 async function getAdminUser() {
@@ -38,32 +38,14 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     return _getUserByEmail(email);
 }
 
+
 export async function updateUser(userData: Partial<User>): Promise<User> {
     const adminUser = await getAdminUser();
-    const isCreating = !userData.id;
-    let authRecord: UserRecord | undefined = undefined;
-
-    if (isCreating && userData.email && userData.password) {
-        // Fluxo de criação de usuário
-        try {
-            const auth = getFirebaseAuth();
-            authRecord = await auth.createUser({
-                email: userData.email,
-                password: userData.password,
-                displayName: userData.displayName || undefined,
-            });
-            // O UID do Firebase se torna o ID no nosso banco de dados
-            userData.id = authRecord.uid;
-        } catch (error: any) {
-            if (error.code === 'auth/email-already-exists') {
-                throw new Error('Este e-mail já está em uso por outro usuário.');
-            }
-            throw new Error(`Falha ao criar usuário na autenticação: ${error.message}`);
-        }
-    } else if (!isCreating && userData.id) {
-        // Fluxo de atualização de usuário existente
-    } else {
-        throw new Error('Dados insuficientes para criar ou atualizar usuário.');
+    
+    // Agora a ação updateUser serve tanto para criar um novo registro (se o ID não existir)
+    // quanto para atualizar um existente. O UID do Firebase é a chave.
+    if (!userData.id) {
+        throw new Error('O UID do Firebase (como id) é obrigatório para criar ou atualizar um usuário.');
     }
     
     // Atualiza/Cria o registro no banco de dados SQL
@@ -71,7 +53,10 @@ export async function updateUser(userData: Partial<User>): Promise<User> {
 
     // Log de auditoria
     if (adminUser) {
-        if (isCreating) {
+        // Verifica se é uma criação (o usuário não existia antes da chamada)
+        const userExisted = !!(await _getUserById(userData.id)); 
+        
+        if (!userExisted) {
              await logAuditEvent({
                 action: 'USER_CREATED',
                 entityType: 'User',
@@ -108,16 +93,8 @@ export async function deleteUser(userId: string): Promise<void> {
     const userToDelete = await _getUserById(userId); 
 
     if (userToDelete) {
-        // Deleta do Firebase Auth
-        try {
-            const auth = getFirebaseAuth();
-            await auth.deleteUser(userId);
-        } catch (error: any) {
-            console.error(`Falha ao deletar usuário ${userId} do Firebase Auth: ${error.message}`);
-            // Continuamos para deletar do DB local mesmo se falhar aqui, para evitar registros órfãos
-        }
-        
-        // Deleta do banco de dados local
+        // A remoção da autenticação do Firebase é manual pelo console.
+        // Apenas deletamos do nosso banco de dados.
         await _deleteUser(userToDelete.id);
     }
 
