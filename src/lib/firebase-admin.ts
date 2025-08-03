@@ -1,5 +1,9 @@
 
 import * as admin from 'firebase-admin';
+import { config } from 'dotenv';
+
+// Força o carregamento das variáveis de ambiente do arquivo .env
+config();
 
 // Variável para armazenar a instância do app inicializado.
 let app: admin.app.App | null = null;
@@ -11,7 +15,7 @@ function initializeFirebaseAdmin() {
         return app;
     }
     
-    // As credenciais agora são lidas automaticamente pelo Next.js do arquivo .env na raiz.
+    // As credenciais agora são lidas automaticamente do arquivo .env.
     const serviceAccount = {
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
