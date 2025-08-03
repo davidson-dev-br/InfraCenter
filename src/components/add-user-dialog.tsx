@@ -54,6 +54,7 @@ const roleLabels: Record<UserRole, string> = {
 
 
 const formSchema = z.object({
+  id: z.string().min(10, { message: "O UID do Firebase é obrigatório e deve ser válido." }),
   email: z.string().email("Por favor, insira um e-mail válido."),
   displayName: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
   role: z.enum(USER_ROLES, {
@@ -72,6 +73,7 @@ export function AddUserDialog() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: "",
       email: "",
       displayName: "",
       role: "technician_2", // Cargo padrão sugerido
@@ -82,6 +84,7 @@ export function AddUserDialog() {
     setIsSubmitting(true);
     try {
       await updateUser({ 
+        id: data.id,
         email: data.email, 
         displayName: data.displayName, 
         role: data.role 
@@ -100,7 +103,7 @@ export function AddUserDialog() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível adicionar o usuário. Verifique se o e-mail já existe.",
+        description: "Não foi possível adicionar o usuário. Verifique se o e-mail ou UID já existe.",
       });
     } finally {
       setIsSubmitting(false);
@@ -119,11 +122,24 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Preencha os dados abaixo para liberar o acesso de um novo usuário ao sistema.
+            Para adicionar um usuário, primeiro crie a conta no painel do Firebase Authentication e depois preencha os dados abaixo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Firebase UID</FormLabel>
+                   <FormControl>
+                      <Input placeholder="Cole o UID do Firebase aqui" {...field} />
+                    </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
              <FormField
               control={form.control}
               name="displayName"
@@ -142,7 +158,7 @@ export function AddUserDialog() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (o mesmo da conta Microsoft)</FormLabel>
+                  <FormLabel>Email</FormLabel>
                    <FormControl>
                       <Input placeholder="Ex: joao.silva@empresa.com" {...field} />
                     </FormControl>
@@ -180,14 +196,6 @@ export function AddUserDialog() {
               )}
             />
 
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Como funciona o login?</AlertTitle>
-                <AlertDescription>
-                    O usuário fará login usando sua própria conta (Ex: Microsoft). A senha padrão <strong>tim@123456</strong> só é usada se você criar uma conta de "Email/Senha" manualmente no Firebase.
-                </AlertDescription>
-            </Alert>
-            
             <DialogFooter>
               <Button
                 type="button"

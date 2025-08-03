@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -560,6 +559,24 @@ export async function _getUserByEmail(email: string): Promise<User | null> {
     }
 }
 
+async function _getUserById(id: string): Promise<User | null> {
+    try {
+        const pool = await getDbPool();
+        const result = await pool.request()
+            .input('id', sql.NVarChar, id)
+            .query('SELECT * FROM Users WHERE id = @id');
+
+        if (result.recordset.length > 0) {
+            return parseUser(result.recordset[0]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Erro ao buscar usuário por ID:", error);
+        throw error;
+    }
+}
+
+
 export async function _getUsers(): Promise<User[]> {
   try {
     const pool = await getDbPool();
@@ -575,27 +592,17 @@ export async function _getUsers(): Promise<User[]> {
 // Ela verifica se um usuário já existe. Se sim, atualiza seus dados.
 // Se não, cria um novo registro. Isso centraliza a lógica de criação e
 // atualização de usuários em um único lugar.
-export async function _updateUser(userData: Partial<User> & ({ email: string } | { id: string })): Promise<User> {
+export async function _updateUser(userData: Partial<User> & { id: string }): Promise<User> {
     const pool = await getDbPool();
     const rolePermissions = await getRolePermissions();
     
-    let existingUser: User | null = null;
-    
-    if ('id' in userData && userData.id) {
-        const result = await pool.request().input('id', sql.NVarChar, userData.id).query('SELECT * FROM Users WHERE id = @id');
-        if (result.recordset.length > 0) {
-            existingUser = parseUser(result.recordset[0]);
-        }
-    } else if ('email' in userData && userData.email) {
-        existingUser = await _getUserByEmail(userData.email);
-    }
+    // A chave primária é o ID (Firebase UID), então buscamos por ele.
+    const existingUser = await _getUserById(userData.id);
 
     if (existingUser) {
-        // Mescla os dados existentes com os novos dados
+        // Se existe, mescla os dados para atualizar.
         const mergedData = { ...existingUser, ...userData };
 
-        // Se o cargo foi alterado e nenhuma permissão customizada foi enviada,
-        // aplica as permissões padrão do novo cargo.
         if (userData.role && userData.role !== existingUser.role && !userData.permissions) {
              mergedData.permissions = rolePermissions[userData.role] || [];
         }
@@ -613,15 +620,13 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
                     SET displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
                         permissions = @permissions, accessibleBuildingIds = @accessibleBuildingIds, preferences = @preferences
                     WHERE id = @id`;
-    } else if ('email' in userData && userData.email) {
-        // Se o usuário não existe, cria um novo
-        const email = userData.email.toLowerCase();
-        const newId = `user_${Date.now()}`;
+    } else {
+        // Se não existe, cria um novo registro usando o ID (UID) fornecido.
         const role = userData.role || 'guest';
         
         await pool.request()
-            .input('id', sql.NVarChar, newId)
-            .input('email', sql.NVarChar, email)
+            .input('id', sql.NVarChar, userData.id)
+            .input('email', sql.NVarChar, userData.email?.toLowerCase())
             .input('displayName', sql.NVarChar, userData.displayName || null)
             .input('photoURL', sql.NVarChar, userData.photoURL || null)
             .input('role', sql.NVarChar, role)
@@ -632,12 +637,9 @@ export async function _updateUser(userData: Partial<User> & ({ email: string } |
             .input('isTestData', sql.Bit, userData.isTestData || false)
             .query`INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData) 
                     VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, @isTestData)`;
-    } else {
-        throw new Error("A atualização ou criação do usuário falhou: dados insuficientes (ID ou email são necessários).");
     }
 
-    const finalEmail = 'email' in userData ? userData.email!.toLowerCase() : existingUser!.email;
-    const updatedUser = await _getUserByEmail(finalEmail);
+    const updatedUser = await _getUserById(userData.id);
     if (!updatedUser) {
         throw new Error("Falha crítica: não foi possível recuperar o usuário após a operação no banco de dados.");
     }

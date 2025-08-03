@@ -5,21 +5,29 @@ import { getAuth } from 'firebase-admin/auth';
 import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { getFirebaseAuth } from './firebase-admin';
+import { headers } from 'next/headers';
+
 
 // Com grandes poderes vêm grandes responsabilidades. Esta função tem grandes poderes.
 async function getAdminUser() {
-    // This is a placeholder for getting the currently logged-in admin user.
-    // In a real app, you'd get this from the session.
-    // For now, let's assume a mock admin for logging purposes.
-    // In a server action, there is no direct concept of "the user" without passing it in.
-    // This is a limitation we'll work around for now.
-    const mockAdminEmail = "dconceicao_fundamentos@timbrasil.com";
-    try {
-        const user = await _getUserByEmail(mockAdminEmail);
-        return user;
-    } catch(e){
-        return null;
+    // Esta função busca o usuário que está realizando a ação.
+    // Em um cenário de produção, isso seria derivado de uma sessão validada.
+    const authorization = headers().get('Authorization');
+    if (authorization?.startsWith('Bearer ')) {
+        const idToken = authorization.split('Bearer ')[1];
+        try {
+            const auth = getFirebaseAuth();
+            const decodedToken = await auth.verifyIdToken(idToken);
+            if (decodedToken.email) {
+                return await _getUserByEmail(decodedToken.email);
+            }
+        } catch (error) {
+            console.error("Erro ao verificar o token de autenticação do administrador:", error);
+            // Retorna null se o token for inválido, para que a operação falhe de forma segura.
+            return null;
+        }
     }
+    return null;
 }
 
 export async function ensureDatabaseSchema(): Promise<string> {
@@ -35,43 +43,12 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     return _getUserByEmail(email);
 }
 
-export async function updateUser(userData: Partial<User> & ({ email: string } | { id: string })): Promise<User> {
+export async function updateUser(userData: Partial<User> & { id: string }): Promise<User> {
     const adminUser = await getAdminUser();
-    const isCreating = !('id' in userData && userData.id);
 
-    // Capture state before the update for detailed logging
-    let oldState: User | null = null;
-    if (!isCreating && 'id' in userData) {
-        // If we are updating, we need the old state for logging.
-        // We find the user by ID and then use their email to get the full old state.
-        const existingUser = await _updateUser({ id: userData.id }); // A bit inefficient, but gets the email
-        if (existingUser?.email) {
-            oldState = await _getUserByEmail(existingUser.email);
-        }
-    } else if (!isCreating && 'email' in userData) {
-        oldState = await _getUserByEmail(userData.email);
-    }
-    
-    // Se estiver criando um novo usuário, primeiro cria a conta no Firebase Auth.
-    if (isCreating && 'email' in userData && userData.email) {
-        try {
-            const auth = getFirebaseAuth();
-            await auth.createUser({
-                email: userData.email,
-                password: 'tim@123456', // Senha padrão para novos usuários
-                displayName: userData.displayName || undefined,
-            });
-        } catch (error: any) {
-            if (error.code === 'auth/email-already-exists') {
-                // Se o usuário já existe no Firebase Auth mas não no nosso DB,
-                // podemos optar por apenas logar ou tentar sincronizar.
-                // Por enquanto, vamos lançar um erro claro.
-                throw new Error('Este e-mail já está registrado no serviço de autenticação.');
-            }
-            console.error("Erro ao criar usuário no Firebase Auth:", error);
-            throw new Error(`Falha ao criar usuário no Firebase Auth: ${error.message}`);
-        }
-    }
+    // Determina se é uma operação de criação ou atualização
+    const userToUpdate = await _getUserByEmail(userData.email);
+    const isCreating = !userToUpdate;
 
     const updatedUser = await _updateUser(userData);
 
@@ -92,7 +69,7 @@ export async function updateUser(userData: Partial<User> & ({ email: string } | 
                 entityType: 'User',
                 entityId: updatedUser.id,
                 details: {
-                    old: oldState ? { role: oldState.role, permissions: oldState.permissions, accessibleBuildingIds: oldState.accessibleBuildingIds, preferences: oldState.preferences } : {},
+                    old: userToUpdate ? { role: userToUpdate.role, permissions: userToUpdate.permissions, accessibleBuildingIds: userToUpdate.accessibleBuildingIds, preferences: userToUpdate.preferences } : {},
                     new: { role: updatedUser.role, permissions: updatedUser.permissions, accessibleBuildingIds: updatedUser.accessibleBuildingIds, preferences: updatedUser.preferences }
                 }
             });
@@ -108,18 +85,21 @@ export async function deleteUser(userId: string): Promise<void> {
     }
 
     const adminUser = await getAdminUser();
-    const userToDelete = await _updateUser({ id: userId }); // Um jeito de pegar o usuário pelo ID
+    const userToDelete = await _updateUser({ id: userId }); 
 
     // Deleta apenas do banco de dados local. A exclusão no Firebase Auth deve ser manual.
     await _deleteUser(userId);
 
-    // Loga o evento de auditoria
     if (adminUser && userToDelete) {
         await logAuditEvent({
-            action: 'USER_DELETED_FROM_DB', // Ação modificada para refletir a operação
+            action: 'USER_DELETED_FROM_DB',
             entityType: 'User',
             entityId: userId,
-            details: { email: userToDelete.email, displayName: userToDelete.displayName, note: 'User deleted from local DB only.' }
+            details: { 
+              email: userToDelete.email, 
+              displayName: userToDelete.displayName, 
+              note: 'Usuário removido apenas do banco de dados da aplicação. A conta de autenticação permanece.' 
+            }
         });
     }
 }
