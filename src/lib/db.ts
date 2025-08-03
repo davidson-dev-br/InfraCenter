@@ -1,5 +1,4 @@
 
-'use server';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 
@@ -10,7 +9,7 @@ import mysql from 'mysql2/promise';
 
 let pool: sql.ConnectionPool | undefined;
 
-async function createPool(): Promise<sql.ConnectionPool> {
+function createPool(): Promise<sql.ConnectionPool> {
     const connectionString = process.env.AZURE_DATABASE_URL;
     if (!connectionString) {
         throw new Error('A variável de ambiente AZURE_DATABASE_URL não está definida. A aplicação não pode se conectar ao banco de dados.');
@@ -51,26 +50,20 @@ async function createPool(): Promise<sql.ConnectionPool> {
           console.error('Erro inesperado no pool do banco de dados:', err);
         });
 
-        await newPool.connect();
-        console.log("Conexão com Azure SQL estabelecida com sucesso.");
-        return newPool;
+        return newPool.connect().then(pool => {
+            console.log("Conexão com Azure SQL estabelecida com sucesso.");
+            return pool;
+        });
     } catch (err: any) {
         throw new Error(`Falha ao conectar ao banco de dados: ${err.message}`);
     }
 }
 
 
-export async function getDbPool(): Promise<sql.ConnectionPool> {
-    if (pool && pool.connected) {
-        return pool;
+export function getDbPool(): Promise<sql.ConnectionPool> {
+    if (!pool) {
+        pool = createPool();
     }
-
-    if (pool) {
-        // Tenta fechar o pool antigo se ele existir, mas não estiver conectado
-        await pool.close();
-    }
-    
-    pool = await createPool();
     return pool;
 }
 
