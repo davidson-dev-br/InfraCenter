@@ -3,29 +3,15 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuth, signInWithPopup, OAuthProvider, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithPopup, OAuthProvider } from "firebase/auth";
 import { app } from "@/lib/firebase"; 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Server, Loader2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  password: z.string().min(1, { message: "A senha é obrigatória." }),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
 
 
 function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -57,11 +43,6 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const auth = getAuth(app);
   
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
-
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unprovisioned') {
@@ -85,29 +66,12 @@ function LoginContent() {
     }
   };
 
-  const handleEmailLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-        // O AuthProvider cuidará do redirecionamento
-    } catch (error: any) {
-        handleAuthError(error);
-    } finally {
-        setIsLoading(false);
-    }
-  }
-
   const handleAuthError = (error: any) => {
     console.error("Erro de autenticação:", error);
     if (error.code === 'auth/account-exists-with-different-credential') {
       setError("Uma conta já existe com este e-mail, mas com um método de login diferente.");
     } else if (error.code === 'auth/popup-closed-by-user') {
       setError("A janela de login foi fechada. Por favor, tente novamente.");
-    } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email' || error.code === 'auth/wrong-password') {
-      setError("Credenciais inválidas. Verifique seu e-mail e senha.");
-    } else if (error.code === 'auth/user-not-found') {
-        setError("Nenhum usuário encontrado com este e-mail.");
     } else {
       setError("Falha ao autenticar. Verifique sua conexão ou tente novamente mais tarde.");
     }
@@ -125,73 +89,26 @@ function LoginContent() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
             <CardDescription>
-                Escolha seu método de login para acessar o painel.
+                Faça login com sua conta Microsoft para acessar o painel.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="microsoft">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="microsoft">Microsoft</TabsTrigger>
-                    <TabsTrigger value="email">Email</TabsTrigger>
-                    <TabsTrigger value="register">Registrar</TabsTrigger>
-                </TabsList>
-                <TabsContent value="microsoft" className="pt-6">
-                     <Button onClick={handleMicrosoftLogin} disabled={isLoading} className="w-full">
-                        {isLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <MicrosoftIcon className="mr-2 h-5 w-5" />
-                        )}
-                        Entrar com Microsoft
-                    </Button>
-                </TabsContent>
-                <TabsContent value="email" className="pt-4">
-                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleEmailLogin)} className="space-y-4">
-                           <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="seu.email@provedor.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Senha</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isLoading} className="w-full">
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Entrar
-                            </Button>
-                        </form>
-                    </Form>
-                </TabsContent>
-                <TabsContent value="register" className="pt-6">
-                    <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Cadastro de Novos Usuários</AlertTitle>
-                        <AlertDescription>
-                            Para garantir a segurança do sistema, o cadastro de novos usuários é feito manualmente por um administrador através da página de "Usuários".
-                        </AlertDescription>
-                    </Alert>
-                </TabsContent>
-            </Tabs>
+          <CardContent className="flex flex-col gap-4">
+             <Button onClick={handleMicrosoftLogin} disabled={isLoading} className="w-full">
+                {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <MicrosoftIcon className="mr-2 h-5 w-5" />
+                )}
+                Entrar com Microsoft
+            </Button>
             {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
+             <Alert className="mt-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Cadastro de Novos Usuários</AlertTitle>
+                <AlertDescription>
+                    Para garantir a segurança, o cadastro de novos usuários é feito por um administrador através da página de "Usuários" dentro do sistema.
+                </AlertDescription>
+            </Alert>
           </CardContent>
       </Card>
     </div>
@@ -214,5 +131,3 @@ export default function LoginPage() {
         </Suspense>
     )
 }
-
-    
