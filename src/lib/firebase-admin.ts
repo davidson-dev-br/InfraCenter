@@ -1,55 +1,53 @@
-
 import * as admin from 'firebase-admin';
-import { config } from 'dotenv';
+import 'server-only';
 
-// Força o carregamento das variáveis de ambiente do arquivo .env
-config();
-
-// Variável para armazenar a instância do app inicializado.
+// Variável para armazenar a instância do app inicializado e evitar múltiplas inicializações.
 let app: admin.app.App | null = null;
 
+/**
+ * Inicializa o Firebase Admin SDK se ainda não tiver sido inicializado.
+ * Esta função é projetada para ser chamada de forma "preguiçosa" (lazy),
+ * apenas quando o serviço for realmente necessário.
+ * @returns A instância do app Firebase Admin inicializado.
+ */
 function initializeFirebaseAdmin() {
-    // Se o aplicativo já estiver inicializado, retorne-o.
-    if (admin.apps.length > 0 && admin.apps[0]) {
-        app = admin.apps[0];
+    // Se o app já foi inicializado, retorna a instância existente.
+    if (app) {
         return app;
     }
-    
-    // As credenciais agora são lidas automaticamente do arquivo .env.
+
     const serviceAccount = {
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // O Firebase armazena a chave privada com "\\n" para quebras de linha.
-        // Precisamos substituir isso por quebras de linha reais ("\n").
+        // A chave privada no .env tem quebras de linha como '\\n', precisamos converter para '\n'.
         privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     };
-    
-    // Verifica se todas as credenciais necessárias estão presentes.
+
+    // Verificação explícita para garantir que todas as credenciais foram carregadas do .env
     if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-        console.error("Credenciais de serviço do Firebase estão ausentes. Verifique suas variáveis de ambiente no arquivo .env");
-        return null;
+        throw new Error("Credenciais de serviço do Firebase Admin estão ausentes ou incompletas. Verifique seu arquivo .env na raiz do projeto.");
     }
 
-    // Inicializa o app com as credenciais de serviço.
-    app = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    });
-    return app;
+    try {
+        // Inicializa o app com as credenciais de serviço.
+        app = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+        console.log("Firebase Admin SDK inicializado com sucesso.");
+        return app;
+    } catch (error: any) {
+        // Se a inicialização falhar mesmo com as credenciais presentes, lança um erro detalhado.
+        throw new Error(`Falha crítica ao inicializar o Firebase Admin SDK: ${error.message}`);
+    }
 }
 
-// Exporta uma função que garante a inicialização e retorna a instância de autenticação.
-// Este é o único ponto de entrada para acessar o serviço de admin.
+/**
+ * Ponto de entrada para obter o serviço de autenticação do Firebase Admin.
+ * Garante que o SDK esteja inicializado antes de retornar o serviço de autenticação.
+ * @returns O serviço de autenticação do Firebase Admin.
+ */
 export function getFirebaseAuth() {
-    // Se o app não foi inicializado ainda, inicializa agora (Lazy Initialization).
-    if (!app) {
-        initializeFirebaseAdmin();
-    }
-    
-    // Se, mesmo após a tentativa, a inicialização falhou (ex: credenciais faltando),
-    // lançamos um erro claro.
-    if (!app) {
-        throw new Error("A inicialização do Firebase Admin falhou. Verifique as credenciais de serviço do projeto.");
-    }
-    
-    return admin.auth(app);
+    // Garante que a inicialização ocorra antes de tentar obter o serviço de auth.
+    const firebaseApp = initializeFirebaseAdmin();
+    return admin.auth(firebaseApp);
 }
