@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -55,6 +54,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 
 const roleLabels: Record<UserRole, string> = {
@@ -80,6 +80,7 @@ const roleHierarchy: Record<UserRole, number> = {
 };
 
 const formSchema = z.object({
+  id: z.string().min(1, "O UID do Firebase é obrigatório."),
   role: z.enum(USER_ROLES),
   permissions: z.array(z.string()),
   accessibleBuildingIds: z.array(z.string()),
@@ -107,7 +108,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
   const { toast } = useToast();
   const [defaultPermissions, setDefaultPermissions] = useState<Record<UserRole, string[]>>({} as any);
 
-  const { hasPermission: adminHasPermission, user: adminUser } = usePermissions();
+  const { hasPermission: adminHasPermission, user: adminUser, isDeveloper } = usePermissions();
 
   useEffect(() => {
     if (isOpen) {
@@ -119,6 +120,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: user.id,
       role: user.role,
       permissions: user.permissions || [],
       accessibleBuildingIds: user.accessibleBuildingIds || [],
@@ -130,6 +132,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
   useEffect(() => {
     if (isOpen) {
         form.reset({
+            id: user.id,
             role: user.role,
             permissions: user.permissions || defaultPermissions[user.role] || [],
             accessibleBuildingIds: user.accessibleBuildingIds || [],
@@ -159,7 +162,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
     setIsSubmitting(true);
     try {
       await updateUser({ 
-          id: user.id, 
+          id: data.id,
+          email: user.email, // O email não deve ser editável aqui
           role: data.role,
           permissions: data.permissions ? Array.from(data.permissions) : [],
           accessibleBuildingIds: data.accessibleBuildingIds ? Array.from(data.accessibleBuildingIds) : [],
@@ -188,7 +192,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         await deleteUser(user.id);
         toast({
             title: "Usuário Removido do Sistema",
-            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision.`,
+            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision, mas a conta de autenticação ainda precisa ser removida manualmente no Firebase.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -239,6 +243,17 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         </DialogHeader>
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Controller
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                    <div>
+                        <Label htmlFor="uid">Firebase UID (ID do Usuário)</Label>
+                        <Input id="uid" {...field} disabled={!isDeveloper} />
+                        {!isDeveloper && <p className="text-xs text-muted-foreground mt-1">O UID não pode ser alterado por não-desenvolvedores.</p>}
+                    </div>
+                )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <Label>Cargo</Label>
@@ -246,7 +261,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                         control={form.control}
                         name="role"
                         render={({ field }) => (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione um cargo" />
                                 </SelectTrigger>
