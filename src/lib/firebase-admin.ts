@@ -4,10 +4,14 @@ config();
 
 import * as admin from 'firebase-admin';
 
+// Variável para armazenar a instância do app inicializado.
+let app: admin.app.App | null = null;
+
 function initializeFirebaseAdmin() {
     // Se o aplicativo já estiver inicializado, retorne-o.
     if (admin.apps.length > 0) {
-        return admin.app();
+        app = admin.apps[0];
+        return app;
     }
     
     const serviceAccount = {
@@ -21,25 +25,29 @@ function initializeFirebaseAdmin() {
     // Verifica se todas as credenciais necessárias estão presentes.
     if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
         console.error("Credenciais de serviço do Firebase estão ausentes. Verifique suas variáveis de ambiente.");
-        // Em vez de lançar um erro que quebra a aplicação, retornamos sem inicializar.
-        // As funções que dependem do admin auth precisarão tratar o caso de falha.
         return null;
     }
 
     // Inicializa o app com as credenciais de serviço.
-    return admin.initializeApp({
+    app = admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
     });
+    return app;
 }
 
-// Inicializa imediatamente ao carregar o módulo
-initializeFirebaseAdmin();
-
-// Exporta uma função que retorna a instância de autenticação do app já inicializado.
-// Lança um erro se a inicialização falhou, garantindo que o chamador saiba do problema.
+// Exporta uma função que garante a inicialização e retorna a instância de autenticação.
+// Este é o único ponto de entrada para acessar o serviço de admin.
 export function getFirebaseAuth() {
-    if (!admin.apps.length || !admin.app()) {
+    // Se o app não foi inicializado ainda, inicializa agora (Lazy Initialization).
+    if (!app) {
+        initializeFirebaseAdmin();
+    }
+    
+    // Se, mesmo após a tentativa, a inicialização falhou (ex: credenciais faltando),
+    // lançamos um erro claro.
+    if (!app) {
         throw new Error("A inicialização do Firebase Admin falhou. Verifique as credenciais de serviço do projeto.");
     }
-    return admin.auth();
+    
+    return admin.auth(app);
 }
