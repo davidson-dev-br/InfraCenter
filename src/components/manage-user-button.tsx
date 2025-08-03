@@ -192,7 +192,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         await deleteUser(user.id);
         toast({
             title: "Usuário Removido do Sistema",
-            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision, mas a conta de autenticação ainda precisa ser removida manualmente no Firebase.`,
+            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision, mas a conta de autenticação ainda precisa ser removida manually no Firebase.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -209,12 +209,10 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
   }
 
   const isRoleManagementDisabled = 
-    user.role === 'developer' || // Ninguém pode editar um dev
     adminUser?.id === user.id || // Ninguém pode editar a si mesmo
     roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]; // Admin não pode editar alguém de nível igual ou superior
 
   const getDisabledReason = () => {
-    if (user.role === 'developer') return "Não é possível gerenciar um desenvolvedor.";
     if (adminUser?.id === user.id) return "Não é possível gerenciar a si mesmo.";
     if (roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]) return "Você não pode gerenciar um usuário de nível igual ou superior.";
     return "Gerenciar Usuário";
