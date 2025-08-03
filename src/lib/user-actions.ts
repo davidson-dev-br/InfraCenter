@@ -42,7 +42,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function updateUser(userData: Partial<User> & { password?: string }): Promise<User> {
     const adminUser = await getAdminUser();
     
-    // Se um ID for fornecido, é uma atualização.
+    // Se um ID de usuário for fornecido, primeiro tentamos uma atualização.
     if (userData.id) {
        const userToUpdate = await _getUserById(userData.id);
        if (userToUpdate) {

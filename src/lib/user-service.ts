@@ -602,6 +602,7 @@ export async function _updateUser(userData: Partial<User> & { id: string }): Pro
         // Se existe, mescla os dados para atualizar.
         const mergedData = { ...existingUser, ...userData };
 
+        // Se o cargo mudou e nenhuma permissão customizada foi enviada, aplica as permissões padrão do novo cargo.
         if (userData.role && userData.role !== existingUser.role && !userData.permissions) {
              mergedData.permissions = rolePermissions[userData.role] || [];
         }
