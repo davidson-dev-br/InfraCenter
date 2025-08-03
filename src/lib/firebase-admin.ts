@@ -25,7 +25,7 @@ function initializeFirebaseAdmin() {
 
     // Verificação explícita para garantir que todas as credenciais foram carregadas do .env
     if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-        throw new Error("Credenciais de serviço do Firebase Admin estão ausentes ou incompletas. Verifique seu arquivo .env na raiz do projeto.");
+        throw new Error("Credenciais de serviço do Firebase Admin estão ausentes ou incompletas. Verifique seu arquivo .env.local na raiz do projeto.");
     }
 
     try {
