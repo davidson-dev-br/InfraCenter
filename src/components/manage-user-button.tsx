@@ -207,14 +207,14 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         setIsSubmitting(false);
     }
   }
-
+  
   const isRoleManagementDisabled = 
-    adminUser?.id === user.id || // Ninguém pode editar a si mesmo
-    roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]; // Admin não pode editar alguém de nível igual ou superior
+    adminUser?.id === user.id || 
+    (adminUser?.role !== 'developer' && roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]);
 
   const getDisabledReason = () => {
     if (adminUser?.id === user.id) return "Não é possível gerenciar a si mesmo.";
-    if (roleHierarchy[adminUser?.role ?? 'guest'] <= roleHierarchy[user.role]) return "Você não pode gerenciar um usuário de nível igual ou superior.";
+    if (isRoleManagementDisabled) return "Você não pode gerenciar um usuário de nível igual ou superior.";
     return "Gerenciar Usuário";
   }
 
@@ -265,7 +265,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                 {USER_ROLES.map((role) => (
-                                    (role !== 'guest' && role !== 'developer' && roleHierarchy[role] < roleHierarchy[adminUser?.role ?? 'guest']) && (
+                                    (role !== 'guest' && roleHierarchy[role] < roleHierarchy[adminUser?.role ?? 'guest']) && (
                                     <SelectItem key={role} value={role}>
                                         {roleLabels[role]}
                                     </SelectItem>
