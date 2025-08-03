@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { ReactNode, useEffect, useState, useCallback, Suspense } from 'react';
@@ -11,10 +12,10 @@ import { updateUser, getUserByEmail, ensureDatabaseSchema } from '@/lib/user-act
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
-import { AppLayout } from './app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { AppLayout } from '@/components/app-layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 // COMENTÁRIO DE ARQUITETURA:
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await ensureDatabaseSchema();
         
         // A busca agora é pelo UID do Firebase, que é a chave primária
-        const userRecord = await _getUserByEmail(user.email);
+        const userRecord = await getUserByEmail(user.email);
 
         if (userRecord) {
           const [updatedUser, buildingsData] = await Promise.all([

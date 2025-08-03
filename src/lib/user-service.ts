@@ -559,6 +559,23 @@ export async function _getUserByEmail(email: string): Promise<User | null> {
     }
 }
 
+export async function _getUserById(id: string): Promise<User | null> {
+    try {
+        const pool = await getDbPool();
+        const result = await pool.request()
+            .input('id', sql.NVarChar, id)
+            .query('SELECT * FROM Users WHERE id = @id');
+
+        if (result.recordset.length > 0) {
+            return parseUser(result.recordset[0]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Erro ao buscar usuário por ID:", error);
+        throw error;
+    }
+}
+
 export async function _getUsers(): Promise<User[]> {
   try {
     const pool = await getDbPool();
@@ -579,7 +596,7 @@ export async function _updateUser(userData: Partial<User> & { id: string }): Pro
     const rolePermissions = await getRolePermissions();
     
     // A chave primária é o ID (Firebase UID), então buscamos por ele.
-    const existingUser = await _getUserByEmail(userData.email || '');
+    const existingUser = await _getUserById(userData.id);
 
     if (existingUser) {
         // Se existe, mescla os dados para atualizar.
@@ -621,7 +638,7 @@ export async function _updateUser(userData: Partial<User> & { id: string }): Pro
                     VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, @isTestData)`;
     }
 
-    const updatedUser = await _getUserByEmail(userData.email || '');
+    const updatedUser = await _getUserById(userData.id);
     if (!updatedUser) {
         throw new Error("Falha crítica: não foi possível recuperar o usuário após a operação no banco de dados.");
     }

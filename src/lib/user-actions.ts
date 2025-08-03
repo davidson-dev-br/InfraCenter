@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
-import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema } from "./user-service";
+import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema, _getUserById } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { getFirebaseAuth } from './firebase-admin';
 import { headers } from 'next/headers';
@@ -85,7 +86,7 @@ export async function deleteUser(userId: string): Promise<void> {
     }
 
     const adminUser = await getAdminUser();
-    const userToDelete = await _updateUser({ id: userId }); 
+    const userToDelete = await _getUserById(userId); 
 
     // Deleta apenas do banco de dados local. A exclusão no Firebase Auth deve ser manual.
     await _deleteUser(userId);
