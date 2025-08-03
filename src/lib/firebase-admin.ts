@@ -1,7 +1,4 @@
 
-import { config } from 'dotenv';
-config();
-
 import * as admin from 'firebase-admin';
 
 // Variável para armazenar a instância do app inicializado.
@@ -14,6 +11,7 @@ function initializeFirebaseAdmin() {
         return app;
     }
     
+    // As credenciais agora são lidas automaticamente pelo Next.js do arquivo .env na raiz.
     const serviceAccount = {
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -24,7 +22,7 @@ function initializeFirebaseAdmin() {
     
     // Verifica se todas as credenciais necessárias estão presentes.
     if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-        console.error("Credenciais de serviço do Firebase estão ausentes. Verifique suas variáveis de ambiente.");
+        console.error("Credenciais de serviço do Firebase estão ausentes. Verifique suas variáveis de ambiente no arquivo .env");
         return null;
     }
 
