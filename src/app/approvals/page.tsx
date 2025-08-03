@@ -44,7 +44,7 @@ function ApprovalItemCard({ request }: { request: ApprovalRequest }) {
       {isDialogOpen && (
         <ResolveApprovalDialog
           request={request}
-          open={isDialogOpen}
+          isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
         />
       )}
