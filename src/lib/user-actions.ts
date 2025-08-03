@@ -4,7 +4,7 @@
 import { getAuth } from 'firebase-admin/auth';
 import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema } from "./user-service";
 import { logAuditEvent } from './audit-actions';
-import { auth } from './firebase-admin';
+import { getFirebaseAuth } from './firebase-admin';
 
 // Com grandes poderes vêm grandes responsabilidades. Esta função tem grandes poderes.
 async function getAdminUser() {
@@ -49,8 +49,9 @@ export async function updateUser(userData: Partial<User> & ({ email: string } | 
     }
     
     // Se estiver criando um novo usuário, primeiro cria a conta no Firebase Auth.
-    if (isCreating && 'email' in userData && userData.email && auth) {
+    if (isCreating && 'email' in userData && userData.email) {
         try {
+            const auth = await getFirebaseAuth();
             await auth.createUser({
                 email: userData.email,
                 password: 'tim@123456', // Senha padrão para novos usuários
@@ -101,16 +102,13 @@ export async function deleteUser(userId: string): Promise<void> {
     if (!userId) {
         throw new Error("O ID do usuário é obrigatório para a exclusão.");
     }
-
-    if (!auth) {
-        throw new Error("A autenticação do Firebase Admin não está inicializada.");
-    }
     
     const adminUser = await getAdminUser();
     const userToDelete = await _updateUser({ id: userId }); // Um jeito de pegar o usuário pelo ID
 
     // Deleta do Firebase Auth
     try {
+        const auth = await getFirebaseAuth();
         await auth.deleteUser(userId);
     } catch (error: any) {
         // Se o usuário não for encontrado no Firebase Auth, apenas logamos e continuamos para apagar do DB local.

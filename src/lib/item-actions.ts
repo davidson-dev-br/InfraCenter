@@ -11,16 +11,16 @@ import { getModelsByManufacturerId } from './models-actions';
 import { getPortTypes, PortType } from './port-types-actions';
 import { _getUserByEmail, User } from './user-service';
 import { headers } from 'next/headers';
-import { auth } from '@/lib/firebase-admin';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
 async function getCurrentUser(): Promise<User | null> {
-    if (!auth) return null;
     const authorization = headers().get('Authorization');
     if (authorization?.startsWith('Bearer ')) {
         const idToken = authorization.split('Bearer ')[1];
         try {
+            const auth = await getFirebaseAuth();
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
                 return await _getUserByEmail(decodedToken.email);

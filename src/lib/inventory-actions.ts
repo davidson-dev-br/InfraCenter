@@ -7,7 +7,7 @@ import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
 import { _getUserByEmail, User } from './user-service';
 import { headers } from 'next/headers';
-import { auth } from '@/lib/firebase-admin';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 import { getItemStatuses, ItemStatus } from './status-actions';
 
 // Tipagem para os itens retornados pela consulta
@@ -20,15 +20,11 @@ interface InventoryItem extends GridItem {
 // Eu sou o perigo. Eu sou aquele que faz o commit.
 // Uma função para obter o usuário atual no servidor.
 async function getCurrentUser(): Promise<User | null> {
-    if (!auth) {
-        console.warn("Firebase Admin não inicializado. Não é possível autenticar o usuário.");
-        return null;
-    }
-
     const authorization = headers().get('Authorization');
     if (authorization?.startsWith('Bearer ')) {
         const idToken = authorization.split('Bearer ')[1];
         try {
+            const auth = await getFirebaseAuth();
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
                 return await _getUserByEmail(decodedToken.email);

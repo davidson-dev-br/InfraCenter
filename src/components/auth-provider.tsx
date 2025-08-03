@@ -15,6 +15,7 @@ import { AppLayout } from './app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 // COMENTÁRIO DE ARQUITETURA:
 // Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
