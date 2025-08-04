@@ -1,6 +1,8 @@
 
 import * as admin from 'firebase-admin';
 import 'server-only';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Inicializa o Firebase Admin SDK de forma segura, garantindo que as credenciais
@@ -15,31 +17,27 @@ function initializeFirebaseAdmin() {
     if (admin.apps.length > 0) {
         return admin.app();
     }
+    
+    // Constrói o caminho para o arquivo de credenciais na raiz do projeto
+    const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
 
-    // Monta o objeto de credenciais a partir das variáveis de ambiente.
-    const serviceAccount = {
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // A chave privada no .env pode vir com literais '\\n'. Substituímos por quebras de linha reais.
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    };
-
-    // Verificação explícita para garantir que todas as credenciais foram carregadas do .env.
-    // Se alguma estiver faltando, lança um erro claro e informativo.
-    if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-        throw new Error("Credenciais de serviço do Firebase Admin estão ausentes ou incompletas no arquivo .env. Verifique se as variáveis FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL e NEXT_PUBLIC_FIREBASE_PROJECT_ID estão definidas.");
+    // Verifica se o arquivo existe antes de tentar lê-lo
+    if (!fs.existsSync(serviceAccountPath)) {
+        console.error("FALHA CRÍTICA: O arquivo 'serviceAccountKey.json' não foi encontrado na raiz do projeto.");
+        throw new Error("Arquivo de credenciais do Firebase (serviceAccountKey.json) não encontrado.");
     }
+    
+    // Lê e faz o parse do arquivo de credenciais
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
     try {
-        // Inicializa o app com as credenciais de serviço.
-        console.log("Tentando inicializar o Firebase Admin SDK...");
+        console.log("Tentando inicializar o Firebase Admin SDK com serviceAccountKey.json...");
         const app = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
         console.log("Firebase Admin SDK inicializado com sucesso.");
         return app;
     } catch (error: any) {
-        // Se a inicialização falhar mesmo com as credenciais presentes, lança um erro detalhado.
         console.error("FALHA CRÍTICA na inicialização do Firebase Admin:", error.message);
         throw new Error(`Falha crítica ao inicializar o Firebase Admin SDK: ${error.message}`);
     }
