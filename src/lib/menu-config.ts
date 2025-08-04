@@ -19,6 +19,7 @@ import {
     AlertTriangle,
     Settings,
     ClipboardList,
+    Server,
 } from 'lucide-react';
 import { ComponentType } from 'react';
 
@@ -72,6 +73,7 @@ export const NAV_SECTIONS: NavSection[] = [
       title: 'Desenvolvimento',
       isDeveloper: true,
       items: [
+        { href: '/teste-firebase', label: 'Teste Firebase', icon: Server, permission: '*' },
         { href: '/mapa-teste', label: 'CRUD de Itens (Mapa)', icon: FlaskConical, permission: '*' },
         { href: '/teste-upload', label: 'Teste de Upload', icon: FileUp, permission: '*' },
         { href: '/teste-conexoes', label: 'Teste de Conexões', icon: Network, permission: '*' },

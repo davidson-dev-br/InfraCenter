@@ -1,65 +1,47 @@
 
 'use server';
 
-import { getDbPool } from './db';
-import mysql from 'mysql2/promise';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 
-/**
- * Tenta estabelecer uma conexão de teste com o banco de dados MySQL local.
- * Lê as credenciais das variáveis de ambiente.
- * Retorna um objeto com os detalhes da conexão ou do erro.
- */
-export async function getMysqlTestConnection() {
-  const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE } = process.env;
-
-  if (!MYSQL_HOST || !MYSQL_USER || !MYSQL_DATABASE) {
-    return { success: false, message: 'As variáveis de ambiente para o MySQL (HOST, USER, DATABASE) não estão completamente definidas.', data: null };
-  }
-
-  let connection: mysql.Connection | null = null;
-  try {
-    connection = await mysql.createConnection({
-        host: MYSQL_HOST,
-        user: MYSQL_USER,
-        password: MYSQL_PASSWORD,
-        database: MYSQL_DATABASE,
-    });
-    const [rows] = await connection.execute('SELECT "Conexão com o MySQL bem-sucedida!" as message;');
-    return { success: true, message: "Consulta executada com sucesso!", data: rows };
-  } catch (error: any) {
-    return { success: false, message: `Erro de conexão/consulta: ${error.message}`, data: null };
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
+interface TestResult {
+    success: boolean;
+    message: string;
+    details?: string;
 }
 
 /**
- * Server Action para listar todas as tabelas e suas colunas do banco de dados principal (Azure SQL).
- * Retorna um objeto com os dados ou um erro.
+ * Server Action para testar a inicialização do Firebase Admin SDK.
+ * Tenta obter a instância de autenticação e retorna um resultado de sucesso ou falha.
  */
-export async function listAllTables() {
-  try {
-    const pool = await getDbPool();
-    const result = await pool.request().query(`
-      SELECT
-          c.TABLE_SCHEMA,
-          c.TABLE_NAME,
-          c.COLUMN_NAME,
-          c.DATA_TYPE,
-          c.CHARACTER_MAXIMUM_LENGTH,
-          c.IS_NULLABLE
-      FROM INFORMATION_SCHEMA.TABLES AS t
-      JOIN INFORMATION_SCHEMA.COLUMNS AS c ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
-      WHERE t.TABLE_TYPE = 'BASE TABLE' AND t.TABLE_SCHEMA = 'dbo'
-      ORDER BY
-          t.TABLE_NAME,
-          c.ORDINAL_POSITION;
-    `);
-    return { success: true, data: result.recordset, error: null };
-  } catch (error: any) {
-    console.error('Erro ao listar tabelas e colunas:', error);
-    return { success: false, data: null, error: error.message };
-  }
+export async function testFirebaseAdminInit(): Promise<TestResult> {
+    try {
+        console.log("Tentando inicializar o Firebase Admin SDK...");
+        const auth = getFirebaseAuth();
+        console.log("getFirebaseAuth() chamado com sucesso.");
+
+        // Para realmente testar a conexão, tentamos uma operação simples de leitura.
+        // Tentar buscar um usuário inexistente é uma forma segura de verificar.
+        await auth.getUserByEmail('test-sdk-init@example.com').catch(error => {
+            // Ignoramos o erro "user-not-found", pois isso significa que a API funcionou.
+            if (error.code !== 'auth/user-not-found') {
+                throw error; // Lança outros erros (ex: permissão negada)
+            }
+        });
+        
+        console.log("Operação de teste com o SDK concluída com sucesso.");
+
+        return { 
+            success: true, 
+            message: "Firebase Admin SDK inicializado e funcionando corretamente.",
+            details: "A conexão com os serviços do Firebase foi estabelecida e uma operação de teste foi executada com sucesso."
+        };
+
+    } catch (error: any) {
+        console.error("FALHA na inicialização do Firebase Admin SDK:", error);
+        return { 
+            success: false, 
+            message: "Erro ao inicializar ou usar o Firebase Admin SDK.",
+            details: error.stack || error.message || "Erro desconhecido."
+        };
+    }
 }
