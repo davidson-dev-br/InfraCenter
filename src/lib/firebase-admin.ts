@@ -11,9 +11,10 @@ let app: admin.app.App | null = null;
  * @returns A instância do app Firebase Admin inicializado.
  */
 function initializeFirebaseAdmin() {
-    // Se o app já foi inicializado, retorna a instância existente.
-    if (app) {
-        return app;
+    // A biblioteca firebase-admin já gerencia a inicialização única.
+    // Se já houver apps inicializados, retornamos o primeiro (padrão).
+    if (admin.apps.length > 0) {
+        return admin.app();
     }
 
     const serviceAccount = {
