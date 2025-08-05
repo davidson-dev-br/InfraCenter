@@ -75,7 +75,7 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureConnectionsTableExists(pool); 
     await ensureAuditLogTableExists(pool);
     await ensureIncidentsTableExists(pool);
-    await ensureApprovalsTableExists(pool); // <-- NOVA TABELA
+    await ensureApprovalsTableExists(pool);
     await ensureEvidenceTableExists(pool);
     await ensureSensorsTableExists(pool);
 }
@@ -422,12 +422,6 @@ async function ensureApprovalsTableExists(pool: sql.ConnectionPool) {
 
 
 async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
-    // This table seems to have been created with an incorrect purpose before.
-    // Let's drop it if it exists to recreate it correctly.
-     try {
-        await pool.request().query(`DROP TABLE IF EXISTS Evidence`);
-    } catch(e) { /* Ignore drop errors */ }
-
     await ensureTableExists(pool, 'Evidence', `
         CREATE TABLE Evidence (
             id NVARCHAR(50) PRIMARY KEY,
@@ -441,9 +435,6 @@ async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
 }
 
 async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
-     try {
-        await pool.request().query(`DROP TABLE IF EXISTS Sensors`);
-    } catch(e) { /* Ignore drop errors */ }
     await ensureTableExists(pool, 'Sensors', `
         CREATE TABLE Sensors (
             id NVARCHAR(50) PRIMARY KEY,
