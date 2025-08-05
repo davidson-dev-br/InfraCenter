@@ -20,7 +20,6 @@ import {
     Settings,
     ClipboardList,
     Server,
-    KeyRound, // Adicionado para a nova página
 } from 'lucide-react';
 import { ComponentType } from 'react';
 
@@ -74,7 +73,6 @@ export const NAV_SECTIONS: NavSection[] = [
       title: 'Desenvolvimento',
       isDeveloper: true,
       items: [
-        { href: '/teste-auth', label: 'Teste de Auth', icon: KeyRound, permission: '*' },
         { href: '/teste-firebase', label: 'Teste Firebase', icon: Server, permission: '*' },
         { href: '/mapa-teste', label: 'CRUD de Itens (Mapa)', icon: FlaskConical, permission: '*' },
         { href: '/teste-upload', label: 'Teste de Upload', icon: FileUp, permission: '*' },
