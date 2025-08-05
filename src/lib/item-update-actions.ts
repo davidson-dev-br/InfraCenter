@@ -7,33 +7,30 @@ import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
 import { _getUserByEmail, User } from './user-service';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
 async function getCurrentUser(): Promise<User | null> {
-    const auth = await getFirebaseAuth();
-    if (!auth) {
-        console.error("A autenticação do Firebase Admin não está disponível ou falhou ao inicializar.");
-        return null;
-    }
-    
-    try {
-        const sessionCookie = cookies().get('session')?.value;
-        if (!sessionCookie) {
-            return null;
+    const authorization = headers().get('Authorization');
+    if (authorization?.startsWith('Bearer ')) {
+        const idToken = authorization.split('Bearer ')[1];
+        try {
+            const auth = getFirebaseAuth();
+            // A verificação do getFirebaseAuth é importante aqui. Se ele não inicializar, não podemos prosseguir.
+            if (!auth) {
+                 console.error("Falha ao obter instância de autenticação do Firebase Admin.");
+                 return null;
+            }
+            const decodedToken = await auth.verifyIdToken(idToken);
+            if (decodedToken.email) {
+                return await _getUserByEmail(decodedToken.email);
+            }
+        } catch (error) {
+            console.error("Erro ao verificar o token de autenticação via header:", error);
         }
-        
-        const decodedToken = await auth.verifySessionCookie(sessionCookie, true);
-        if (decodedToken.email) {
-            return await _getUserByEmail(decodedToken.email);
-        }
-        
-        return null;
-    } catch (error) {
-        console.log("Nenhuma sessão de cookie válida encontrada ou token expirado. O usuário não está logado no servidor.", error);
-        return null;
     }
+    return null;
 }
 
 
@@ -131,6 +128,8 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
   if (!user) throw new Error("Usuário não autenticado.");
 
   const addInput = (request: sql.Request, key: string, value: any) => {
+    const isNumeric = !isNaN(parseFloat(value)) && isFinite(value);
+    
     if (value === null || value === undefined) {
         if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, null);
         else if (['width', 'height', 'preco'].includes(key)) request.input(key, sql.Float, null);
@@ -138,9 +137,10 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
         else request.input(key, sql.NVarChar, null);
     } else if (typeof value === 'boolean') {
         request.input(key, sql.Bit, value);
-    } else if (typeof value === 'number') {
-        if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, value);
-        else request.input(key, sql.Float, value);
+    } else if (typeof value === 'number' || (typeof value === 'string' && isNumeric)) {
+        const numValue = Number(value);
+        if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, numValue);
+        else request.input(key, sql.Float, numValue);
     } else {
         request.input(key, sql.NVarChar, String(value));
     }
