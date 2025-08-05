@@ -4,10 +4,11 @@
 
 import sql from 'mssql';
 import { getDbPool } from './db';
-import { serviceAccount as devUserCredentials } from './firebase-credentials';
+import { getServiceAccount } from './firebase-credentials';
 import { _ensureDatabaseSchema } from './user-service';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
+const devUserCredentials = getServiceAccount();
 
 const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },

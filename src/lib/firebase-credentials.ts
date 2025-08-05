@@ -1,7 +1,11 @@
 // CUIDADO: Este arquivo contém credenciais de serviço.
 // Ele foi adicionado ao .gitignore, mas certifique-se de que ele nunca seja exposto publicamente.
 
-export const serviceAccount = {
+// A abordagem foi alterada para usar uma função getter.
+// Isso ajuda a evitar problemas de dependência circular e garante que
+// o objeto de credenciais esteja sempre disponível quando a função for chamada.
+
+const serviceAccountObject = {
   "type": "service_account",
   "project_id": "infravision-vjb5j",
   "private_key_id": "aee67a61c45ad72d477917e61c5aa1c6716077a6",
@@ -14,3 +18,7 @@ export const serviceAccount = {
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40infravision-vjb5j.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
 };
+
+export function getServiceAccount() {
+    return serviceAccountObject;
+}

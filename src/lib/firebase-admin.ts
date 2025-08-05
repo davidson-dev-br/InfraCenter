@@ -1,7 +1,6 @@
-
 import * as admin from 'firebase-admin';
 import 'server-only';
-import { serviceAccount } from './firebase-credentials';
+import { getServiceAccount } from './firebase-credentials';
 
 /**
  * Ponto de entrada para obter o serviço de autenticação do Firebase Admin.
@@ -18,6 +17,9 @@ export function getFirebaseAuth() {
     try {
         console.log("Tentando inicializar o Firebase Admin SDK com objeto de credenciais...");
         
+        // Agora chamamos a função para obter as credenciais.
+        const serviceAccount = getServiceAccount();
+
         // Inicializa o app com as credenciais importadas diretamente.
         const app = admin.initializeApp({
             // O tipo de 'serviceAccount' precisa ser convertido para ServiceAccount
