@@ -230,3 +230,7 @@ export function AddUserDialog() {
             </DialogFooter>
           </form>
         </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
