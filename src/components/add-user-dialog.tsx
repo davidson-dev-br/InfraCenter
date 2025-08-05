@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserPlus, Loader2 } from "lucide-react";
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { app } from '@/lib/firebase';
 
 import type { UserRole } from "@/components/permissions-provider";
 import { USER_ROLES, usePermissions } from "@/components/permissions-provider";
@@ -66,6 +68,7 @@ export function AddUserDialog() {
   const router = useRouter();
   const { toast } = useToast();
   const { isDeveloper } = usePermissions();
+  const auth = getAuth(app);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -75,11 +78,20 @@ export function AddUserDialog() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      // 1. Criar usuário no Firebase Auth (no cliente)
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const firebaseUser = userCredential.user;
+
+      // Atualiza o nome do perfil no Firebase Auth
+      await updateProfile(firebaseUser, { displayName: data.displayName });
+
+      // 2. Chamar a Server Action para salvar no banco de dados
       await updateUser({
+        id: firebaseUser.uid, // Usa o UID retornado pelo Firebase
         email: data.email,
         displayName: data.displayName, 
-        password: data.password,
         role: data.role,
+        lastLoginAt: new Date().toISOString(),
       });
 
       toast({
@@ -92,10 +104,14 @@ export function AddUserDialog() {
       router.refresh(); 
     } catch (error: any) {
       console.error("Falha ao adicionar usuário:", error);
+      let errorMessage = "Não foi possível registrar o usuário.";
+      if (error.code === 'auth/email-already-in-use') {
+          errorMessage = "Este e-mail já está sendo usado por outra conta.";
+      }
       toast({
         variant: "destructive",
         title: "Erro ao Criar Usuário",
-        description: error.message || "Não foi possível registrar o usuário.",
+        description: errorMessage,
       });
     } finally {
       setIsSubmitting(false);

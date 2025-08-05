@@ -18,7 +18,10 @@ export async function getFirebaseAuth() {
             // As credenciais são recuperadas de variáveis de ambiente seguras no servidor.
             const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
             if (!serviceAccountString) {
-                throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT não está definida.');
+                // Se a variável não estiver definida, simplesmente não inicialize.
+                // Isso permite que o app funcione sem o SDK Admin em ambientes onde ele não é necessário.
+                console.warn("FIREBASE_SERVICE_ACCOUNT não está definida. O Firebase Admin SDK não será inicializado.");
+                return null;
             }
             const serviceAccount = JSON.parse(serviceAccountString);
             
@@ -27,10 +30,11 @@ export async function getFirebaseAuth() {
             });
              console.log("Firebase Admin SDK inicializado com sucesso.");
         } catch(error: any) {
-            console.error("Falha crítica ao inicializar o Firebase Admin SDK:", error.message);
-            // Lançar o erro é importante para que as chamadas falhem em vez de continuar com um SDK não funcional.
-            throw new Error(`Falha crítica ao inicializar o Firebase Admin SDK: ${error.message}`);
+            console.error("Falha ao inicializar o Firebase Admin SDK:", error.message);
+            // Retorna null para não quebrar a aplicação.
+            return null;
         }
     }
-    return admin.auth();
+    // Retorna a instância de auth se o app foi inicializado, senão null.
+    return admin.apps.length > 0 ? admin.auth() : null;
 }

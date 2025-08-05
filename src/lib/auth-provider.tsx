@@ -7,15 +7,14 @@ import { app } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
-import { updateUser, getUserById, ensureDatabaseSchema } from '@/lib/user-actions';
+import { updateUser, getUserByEmail, ensureDatabaseSchema } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
-import { AppLayout } from '@/components/app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AppLayout } from './app-layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getFirebaseAuth } from '@/lib/firebase-admin';
+import { Button } from './ui/button';
 
 // COMENTÁRIO DE ARQUITETURA:
 // Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
@@ -27,7 +26,7 @@ import { getFirebaseAuth } from '@/lib/firebase-admin';
 //    a. A primeira coisa que ele faz é chamar `ensureDatabaseSchema()`. Isso garante que
 //       todas as tabelas do banco de dados existam. Se uma tabela como 'Approvals'
 //       estiver faltando, ela é criada aqui, tornando o sistema auto-corrigível.
-//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserById`).
+//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
 //    c. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
 //       para o login com uma mensagem de erro.
 //    d. Se o usuário EXISTE, atualizamos seus dados e buscamos os dados da aplicação.
@@ -84,20 +83,6 @@ type Building = {
     name: string;
 };
 
-// Esta função injeta o token de autenticação em todas as requisições fetch.
-const createAuthorizedFetch = (getAuthToken: () => Promise<string | null>) => {
-    if (typeof window === 'undefined') return;
-    const originalFetch = window.fetch;
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        const token = await getAuthToken();
-        const headers = new Headers(init?.headers);
-        if (token) {
-            headers.set('Authorization', `Bearer ${token}`);
-        }
-        return originalFetch(input, { ...init, headers });
-    };
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
@@ -108,25 +93,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    createAuthorizedFetch(() => auth.currentUser?.getIdToken() ?? Promise.resolve(null));
-  }, [auth]);
-
   const handleUserAuth = useCallback(async (user: AuthUser | null) => {
     setLoading(true);
     setConnectionError(null);
-    if (user) {
+    if (user && user.email) {
       try {
         await ensureDatabaseSchema();
-        
-        // A busca agora é pelo UID do Firebase, que é a chave primária
-        const userRecord = await getUserById(user.uid);
+
+        const userRecord = await getUserByEmail(user.email);
 
         if (userRecord) {
           const [updatedUser, buildingsData] = await Promise.all([
             updateUser({
-              id: user.uid, // Garante que o UID do Firebase seja usado
-              email: user.email!, // Email é garantido se o user existir
+              id: userRecord.id,
+              email: user.email.toLowerCase(),
               displayName: user.displayName,
               photoURL: user.photoURL,
               lastLoginAt: new Date().toISOString(),
