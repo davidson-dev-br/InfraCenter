@@ -9,11 +9,7 @@ import type { User } from './user-service';
 // Trate com o devido respeito. - davidson.dev.br
 
 export interface AuditEvent {
-    // Para simplificar, não passaremos o usuário em cada chamada.
-    // O sistema usará um usuário "admin" fixo por enquanto.
-    // Em um sistema de produção, isso viria de uma sessão de usuário.
-    // userId: string;
-    // userDisplayName: string | null;
+    user: User;
     action: string;
     entityType?: string;
     entityId?: string;
@@ -24,9 +20,8 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
     try {
         const pool = await getDbPool();
         await pool.request()
-            // Provisoriamente usando um ID e nome fixos para o ator da ação.
-            .input('userId', sql.NVarChar, 'admin_system')
-            .input('userDisplayName', sql.NVarChar, 'Sistema (Admin)')
+            .input('userId', sql.NVarChar, event.user.id)
+            .input('userDisplayName', sql.NVarChar, event.user.displayName || event.user.email)
             .input('action', sql.NVarChar, event.action)
             .input('entityType', sql.NVarChar, event.entityType || null)
             .input('entityId', sql.NVarChar, event.entityId || null)
@@ -56,4 +51,3 @@ export async function getAuditLogs(): Promise<any[]> {
         return [];
     }
 }
-

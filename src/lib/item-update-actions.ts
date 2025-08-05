@@ -1,14 +1,13 @@
 
-
 'use server';
 
 import sql from 'mssql';
 import { revalidatePath } from 'next/cache';
 import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
-import { _getUserByEmail, _getUserById, User } from './user-service';
-import { getFirebaseAuth } from '@/lib/firebase-admin';
-import { headers } from 'next/headers';
+import { _getUserById, User } from './user-service';
+import { logAuditEvent } from './audit-actions';
+
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
@@ -99,7 +98,7 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
   const pool = await getDbPool();
   const tableName = getTableName(itemData);
   
-  const existingItemResult = await pool.request().input('id', sql.NVarChar, id).query(`SELECT id, status FROM ${tableName} WHERE id = @id`);
+  const existingItemResult = await pool.request().input('id', sql.NVarChar, id).query(`SELECT * FROM ${tableName} WHERE id = @id`);
   const existingItem = existingItemResult.recordset[0];
   const user = await _getUserById(userId);
 
@@ -127,24 +126,36 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
 
   if (existingItem) {
     // --- Lógica de Aprovação ---
-    if (fieldsToUpdate.status && fieldsToUpdate.status === 'active' && existingItem.status === 'draft') {
+    if (fieldsToUpdate.status && fieldsToUpdate.status !== existingItem.status && fieldsToUpdate.status === 'active' && existingItem.status === 'draft') {
         await createApprovalRequest(pool, id, tableName, 'draft', 'active', user);
         fieldsToUpdate.status = 'pending_approval'; // Muda o status para pendente
     }
 
-    const validFields = Object.keys(fieldsToUpdate).filter(key => (fieldsToUpdate as any)[key] !== undefined);
+    const validFields = Object.keys(fieldsToUpdate).filter(key => (fieldsToUpdate as any)[key] !== undefined && (fieldsToUpdate as any)[key] !== existingItem[key]);
     if (validFields.length === 0) return;
 
     try {
       const request = pool.request().input('id', sql.NVarChar, id);
       const setClauses = validFields.map(key => `${key} = @${key}`);
       
+      const detailsForLog: Record<string, any> = {};
+
       for (const key of validFields) {
           addInput(request, key, (fieldsToUpdate as any)[key]);
+          detailsForLog[key] = { old: existingItem[key], new: (fieldsToUpdate as any)[key] };
       }
 
       const query = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = @id`;
       await request.query(query);
+
+      await logAuditEvent({
+        user,
+        action: 'ITEM_UPDATED',
+        entityType: tableName,
+        entityId: id,
+        details: detailsForLog,
+      });
+
     } catch (error: any) {
         console.error(`Erro de banco de dados ao ATUALIZAR item ${id}:`, error);
         throw new Error(`Falha ao atualizar o item ${itemData.label || id} no banco de dados. Detalhe: ${error.message}`);
@@ -172,6 +183,15 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
             }
             
             await transaction.commit();
+
+             await logAuditEvent({
+                user,
+                action: 'ITEM_CREATED',
+                entityType: tableName,
+                entityId: id,
+                details: allDataForInsert
+            });
+
         } catch (err) {
             await transaction.rollback();
             throw err;

@@ -5,8 +5,7 @@ import sql from 'mssql';
 import { getDbPool } from './db';
 import { logAuditEvent } from './audit-actions';
 import { revalidatePath } from 'next/cache';
-import { _getUserByEmail, User } from './user-service';
-import { headers } from 'next/headers';
+import { _getUserById, User } from './user-service';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 export interface ApprovalRequest {
@@ -21,19 +20,9 @@ export interface ApprovalRequest {
 }
 
 async function getCurrentUser(): Promise<User | null> {
-    const authorization = headers().get('Authorization');
-    if (authorization?.startsWith('Bearer ')) {
-        const idToken = authorization.split('Bearer ')[1];
-        try {
-            const auth = getFirebaseAuth();
-            const decodedToken = await auth.verifyIdToken(idToken);
-            if (decodedToken.email) {
-                return await _getUserByEmail(decodedToken.email);
-            }
-        } catch (error) {
-            console.error("Erro ao verificar o token de autenticação:", error);
-        }
-    }
+    // Esta função precisa ser implementada de forma robusta,
+    // talvez lendo um cookie de sessão ou um token de autorização.
+    // Por enquanto, vamos assumir que o usuário é passado para as funções que precisam dele.
     return null;
 }
 
@@ -89,10 +78,11 @@ export async function getPendingApprovals(): Promise<ApprovalRequest[]> {
 export async function resolveApproval(
     approvalId: string,
     decision: 'approved' | 'rejected',
-    notes: string | null
+    notes: string | null,
+    adminUserId: string,
 ): Promise<void> {
 
-    const user = await getCurrentUser();
+    const user = await _getUserById(adminUserId);
     if (!user) {
         throw new Error("Usuário não autenticado.");
     }
@@ -139,6 +129,7 @@ export async function resolveApproval(
         await transaction.commit();
 
         await logAuditEvent({
+            user,
             action: `APPROVAL_${decision.toUpperCase()}`,
             entityType: 'Approvals',
             entityId: approvalId,

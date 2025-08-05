@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { resolveApproval, ApprovalRequest } from '@/lib/approval-actions';
 import { Badge } from '../ui/badge';
+import { usePermissions } from '../permissions-provider';
 
 const formSchema = z.object({
   notes: z.string().optional(),
@@ -48,6 +49,7 @@ export function ResolveApprovalDialog({
 }: ResolveApprovalDialogProps) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = usePermissions();
     
     const form = useForm<FormData>({
       resolver: zodResolver(formSchema),
@@ -55,9 +57,13 @@ export function ResolveApprovalDialog({
     });
 
     const handleResolve = async (decision: 'approved' | 'rejected') => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.'});
+            return;
+        }
         const notes = form.getValues('notes');
         try {
-            await resolveApproval(request.id, decision, notes || null);
+            await resolveApproval(request.id, decision, notes || null, user.id);
             toast({
                 title: 'Sucesso!',
                 description: `A solicitação para o item "${request.entityLabel}" foi ${decision === 'approved' ? 'aprovada' : 'rejeitada'}.`,
