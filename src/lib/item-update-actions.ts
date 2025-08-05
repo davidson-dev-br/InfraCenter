@@ -18,6 +18,10 @@ async function getCurrentUser(): Promise<User | null> {
         const idToken = authorization.split('Bearer ')[1];
         try {
             const auth = getFirebaseAuth();
+            if (!auth) {
+                 console.warn("A autenticação do Firebase Admin não está disponível.");
+                 return null;
+            }
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
                 return await _getUserByEmail(decodedToken.email);
