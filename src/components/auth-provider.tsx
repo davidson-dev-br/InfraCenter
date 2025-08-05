@@ -24,13 +24,10 @@ import { getFirebaseAuth } from '@/lib/firebase-admin';
 // FLUXO DE EXECUÇÃO:
 // 1. `onAuthStateChanged` (Firebase): Ouve mudanças no estado de login do Firebase.
 // 2. `handleUserAuth`: Quando um usuário é detectado, esta função é chamada.
-//    a. A primeira coisa que ele faz é chamar `ensureDatabaseSchema()`. Isso garante que
-//       todas as tabelas do banco de dados existam. Se uma tabela como 'Approvals'
-//       estiver faltando, ela é criada aqui, tornando o sistema auto-corrigível.
+//    a. Garante que o schema do banco de dados exista.
 //    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
-//    c. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
-//       para o login com uma mensagem de erro.
-//    d. Se o usuário EXISTE, atualizamos seus dados e buscamos os dados da aplicação.
+//    c. Se o usuário NÃO EXISTE no nosso DB, ele é criado com o cargo 'guest'.
+//    d. Se o usuário EXISTE (ou foi criado), atualizamos seus dados e buscamos os dados da aplicação.
 //    e. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
 // 3. Renderização Condicional:
 //    - Enquanto `loading` for `true`, exibe um loader de página inteira.
@@ -117,31 +114,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConnectionError(null);
     if (user && user.email) {
       try {
-        // GARANTE QUE O SCHEMA DO BANCO DE DADOS ESTÁ ATUALIZADO
         await ensureDatabaseSchema();
+        
+        let userRecord = await getUserByEmail(user.email);
 
-        const userRecord = await getUserByEmail(user.email);
-
-        if (userRecord) {
-          const [updatedUser, buildingsData] = await Promise.all([
-            updateUser({
-              id: userRecord.id,
-              email: user.email.toLowerCase(),
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              lastLoginAt: new Date().toISOString(),
-            }),
-            getBuildingsList()
-          ]);
-          setAuthUser(user);
-          setDbUser(updatedUser);
-          setBuildings(buildingsData);
-        } else {
-          await signOut(auth);
-          setAuthUser(null);
-          setDbUser(null);
-          router.push('/login?error=unprovisioned'); 
+        if (!userRecord) {
+            console.log(`Usuário autenticado ${user.email} não encontrado no DB. Criando novo registro...`);
+            userRecord = await updateUser({
+                id: user.uid,
+                email: user.email.toLowerCase(),
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                role: 'guest', // Novo usuário sempre começa como convidado
+                lastLoginAt: new Date().toISOString(),
+            });
         }
+        
+        const [updatedUser, buildingsData] = await Promise.all([
+          updateUser({
+            id: userRecord.id,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLoginAt: new Date().toISOString(),
+          }),
+          getBuildingsList()
+        ]);
+        
+        setAuthUser(user);
+        setDbUser(updatedUser);
+        setBuildings(buildingsData);
+
       } catch (error: any) {
          console.error("Erro de conexão durante a autenticação:", error);
          setConnectionError(error.message || "Erro desconhecido ao conectar ao banco de dados.");
