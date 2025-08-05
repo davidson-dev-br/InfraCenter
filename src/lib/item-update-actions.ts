@@ -1,38 +1,16 @@
 
+
 'use server';
 
 import sql from 'mssql';
 import { revalidatePath } from 'next/cache';
 import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
-import { _getUserByEmail, User } from './user-service';
+import { _getUserByEmail, _getUserById, User } from './user-service';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
 import { headers } from 'next/headers';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
-
-async function getCurrentUser(): Promise<User | null> {
-    const authorization = headers().get('Authorization');
-    if (authorization?.startsWith('Bearer ')) {
-        const idToken = authorization.split('Bearer ')[1];
-        try {
-            const auth = getFirebaseAuth();
-            // A verificação do getFirebaseAuth é importante aqui. Se ele não inicializar, não podemos prosseguir.
-            if (!auth) {
-                 console.error("Falha ao obter instância de autenticação do Firebase Admin.");
-                 return null;
-            }
-            const decodedToken = await auth.verifyIdToken(idToken);
-            if (decodedToken.email) {
-                return await _getUserByEmail(decodedToken.email);
-            }
-        } catch (error) {
-            console.error("Erro ao verificar o token de autenticação via header:", error);
-        }
-    }
-    return null;
-}
-
 
 async function createApprovalRequest(pool: sql.ConnectionPool, entityId: string, entityType: string, oldStatus: string, newStatus: string, user: User) {
     const approvalId = `appr_${Date.now()}`;
@@ -113,7 +91,7 @@ async function createPortsForModel(transaction: sql.Transaction, childItemId: st
  * Server Action para atualizar um item existente ou criar um novo no banco de dados.
  * @param itemData Um objeto contendo o ID do item e os campos a serem atualizados/criados.
  */
-export async function updateItem(itemData: UpdateItemData): Promise<void> {
+export async function updateItem(itemData: UpdateItemData, userId: string): Promise<void> {
   const { id, ...fieldsToUpdate } = itemData;
 
   if (!id) throw new Error('O ID do item é obrigatório para a operação.');
@@ -123,7 +101,7 @@ export async function updateItem(itemData: UpdateItemData): Promise<void> {
   
   const existingItemResult = await pool.request().input('id', sql.NVarChar, id).query(`SELECT id, status FROM ${tableName} WHERE id = @id`);
   const existingItem = existingItemResult.recordset[0];
-  const user = await getCurrentUser();
+  const user = await _getUserById(userId);
 
   if (!user) throw new Error("Usuário não autenticado.");
 

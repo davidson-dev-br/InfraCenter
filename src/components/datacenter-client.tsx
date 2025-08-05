@@ -125,7 +125,7 @@ const StatusLegend = () => {
 
 export function DatacenterClient({ initialData }: { initialData: Building[] }) {
   const { toast } = useToast();
-  const { hasPermission } = usePermissions();
+  const { user, hasPermission } = usePermissions();
   const { activeBuildingId } = useBuilding();
   const [activeRoomId, setActiveRoomId] = React.useState<string | null>(null);
   const [gridItems, setGridItems] = React.useState<GridItem[]>([]);
@@ -249,7 +249,8 @@ export function DatacenterClient({ initialData }: { initialData: Building[] }) {
       const draggedItem = gridItems.find(item => item.id === draggingItem.id);
       if (draggedItem && (draggedItem.x !== draggingItem.originalX || draggedItem.y !== draggingItem.originalY)) {
         try {
-          await updateItem({ id: draggedItem.id, x: draggedItem.x, y: draggedItem.y });
+          if (!user) throw new Error("Usuário não identificado.");
+          await updateItem({ id: draggedItem.id, x: draggedItem.x, y: draggedItem.y }, user.id);
           toast({
             title: "Posição Atualizada",
             description: `A nova posição de ${draggedItem.label} foi salva.`,
