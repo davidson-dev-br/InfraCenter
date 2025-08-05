@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getAuth, UserRecord } from 'firebase-admin/auth';
@@ -36,6 +37,11 @@ export async function getUsers(): Promise<User[]> {
 export async function getUserByEmail(email: string): Promise<User | null> {
     if (!email) return null;
     return _getUserByEmail(email);
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+    if (!id) return null;
+    return _getUserById(id);
 }
 
 

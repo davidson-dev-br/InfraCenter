@@ -8,7 +8,7 @@ import { app } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
-import { updateUser, getUserByEmail, ensureDatabaseSchema } from '@/lib/user-actions';
+import { updateUser, getUserByEmail, ensureDatabaseSchema, getUserById } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
@@ -118,11 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConnectionError(null);
     if (user && user.email) {
       try {
-        // GARANTE QUE O SCHEMA DO BANCO DE DADOS ESTÁ ATUALIZADO
         await ensureDatabaseSchema();
         
         // A busca agora é pelo UID do Firebase, que é a chave primária
-        const userRecord = await getUserByEmail(user.email);
+        const userRecord = await getUserById(user.uid);
 
         if (userRecord) {
           const [updatedUser, buildingsData] = await Promise.all([
@@ -211,3 +210,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <FullPageLoader />;
 }
+
