@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -37,17 +38,16 @@ function initializeFirebaseAdmin() {
     }
 
     // As credenciais são recuperadas de variáveis de ambiente seguras no servidor.
-    // Isso é mais seguro e flexível do que um arquivo de credenciais físico.
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-    if (!serviceAccount) {
+    if (!serviceAccountString) {
         throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT não está definida.');
     }
     
     try {
-        const serviceAccountJson = JSON.parse(serviceAccount);
+        const serviceAccount = JSON.parse(serviceAccountString);
         return admin.initializeApp({
-            credential: admin.credential.cert(serviceAccountJson),
+            credential: admin.credential.cert(serviceAccount),
         });
     } catch(error: any) {
         console.error("Falha ao analisar as credenciais do Firebase. Verifique a variável de ambiente.", error);

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -181,12 +180,12 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
       });
       setIsOpen(false);
       router.refresh(); 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Falha ao atualizar usuário:", error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível atualizar as permissões do usuário.",
+        description: error.message || "Não foi possível atualizar as permissões do usuário.",
       });
     } finally {
       setIsSubmitting(false);
@@ -199,7 +198,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         await deleteUser(user.id);
         toast({
             title: "Usuário Removido",
-            description: `${user.displayName || user.email} foi removido do banco de dados do InfraVision.`,
+            description: `${user.displayName || user.email} foi removido do sistema.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -411,9 +410,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão de Usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-                Esta ação removerá o usuário <span className="font-bold">{user.displayName || user.email}</span> do banco de dados do InfraVision, mas 
-                <span className="font-bold text-destructive"> não</span> o removerá do sistema de autenticação (Firebase). 
-                Você precisará remover o usuário do painel do Firebase Auth manualmente para revogar completamente o acesso.
+                Esta ação removerá o usuário <span className="font-bold">{user.displayName || user.email}</span> do banco de dados do InfraVision e 
+                do sistema de autenticação do Firebase. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -428,7 +426,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Entendi, remover do sistema
+              Sim, excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
