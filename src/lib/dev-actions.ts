@@ -4,17 +4,15 @@
 
 import sql from 'mssql';
 import { getDbPool } from './db';
-import { getServiceAccount } from './firebase-credentials';
 import { _ensureDatabaseSchema } from './user-service';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
-const devUserCredentials = getServiceAccount();
 
 const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
-    { id: devUserCredentials.client_id, email: 'dev@dev.com', displayName: 'Desenvolvedor Padrão', photoURL: null, role: 'developer', permissions: ['*'], accessibleBuildingIds: [], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true }
+    { id: 'dev_user_placeholder_id', email: 'dev@dev.com', displayName: 'Desenvolvedor Padrão', photoURL: null, role: 'developer', permissions: ['*'], accessibleBuildingIds: [], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true }
 ];
 
 const testBuildings = [
@@ -119,7 +117,7 @@ export async function populateTestData() {
     await cleanTestData();
 
     const devUser = {
-        id: devUserCredentials.client_id, 
+        id: 'dev_user_placeholder_id', 
         email: 'dev@dev.com',
         displayName: 'Desenvolvedor Padrão',
         photoURL: null,

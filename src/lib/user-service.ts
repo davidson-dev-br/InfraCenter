@@ -588,15 +588,13 @@ export async function _getUsers(): Promise<User[]> {
   }
 }
 
-// Esta função implementa a lógica "UPSERT" (Update or Insert).
+// Esta função implementa a lógica "UPSERT" (Update or Insert) para nosso DB.
 // Ela verifica se um usuário já existe. Se sim, atualiza seus dados.
-// Se não, cria um novo registro. Isso centraliza a lógica de criação e
-// atualização de usuários em um único lugar.
-export async function _updateUser(userData: Partial<User> & { id: string }): Promise<User> {
+// Se não, cria um novo registro.
+export async function _updateUserInDb(userData: Partial<User> & { id: string }): Promise<User> {
     const pool = await getDbPool();
     const rolePermissions = await getRolePermissions();
     
-    // A chave primária é o ID (Firebase UID), então buscamos por ele.
     const existingUser = await _getUserById(userData.id);
 
     if (existingUser) {

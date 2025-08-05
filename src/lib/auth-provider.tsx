@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { ReactNode, useEffect, useState, useCallback, Suspense } from 'react';
@@ -16,7 +15,6 @@ import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 // COMENTÁRIO DE ARQUITETURA:
 // Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
@@ -28,7 +26,7 @@ import { getFirebaseAuth } from '@/lib/firebase-admin';
 //    a. A primeira coisa que ele faz é chamar `ensureDatabaseSchema()`. Isso garante que
 //       todas as tabelas do banco de dados existam. Se uma tabela como 'Approvals'
 //       estiver faltando, ela é criada aqui, tornando o sistema auto-corrigível.
-//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
+//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserById`).
 //    c. Se o usuário NÃO EXISTE no nosso DB, ele é deslogado do Firebase e redirecionado
 //       para o login com uma mensagem de erro.
 //    d. Se o usuário EXISTE, atualizamos seus dados e buscamos os dados da aplicação.
@@ -116,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleUserAuth = useCallback(async (user: AuthUser | null) => {
     setLoading(true);
     setConnectionError(null);
-    if (user && user.email) {
+    if (user) {
       try {
         await ensureDatabaseSchema();
         
@@ -127,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const [updatedUser, buildingsData] = await Promise.all([
             updateUser({
               id: user.uid, // Garante que o UID do Firebase seja usado
-              email: user.email.toLowerCase(),
+              email: user.email!, // Email é garantido se o user existir
               displayName: user.displayName,
               photoURL: user.photoURL,
               lastLoginAt: new Date().toISOString(),
@@ -210,4 +208,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <FullPageLoader />;
 }
-
