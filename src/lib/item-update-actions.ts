@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -7,31 +6,36 @@ import { revalidatePath } from 'next/cache';
 import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
 import { _getUserByEmail, User } from './user-service';
-import { headers } from 'next/headers';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
 
 type UpdateItemData = Partial<Omit<GridItem, 'id'>> & { id: string };
 
 async function getCurrentUser(): Promise<User | null> {
-    const authorization = headers().get('Authorization');
-    if (authorization?.startsWith('Bearer ')) {
-        const idToken = authorization.split('Bearer ')[1];
-        try {
-            const auth = getFirebaseAuth();
-            if (!auth) {
-                 console.warn("A autenticação do Firebase Admin não está disponível.");
-                 return null;
-            }
-            const decodedToken = await auth.verifyIdToken(idToken);
-            if (decodedToken.email) {
-                return await _getUserByEmail(decodedToken.email);
-            }
-        } catch (error) {
-            console.error("Erro ao verificar o token de autenticação:", error);
-        }
+    const auth = await getFirebaseAuth();
+    if (!auth) {
+        console.error("A autenticação do Firebase Admin não está disponível ou falhou ao inicializar.");
+        return null;
     }
-    return null;
+    
+    try {
+        const sessionCookie = cookies().get('session')?.value;
+        if (!sessionCookie) {
+            return null;
+        }
+        
+        const decodedToken = await auth.verifySessionCookie(sessionCookie, true);
+        if (decodedToken.email) {
+            return await _getUserByEmail(decodedToken.email);
+        }
+        
+        return null;
+    } catch (error) {
+        console.log("Nenhuma sessão de cookie válida encontrada ou token expirado. O usuário não está logado no servidor.", error);
+        return null;
+    }
 }
+
 
 async function createApprovalRequest(pool: sql.ConnectionPool, entityId: string, entityType: string, oldStatus: string, newStatus: string, user: User) {
     const approvalId = `appr_${Date.now()}`;
