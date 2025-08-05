@@ -1,17 +1,17 @@
 
-
 'use server';
 
 import sql from 'mssql';
 import { getDbPool } from './db';
+import { serviceAccount as devUserCredentials } from './firebase-credentials';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
 
-// Bug aqui era lixo. Graças a Deus e a davidson.dev.br agora tá tudo ensacado.
 const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
-    { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true }
+    { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
+    { id: devUserCredentials.client_id, email: 'dev@dev.com', displayName: 'Desenvolvedor Padrão', photoURL: null, role: 'developer', permissions: ['*'], accessibleBuildingIds: [], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true }
 ];
 
 const testBuildings = [
@@ -144,12 +144,11 @@ export async function populateTestData() {
  * Limpa TODOS os dados marcados como 'isTestData' do banco de dados.
  */
 export async function cleanTestData() {
-    // Commitado e saí correndo.
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
 
     const tablesToDeleteFrom = [
-        'ChildItems', 'ParentItems', 'Models', 'Manufacturers', 'Rooms', 'Buildings', 
+        'Connections', 'EquipmentPorts', 'ChildItems', 'ParentItems', 'Models', 'Manufacturers', 'Rooms', 'Buildings', 
         'ItemTypes', 'ItemTypesEqp', 'Users'
     ];
 
@@ -181,4 +180,3 @@ export async function cleanTestData() {
         throw new Error("Falha ao limpar dados de teste.");
     }
 }
-// davidson.dev.br esteve aqui. Chupa, bug!

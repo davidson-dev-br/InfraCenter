@@ -5,6 +5,7 @@ import sql from 'mssql';
 import { getDbPool } from './db';
 import type { UserRole } from '@/components/permissions-provider';
 import { getRolePermissions } from './role-actions';
+import { serviceAccount as devUserCredentials } from './firebase-credentials';
 
 // Adicionado inventoryColumns às preferências do usuário
 export interface UserPreferences {
@@ -80,7 +81,7 @@ async function createAllTables(pool: sql.ConnectionPool) {
 }
 
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Users', `
+    const wasCreated = await ensureTableExists(pool, 'Users', `
         CREATE TABLE Users (
             id NVARCHAR(100) PRIMARY KEY,
             email NVARCHAR(255) NOT NULL UNIQUE,
@@ -94,6 +95,26 @@ async function ensureUsersTableExists(pool: sql.ConnectionPool) {
             isTestData BIT NOT NULL DEFAULT 0
         );
     `);
+     if(wasCreated) {
+        // Se a tabela foi criada, insere o usuário dev padrão
+        const devUser = {
+            id: devUserCredentials.client_id, 
+            email: 'dev@dev.com',
+            displayName: 'Desenvolvedor Padrão',
+            photoURL: null,
+            role: 'developer',
+            permissions: JSON.stringify(['*']),
+            accessibleBuildingIds: JSON.stringify([]),
+            lastLoginAt: new Date(),
+            preferences: JSON.stringify({}),
+            isTestData: true
+        };
+        const request = new sql.Request(pool);
+        await request.query`
+            INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData)
+            VALUES (${devUser.id}, ${devUser.email}, ${devUser.displayName}, ${devUser.photoURL}, ${devUser.role}, ${devUser.permissions}, ${devUser.accessibleBuildingIds}, ${devUser.lastLoginAt}, ${devUser.preferences}, ${devUser.isTestData})
+        `;
+     }
 }
 
 async function ensureBuildingsTableExists(pool: sql.ConnectionPool) {
@@ -481,7 +502,7 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
  * Server Action exportada para ser chamada pelo menu de desenvolvedor.
  * Garante que todo o schema do banco de dados exista.
  */
-export async function ensureDatabaseSchema(): Promise<string> {
+export async function _ensureDatabaseSchema(): Promise<string> {
     try {
         const pool = await getDbPool();
         await createAllTables(pool);

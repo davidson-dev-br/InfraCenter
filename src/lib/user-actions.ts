@@ -2,7 +2,7 @@
 'use server';
 
 import { getAuth, UserRecord } from 'firebase-admin/auth';
-import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, ensureDatabaseSchema as _ensureDatabaseSchema, _getUserById } from "./user-service";
+import { _getUsers, _getUserByEmail, _updateUser, User, _deleteUser, _ensureDatabaseSchema, _getUserById } from "./user-service";
 import { logAuditEvent } from './audit-actions';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
 import { headers } from 'next/headers';
