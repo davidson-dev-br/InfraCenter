@@ -117,6 +117,21 @@ export async function populateTestData() {
     
     await cleanTestData();
 
+    const devUser = {
+        id: devUserCredentials.client_id, 
+        email: 'dev@dev.com',
+        displayName: 'Desenvolvedor Padrão',
+        photoURL: null,
+        role: 'developer',
+        permissions: JSON.stringify(['*']),
+        accessibleBuildingIds: JSON.stringify([]),
+        lastLoginAt: new Date(),
+        preferences: JSON.stringify({}),
+        isTestData: true
+    };
+    await upsertRecord(pool, 'Users', devUser);
+
+
     const operationsInOrder = [
         ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
         ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
