@@ -33,10 +33,11 @@ export async function getUserById(id: string): Promise<User | null> {
 export async function updateUser(userData: Partial<User>): Promise<User> {
     const adminUser = await getAdminUser();
     
-    const isCreating = !(await _getUserById(userData.id!));
+    // A verificação de existência agora é baseada no e-mail para lidar com a vinculação de contas.
+    const isCreating = !(await _getUserByEmail(userData.email!));
 
     try {
-        const savedUser = await _updateUserInDb(userData);
+        const savedUser = await _updateUserInDb(userData as User);
         
         if (adminUser) {
             await logAuditEvent({

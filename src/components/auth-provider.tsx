@@ -17,23 +17,24 @@ import { AlertTriangle, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { getFirebaseAuth } from '@/lib/firebase-admin';
 
-// COMENTÁRIO DE ARQUITETURA:
-// Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,
-// os dados do usuário, permissões e o layout geral.
+// COMENTÁRIO DE ARQUITETURA (VERSÃO ROBUSTA):
+// Este AuthProvider agora implementa uma lógica de "vinculação implícita" baseada em e-mail.
 //
 // FLUXO DE EXECUÇÃO:
-// 1. `onAuthStateChanged` (Firebase): Ouve mudanças no estado de login do Firebase.
-// 2. `handleUserAuth`: Quando um usuário é detectado, esta função é chamada.
-//    a. Garante que o schema do banco de dados exista.
-//    b. Busca o registro do usuário em nosso banco de dados SQL (`getUserByEmail`).
-//    c. Se o usuário NÃO EXISTE no nosso DB, ele é criado com o cargo 'guest'.
-//    d. Se o usuário EXISTE (ou foi criado), atualizamos seus dados e buscamos os dados da aplicação.
-//    e. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
-// 3. Renderização Condicional:
-//    - Enquanto `loading` for `true`, exibe um loader de página inteira.
-//    - Se o usuário não estiver logado (`!authUser`) e a página não for pública, redireciona para `/login`.
-//    - Se tudo estiver OK, ele renderiza o `<AppLayout>`, envolvendo o conteúdo da página
-//      com os Providers de contexto necessários (`PermissionsProvider`, `BuildingProvider`).
+// 1. `onAuthStateChanged` (Firebase): Ouve o estado de login.
+// 2. `handleUserAuth`: Quando um usuário é detectado (user: AuthUser):
+//    a. Busca no nosso banco de dados SQL um usuário com o mesmo e-mail (`getUserByEmail`).
+//    b. **CENÁRIO 1: USUÁRIO ENCONTRADO NO DB**
+//       - Compara o `id` do registro do DB com o `uid` do usuário do Firebase.
+//       - Se forem diferentes, significa que o UID do Firebase mudou ou o registro do DB
+//         tinha um ID antigo. A ação `updateUser` é chamada para ATUALIZAR o ID no DB
+//         para o `uid` atual do Firebase, efetivamente "reivindicando" e vinculando
+//         o registro do DB à identidade de autenticação correta, preservando todas as permissões.
+//    c. **CENÁRIO 2: USUÁRIO NÃO ENCONTRADO NO DB**
+//       - Este é um usuário genuinamente novo. A ação `updateUser` (que funciona como um 'upsert')
+//         é chamada para CRIAR um novo registro no DB com o `uid` do Firebase, e-mail e
+//         o cargo padrão de 'guest'.
+//    d. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
 
 const FullPageLoader = () => (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -116,32 +117,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await ensureDatabaseSchema();
         
-        let userRecord = await getUserByEmail(user.email);
-
-        if (!userRecord) {
-            console.log(`Usuário autenticado ${user.email} não encontrado no DB. Criando novo registro...`);
-            userRecord = await updateUser({
-                id: user.uid,
-                email: user.email.toLowerCase(),
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                role: 'guest', // Novo usuário sempre começa como convidado
-                lastLoginAt: new Date().toISOString(),
-            });
-        }
+        const userRecordInDb = await getUserByEmail(user.email);
         
-        const [updatedUser, buildingsData] = await Promise.all([
-          updateUser({
-            id: userRecord.id,
+        let userDataToSync: Partial<DbUser> = {
+            id: user.uid, // Sempre usar o UID do Firebase como a fonte da verdade para o ID.
+            email: user.email.toLowerCase(),
             displayName: user.displayName,
             photoURL: user.photoURL,
             lastLoginAt: new Date().toISOString(),
-          }),
+        };
+
+        if (userRecordInDb) {
+            // Usuário existe no nosso DB. Vamos apenas garantir que os dados estão sincronizados.
+            // A ação `updateUser` vai usar o email para encontrar e atualizar o ID se necessário.
+            console.log(`Usuário ${user.email} encontrado no DB. Sincronizando...`);
+        } else {
+            // Usuário não existe no nosso DB. Será criado com o cargo 'guest'.
+            console.log(`Usuário autenticado ${user.email} não encontrado no DB. Criando novo registro...`);
+            userDataToSync.role = 'guest'; 
+        }
+        
+        const [syncedUser, buildingsData] = await Promise.all([
+          updateUser(userDataToSync),
           getBuildingsList()
         ]);
         
         setAuthUser(user);
-        setDbUser(updatedUser);
+        setDbUser(syncedUser);
         setBuildings(buildingsData);
 
       } catch (error: any) {

@@ -435,7 +435,7 @@ async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
 }
 
 async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Sensors', `
+     await ensureTableExists(pool, 'Sensors', `
         CREATE TABLE Sensors (
             id NVARCHAR(50) PRIMARY KEY,
             itemId NVARCHAR(50) NOT NULL,
@@ -580,16 +580,17 @@ export async function _getUsers(): Promise<User[]> {
 }
 
 // Esta função implementa a lógica "UPSERT" (Update or Insert) para nosso DB.
-// Ela verifica se um usuário já existe. Se sim, atualiza seus dados.
+// Ela verifica se um usuário já existe pelo e-mail. Se sim, atualiza seus dados (incluindo o ID, se necessário).
 // Se não, cria um novo registro.
-export async function _updateUserInDb(userData: Partial<User> & { id: string }): Promise<User> {
+export async function _updateUserInDb(userData: Partial<User> & { id: string, email: string }): Promise<User> {
     const pool = await getDbPool();
     const rolePermissions = await getRolePermissions();
     
-    const existingUser = await _getUserById(userData.id);
+    // Busca pelo e-mail para encontrar o registro correto, independente do ID.
+    const existingUser = await _getUserByEmail(userData.email);
 
     if (existingUser) {
-        // Se existe, mescla os dados para atualizar.
+        // Se existe, mescla os dados para atualizar, garantindo que o ID do Firebase seja a fonte da verdade.
         const mergedData = { ...existingUser, ...userData };
 
         // Se o cargo mudou e nenhuma permissão customizada foi enviada, aplica as permissões padrão do novo cargo.
@@ -598,7 +599,7 @@ export async function _updateUserInDb(userData: Partial<User> & { id: string }):
         }
 
         await pool.request()
-            .input('id', sql.NVarChar, mergedData.id)
+            .input('newId', sql.NVarChar, mergedData.id) // O ID atual do Firebase
             .input('email', sql.NVarChar, mergedData.email)
             .input('displayName', sql.NVarChar, mergedData.displayName)
             .input('photoURL', sql.NVarChar, mergedData.photoURL)
@@ -608,16 +609,16 @@ export async function _updateUserInDb(userData: Partial<User> & { id: string }):
             .input('accessibleBuildingIds', sql.NVarChar, JSON.stringify(mergedData.accessibleBuildingIds || []))
             .input('preferences', sql.NVarChar, JSON.stringify(mergedData.preferences || {}))
             .query`UPDATE Users 
-                    SET email = @email, displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
+                    SET id = @newId, displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
                         permissions = @permissions, accessibleBuildingIds = @accessibleBuildingIds, preferences = @preferences
-                    WHERE id = @id`;
+                    WHERE email = @email`; // A atualização é feita usando o e-mail como chave segura.
     } else {
-        // Se não existe, cria um novo registro usando o ID (UID) fornecido.
+        // Se não existe, cria um novo registro usando o ID (UID) e e-mail fornecidos.
         const role = userData.role || 'guest';
         
         await pool.request()
             .input('id', sql.NVarChar, userData.id)
-            .input('email', sql.NVarChar, userData.email?.toLowerCase())
+            .input('email', sql.NVarChar, userData.email.toLowerCase())
             .input('displayName', sql.NVarChar, userData.displayName || null)
             .input('photoURL', sql.NVarChar, userData.photoURL || null)
             .input('role', sql.NVarChar, role)
