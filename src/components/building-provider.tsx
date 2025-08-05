@@ -21,17 +21,22 @@ export const BuildingContext = createContext<BuildingContextType>({
 });
 
 export const BuildingProvider = ({ children, initialBuildings }: { children: ReactNode, initialBuildings: Building[] }) => {
-  const [activeBuildingId, _setActiveBuildingId] = useState<string>('');
+  const [activeBuildingId, _setActiveBuildingId] = useState<string>(initialBuildings[0]?.id || '');
 
   const setActiveBuildingId = useCallback((id: string) => {
     _setActiveBuildingId(id);
   }, []);
   
   useEffect(() => {
+    // Se a lista de prédios mudar e o prédio ativo não estiver mais na lista,
+    // define o primeiro prédio da nova lista como ativo.
     if (initialBuildings.length > 0 && !initialBuildings.some(b => b.id === activeBuildingId)) {
-      setActiveBuildingId(initialBuildings[0].id);
+      _setActiveBuildingId(initialBuildings[0].id);
+    } else if (initialBuildings.length === 0) {
+      // Se não houver prédios, limpa o ID ativo.
+      _setActiveBuildingId('');
     }
-  }, [initialBuildings, activeBuildingId, setActiveBuildingId]);
+  }, [initialBuildings]); // Executa apenas quando a lista de prédios mudar.
   
   const value = {
     buildings: initialBuildings,
