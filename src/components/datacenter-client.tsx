@@ -26,7 +26,7 @@ import { usePermissions } from '@/components/permissions-provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Building, Room, GridItem } from '@/types/datacenter';
 import { RenameRoomDialog } from './rename-room-dialog';
-import { updateItem } from '@/lib/item-actions';
+import { updateItem } from '@/lib/item-update-actions';
 import { ItemDetailDialog } from './item-detail-dialog'; 
 import { AddItemDialog } from './add-item-dialog';
 import { cn } from '@/lib/utils';

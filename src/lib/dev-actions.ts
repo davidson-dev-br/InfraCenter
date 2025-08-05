@@ -1,9 +1,11 @@
 
+
 'use server';
 
 import sql from 'mssql';
 import { getDbPool } from './db';
 import { serviceAccount as devUserCredentials } from './firebase-credentials';
+import { _ensureDatabaseSchema } from './user-service';
 
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
 
@@ -179,4 +181,8 @@ export async function cleanTestData() {
         console.error("Erro ao limpar dados de teste. A transação foi revertida.", error);
         throw new Error("Falha ao limpar dados de teste.");
     }
+}
+
+export async function ensureDatabaseSchema(): Promise<string> {
+    return _ensureDatabaseSchema();
 }

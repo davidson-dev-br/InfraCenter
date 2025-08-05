@@ -27,7 +27,7 @@ import { usePermissions } from '@/components/permissions-provider';
 import { uploadImage } from '@/lib/storage-actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Building, Room, GridItem } from '@/types/datacenter';
-import { updateItem } from '@/lib/item-actions';
+import { updateItem } from '@/lib/item-update-actions';
 import { DeleteItemConfirmationDialog } from '@/components/delete-item-confirmation-dialog';
 import { getItemStatuses, ItemStatus } from '@/lib/status-actions';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';

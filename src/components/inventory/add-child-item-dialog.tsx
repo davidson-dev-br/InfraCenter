@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { GridItem } from '@/types/datacenter';
 import { getManufacturers, Manufacturer } from '@/lib/manufacturer-actions';
 import { getModelsByManufacturerId, Model } from '@/lib/models-actions';
-import { updateItem } from '@/lib/item-actions';
+import { updateItem } from '@/lib/item-update-actions';
 
 const formSchema = z.object({
   label: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
