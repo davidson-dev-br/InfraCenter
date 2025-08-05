@@ -7,7 +7,7 @@ import { app } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionsProvider } from '@/components/permissions-provider';
-import { updateUser, getUserByEmail, ensureDatabaseSchema, getUserById } from '@/lib/user-actions';
+import { updateUser, getUserById, ensureDatabaseSchema } from '@/lib/user-actions';
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
@@ -15,6 +15,7 @@ import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getFirebaseAuth } from '@/lib/firebase-admin';
 
 // COMENTÁRIO DE ARQUITETURA:
 // Este componente é o coração da aplicação. Ele orquestra o estado de autenticação,

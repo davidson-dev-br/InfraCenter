@@ -25,7 +25,7 @@ async function getCurrentUser(): Promise<User | null> {
     if (authorization?.startsWith('Bearer ')) {
         const idToken = authorization.split('Bearer ')[1];
         try {
-            const auth = await getFirebaseAuth();
+            const auth = getFirebaseAuth();
             const decodedToken = await auth.verifyIdToken(idToken);
             if (decodedToken.email) {
                 return await _getUserByEmail(decodedToken.email);
