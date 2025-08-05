@@ -7,11 +7,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserPlus, Loader2 } from "lucide-react";
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { app } from "@/lib/firebase";
 
 import type { UserRole } from "@/components/permissions-provider";
 import { USER_ROLES, usePermissions } from "@/components/permissions-provider";
 import { updateUser } from "@/lib/user-actions";
-import { manageUserInAuth } from "@/ai/flows/user-management";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +68,7 @@ export function AddUserDialog() {
   const router = useRouter();
   const { toast } = useToast();
   const { isDeveloper } = usePermissions();
+  const auth = getAuth(app);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -76,19 +78,14 @@ export function AddUserDialog() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // 1. Criar usuário no Firebase Auth usando o fluxo Genkit no servidor
-      const firebaseUser = await manageUserInAuth({
-        action: 'create',
-        email: data.email,
-        password: data.password,
-        displayName: data.displayName,
-      });
+      // 1. Criar usuário no Firebase Auth usando a biblioteca do cliente
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const firebaseUser = userCredential.user;
 
-      if (!firebaseUser) {
-        throw new Error("A criação do usuário no sistema de autenticação falhou.");
-      }
+      // 2. Atualizar o perfil do usuário no Firebase com o nome de exibição
+      await updateProfile(firebaseUser, { displayName: data.displayName });
 
-      // 2. Chamar a Server Action para salvar no banco de dados
+      // 3. Chamar a Server Action para salvar no banco de dados local
       await updateUser({
         id: firebaseUser.uid,
         email: data.email,
@@ -108,11 +105,9 @@ export function AddUserDialog() {
     } catch (error: any) {
       console.error("Falha ao adicionar usuário:", error);
       let errorMessage = "Não foi possível registrar o usuário.";
-      // O erro agora pode vir do Genkit/Admin SDK
-      if (error.message.includes('EMAIL_EXISTS')) {
+      
+      if (error.code === 'auth/email-already-in-use') {
           errorMessage = "Este e-mail já está sendo usado por outra conta.";
-      } else {
-        errorMessage = error.message;
       }
       toast({
         variant: "destructive",
@@ -136,7 +131,7 @@ export function AddUserDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes abaixo para criar uma nova conta de usuário no sistema de autenticação e no banco de dados local.
+            Preencha os detalhes abaixo para criar uma nova conta de usuário.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

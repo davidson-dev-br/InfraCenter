@@ -11,30 +11,10 @@ import { updateUser, getUserByEmail, ensureDatabaseSchema } from '@/lib/user-act
 import type { User as DbUser } from '@/lib/user-service';
 import { BuildingProvider } from '@/components/building-provider';
 import { getBuildingsList } from '@/lib/building-actions';
-import { AppLayout } from './app-layout';
+import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
-import { getFirebaseAuth } from '@/lib/firebase-admin';
-
-// COMENTÁRIO DE ARQUITETURA (VERSÃO ROBUSTA):
-// Este AuthProvider agora implementa uma lógica de "vinculação implícita" baseada em e-mail.
-//
-// FLUXO DE EXECUÇÃO:
-// 1. `onAuthStateChanged` (Firebase): Ouve o estado de login.
-// 2. `handleUserAuth`: Quando um usuário é detectado (user: AuthUser):
-//    a. Busca no nosso banco de dados SQL um usuário com o mesmo e-mail (`getUserByEmail`).
-//    b. **CENÁRIO 1: USUÁRIO ENCONTRADO NO DB**
-//       - Compara o `id` do registro do DB com o `uid` do usuário do Firebase.
-//       - Se forem diferentes, significa que o UID do Firebase mudou ou o registro do DB
-//         tinha um ID antigo. A ação `updateUser` é chamada para ATUALIZAR o ID no DB
-//         para o `uid` atual do Firebase, efetivamente "reivindicando" e vinculando
-//         o registro do DB à identidade de autenticação correta, preservando todas as permissões.
-//    c. **CENÁRIO 2: USUÁRIO NÃO ENCONTRADO NO DB**
-//       - Este é um usuário genuinamente novo. A ação `updateUser` (que funciona como um 'upsert')
-//         é chamada para CRIAR um novo registro no DB com o `uid` do Firebase, e-mail e
-//         o cargo padrão de 'guest'.
-//    d. Os estados `authUser` e `dbUser` são populados, e `loading` se torna `false`.
 
 const FullPageLoader = () => (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -82,20 +62,6 @@ type Building = {
     name: string;
 };
 
-// Esta função injeta o token de autenticação em todas as requisições fetch.
-const createAuthorizedFetch = (getAuthToken: () => Promise<string | null>) => {
-    if (typeof window === 'undefined') return;
-    const originalFetch = window.fetch;
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        const token = await getAuthToken();
-        const headers = new Headers(init?.headers);
-        if (token) {
-            headers.set('Authorization', `Bearer ${token}`);
-        }
-        return originalFetch(input, { ...init, headers });
-    };
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
@@ -105,10 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = getAuth(app);
   const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    createAuthorizedFetch(() => auth.currentUser?.getIdToken() ?? Promise.resolve(null));
-  }, [auth]);
 
   const handleUserAuth = useCallback(async (user: AuthUser | null) => {
     setLoading(true);
@@ -120,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRecordInDb = await getUserByEmail(user.email);
         
         let userDataToSync: Partial<DbUser> = {
-            id: user.uid, // Sempre usar o UID do Firebase como a fonte da verdade para o ID.
+            id: user.uid,
             email: user.email.toLowerCase(),
             displayName: user.displayName,
             photoURL: user.photoURL,
@@ -128,11 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         if (userRecordInDb) {
-            // Usuário existe no nosso DB. Vamos apenas garantir que os dados estão sincronizados.
-            // A ação `updateUser` vai usar o email para encontrar e atualizar o ID se necessário.
             console.log(`Usuário ${user.email} encontrado no DB. Sincronizando...`);
         } else {
-            // Usuário não existe no nosso DB. Será criado com o cargo 'guest'.
             console.log(`Usuário autenticado ${user.email} não encontrado no DB. Criando novo registro...`);
             userDataToSync.role = 'guest'; 
         }

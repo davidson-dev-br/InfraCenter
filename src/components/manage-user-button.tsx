@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -198,7 +199,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
         await deleteUser(user.id);
         toast({
             title: "Usuário Removido",
-            description: `${user.displayName || user.email} foi removido do sistema.`,
+            description: `${user.displayName || user.email} foi removido do banco de dados. A conta no autenticador deve ser removida manualmente.`,
         });
         setConfirmDeleteOpen(false);
         setIsOpen(false);
@@ -268,7 +269,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
                     render={({ field }) => (
                         <div>
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" {...field} />
+                            <Input id="email" type="email" {...field} disabled />
                         </div>
                     )}
                 />
@@ -410,8 +411,8 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão de Usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-                Esta ação removerá o usuário <span className="font-bold">{user.displayName || user.email}</span> do banco de dados do InfraVision e 
-                do sistema de autenticação do Firebase. Esta ação não pode ser desfeita.
+                Esta ação removerá o usuário <span className="font-bold">{user.displayName || user.email}</span> do banco de dados do InfraVision. 
+                A conta no sistema de autenticação Firebase precisará ser removida manualmente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -426,7 +427,7 @@ export function ManageUserButton({ user }: ManageUserButtonProps) {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Sim, excluir permanentemente
+              Sim, excluir do DB
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

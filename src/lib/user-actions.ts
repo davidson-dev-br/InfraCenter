@@ -1,9 +1,9 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { _getUsers, _getUserByEmail, _updateUserInDb, User, _deleteUser, _ensureDatabaseSchema, _getUserById } from "./user-service";
 import { logAuditEvent } from './audit-actions';
-import { manageUserInAuth } from '@/ai/flows/user-management';
 
 async function getAdminUser() {
     // Esta função simula a obtenção do usuário administrador que está executando a ação.
@@ -39,15 +39,8 @@ export async function updateUser(userData: Partial<User>): Promise<User> {
     try {
         const savedUser = await _updateUserInDb(userData as User);
         
-        // Se houver uma alteração de displayName ou email, atualiza no Firebase Auth
-        if (!isCreating && (userData.displayName || userData.email)) {
-            await manageUserInAuth({
-                action: 'update',
-                uid: userData.id,
-                displayName: userData.displayName,
-                email: userData.email,
-            });
-        }
+        // A atualização de displayName/email no Firebase Auth foi removida do backend
+        // para evitar a dependência do Admin SDK aqui.
 
         if (adminUser) {
             await logAuditEvent({
@@ -80,8 +73,8 @@ export async function deleteUser(userId: string): Promise<void> {
         // Exclui do banco de dados local
         await _deleteUser(userToDelete.id);
 
-        // Exclui do Firebase Auth
-        await manageUserInAuth({ action: 'delete', uid: userId });
+        // A exclusão do Firebase Auth deve ser feita no cliente ou com um fluxo separado e seguro.
+        // Removendo a chamada ao `manageUserInAuth` daqui.
 
         if (adminUser) {
             await logAuditEvent({
