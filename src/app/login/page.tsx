@@ -31,10 +31,10 @@ function LoginContent() {
       await signInWithEmailAndPassword(auth, email, password);
       // O AuthProvider cuidará do redirecionamento
     } catch (error: any) {
-      console.error("Erro de autenticação:", error);
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        setError("Email ou senha inválidos.");
+      if (error.code === 'auth/invalid-credential') {
+        setError("Credenciais inválidas. Verifique seu e-mail e senha.");
       } else {
+        console.error("Erro de autenticação:", error);
         setError("Ocorreu um erro durante o login. Tente novamente.");
       }
     } finally {
