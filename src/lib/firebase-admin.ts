@@ -11,7 +11,7 @@ import * as admin from 'firebase-admin';
  * Retorna a instância de autenticação do Firebase Admin SDK,
  * inicializando o app se necessário.
  */
-export function getFirebaseAuth() {
+export async function getFirebaseAuth() {
     if (admin.apps.length === 0) {
         console.log("Inicializando Firebase Admin SDK...");
         try {
