@@ -57,8 +57,8 @@ const essentialManufacturers = [
 const essentialModels = [
     // --- Switches & Routers (Rede) ---
     { id: 'model_c9300_48', name: 'Catalyst 9300 48-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;8xSFP+' },
-    { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
     { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP+' },
+    { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
     { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
     { id: 'model_cisco_ncs2k6', name: 'NCS 2006 Chassis', manufacturerId: 'man_cisco', tamanhoU: 14, portConfig: '6xService_Slot;2xController_Slot' },
     { id: 'model_asr9k', name: 'ASR 9000 Series', manufacturerId: 'man_cisco', tamanhoU: 22, portConfig: '8xService_Slot;2xRSP_Slot' },
@@ -153,64 +153,47 @@ const essentialConnectionTypes = [
     { id: 'conn_dac', name: 'Direct Attach Copper (DAC)', description: 'Cabo de cobre de alta velocidade para conexões curtas.', isDefault: false },
 ];
 
-
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
-    // Verifica se o registro já existe
-    const checkResult = await pool.request().input('id', sql.NVarChar, data.id).query(`SELECT 1 FROM ${tableName} WHERE id = @id`);
-    if (checkResult.recordset.length > 0) {
-        return; 
-    }
+    const updateColumns = Object.keys(data).filter(key => key !== 'id');
+    const setClauses = updateColumns.map(col => `${col} = @${col}`);
 
-    // Verifica se a tabela tem a coluna isTestData
-    const columnCheck = await pool.request().query(`
-        SELECT 1 
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = '${tableName}' AND COLUMN_NAME = 'isTestData'
-    `);
-    const hasTestDataColumn = columnCheck.recordset.length > 0;
-    
-    // Adiciona o campo isTestData aos dados se a coluna existir na tabela
-    const dataToInsert = hasTestDataColumn ? { ...data, isTestData: data.isTestData || false } : data;
-
-    const columns = Object.keys(dataToInsert);
-    const values = columns.map(col => `@${col}`);
-    const request = pool.request();
-    
-    // Mapeia os dados para os tipos corretos do SQL Server
-    const addInput = (key: string, value: any) => {
-        const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
-        const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable', 'isDefault'];
-
-        if (value === null || value === undefined) {
-            if (numericColumns.includes(key)) request.input(key, sql.Float, null);
-            else if (booleanColumns.includes(key)) request.input(key, sql.Bit, null);
-            else request.input(key, sql.NVarChar, null);
-        } else if (typeof value === 'boolean') {
-            request.input(key, sql.Bit, value);
-        } else if (typeof value === 'number' || (typeof value === 'string' && isFinite(value))) {
-            const numValue = Number(value);
-            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, numValue);
-            else request.input(key, sql.Float, numValue);
-        } else if (value instanceof Date) {
-            request.input(key, sql.DateTime2, value);
-        } else if (typeof value === 'object') {
-            request.input(key, sql.NVarChar, JSON.stringify(value));
-        } else {
-            request.input(key, sql.NVarChar, String(value));
-        }
-    };
-    
-    for (const col of columns) {
-        addInput(col, dataToInsert[col]);
-    }
-
-    const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+    const transaction = new sql.Transaction(pool);
     try {
-        await request.query(query);
+        await transaction.begin();
+        const request = new sql.Request(transaction);
+
+        // Adiciona todos os inputs para a query
+        for (const col of Object.keys(data)) {
+            const value = data[col];
+            if (value === null || value === undefined) {
+                request.input(col, null);
+            } else if (typeof value === 'boolean') {
+                request.input(col, sql.Bit, value);
+            } else if (typeof value === 'number') {
+                request.input(col, sql.Float, value);
+            } else {
+                request.input(col, sql.NVarChar, String(value));
+            }
+        }
+        
+        // Tenta o UPDATE primeiro
+        const updateQuery = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = @id`;
+        const result = await request.query(updateQuery);
+
+        // Se nenhuma linha foi afetada, faz o INSERT
+        if (result.rowsAffected[0] === 0) {
+            const insertColumns = Object.keys(data);
+            const insertValues = insertColumns.map(col => `@${col}`);
+            const insertQuery = `INSERT INTO ${tableName} (${insertColumns.join(', ')}) VALUES (${insertValues.join(', ')})`;
+            await request.query(insertQuery);
+        }
+
+        await transaction.commit();
     } catch (err: any) {
-        console.error(`Falha ao inserir na tabela ${tableName}. Query: ${query}`);
-        console.error('Dados:', dataToInsert);
+        await transaction.rollback();
+        console.error(`Falha no UPSERT na tabela ${tableName}. Dados:`, data);
+        console.error('Erro SQL:', err.message);
         throw err;
     }
 }
@@ -240,8 +223,8 @@ export async function populateTestData() {
 
     const testManufacturers = [
         ...essentialManufacturers.slice(0, 5), // Pega alguns para teste
-        { id: 'man_panduit_test', name: 'Panduit' },
-        { id: 'man_padtec_test', name: 'Padtec' },
+        { id: 'man_panduit_test', name: 'Panduit', isTestData: true },
+        { id: 'man_padtec_test', name: 'Padtec', isTestData: true },
     ];
 
 
