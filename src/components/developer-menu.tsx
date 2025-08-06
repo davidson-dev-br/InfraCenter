@@ -9,67 +9,38 @@ import { Switch } from './ui/switch';
 import { Button } from './ui/button';
 import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle, FileCode, Package, Sparkles } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { populateTestData, cleanTestData, populateEssentialData } from '@/lib/dev-actions';
+import {
+    populateEssentialData,
+    cleanTestData,
+    populateBaseEntities,
+    populateRooms,
+    populateParentItems,
+    populateChildItems,
+    populatePortsAndConnections
+} from '@/lib/dev-actions';
 import { ensureDatabaseSchema } from '@/lib/user-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
+
+type TaskName = 'schema' | 'seed' | 'clean' | 'base' | 'rooms' | 'parentItems' | 'childItems' | 'connections';
+
 
 export const DeveloperMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
     const { toast } = useToast();
     
     const [auditLogEnabled, setAuditLogEnabled] = useLocalStorage('dev_auditLogEnabled', false);
-    const [isCheckingSchema, setIsCheckingSchema] = useState(false);
-    const [isPopulating, setIsPopulating] = useState(false);
-    const [isCleaning, setIsCleaning] = useState(false);
-    const [isSeeding, setIsSeeding] = useState(false);
+    const [activeTask, setActiveTask] = useState<TaskName | null>(null);
     
-    const handleEnsureSchema = async () => {
-        setIsCheckingSchema(true);
+    const handleTask = async (taskName: TaskName, taskFn: () => Promise<any>, successMessage: string) => {
+        setActiveTask(taskName);
         try {
-            const result = await ensureDatabaseSchema();
-            toast({ title: 'Sucesso', description: result });
+            await taskFn();
+            toast({ title: 'Sucesso', description: successMessage });
         } catch (error: any) {
-            toast({ title: 'Erro na verificação do Schema', description: error.message, variant: 'destructive' });
+            toast({ title: `Erro ao executar: ${taskName}`, description: error.message, variant: 'destructive' });
         } finally {
-            setIsCheckingSchema(false);
-        }
-    }
-
-    const handlePopulate = async () => {
-        setIsPopulating(true);
-        try {
-            await populateTestData();
-            toast({ title: 'Sucesso', description: 'Banco de dados populado com dados de teste. Recarregue a página para ver as alterações.' });
-        } catch (error: any) {
-            toast({ title: 'Erro ao Popular', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsPopulating(false);
-        }
-    }
-
-    const handleSeed = async () => {
-        setIsSeeding(true);
-        try {
-            await populateEssentialData();
-            toast({ title: 'Sucesso', description: 'Dados essenciais (fabricantes, modelos, etc.) foram carregados. Recarregue a página.' });
-        } catch (error: any) {
-            toast({ title: 'Erro ao Carregar Dados', description: (error as Error).message, variant: 'destructive' });
-        } finally {
-            setIsSeeding(false);
-        }
-    }
-
-    const handleClean = async () => {
-        setIsCleaning(true);
-        try {
-            await cleanTestData();
-            toast({ title: 'Sucesso', description: 'Dados de teste removidos do banco de dados. Recarregue a página.' });
-            window.location.reload();
-        } catch (error: any) {
-            toast({ title: 'Erro ao Limpar', description: (error as Error).message, variant: 'destructive' });
-        } finally {
-            setIsCleaning(false);
+            setActiveTask(null);
         }
     }
     
@@ -83,10 +54,10 @@ export const DeveloperMenu = () => {
         )
     }
 
-    const isAnyTaskRunning = isCheckingSchema || isPopulating || isCleaning || isSeeding;
+    const isAnyTaskRunning = activeTask !== null;
 
     return (
-        <Card className="fixed bottom-4 right-4 z-50 w-80 shadow-2xl">
+        <Card className="fixed bottom-4 right-4 z-50 w-96 shadow-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="space-y-1">
                     <CardTitle className="text-lg">Dev Menu</CardTitle>
@@ -97,39 +68,62 @@ export const DeveloperMenu = () => {
                 </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex items-center justify-between space-x-2 border-t pt-4">
-                    <Label htmlFor="audit-log-switch" className="flex flex-col space-y-1">
-                        <span>Log de Auditoria</span>
-                         <span className="font-normal leading-snug text-muted-foreground text-xs">
-                           Ative para gravar e exibir ações no log.
-                        </span>
-                    </Label>
-                    <Switch
-                        id="audit-log-switch"
-                        checked={auditLogEnabled}
-                        onCheckedChange={setAuditLogEnabled}
-                    />
+                 <div className="space-y-2 border-t pt-4">
+                    <Label className="text-sm font-medium">Controles Gerais</Label>
+                    <div className="flex items-center justify-between space-x-2">
+                        <Label htmlFor="audit-log-switch" className="flex flex-col space-y-1">
+                            <span>Log de Auditoria</span>
+                            <span className="font-normal leading-snug text-muted-foreground text-xs">
+                               Ative para gravar e exibir ações no log.
+                            </span>
+                        </Label>
+                        <Switch
+                            id="audit-log-switch"
+                            checked={auditLogEnabled}
+                            onCheckedChange={setAuditLogEnabled}
+                        />
+                    </div>
+                    <Button onClick={() => handleTask('schema', ensureDatabaseSchema, 'Schema do DB verificado/criado.')} disabled={isAnyTaskRunning} className="w-full">
+                        {activeTask === 'schema' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                        Verificar/Criar Schema DB
+                    </Button>
+                     <Button onClick={() => handleTask('seed', populateEssentialData, 'Dados essenciais (fabricantes, modelos, etc.) foram carregados.')} disabled={isAnyTaskRunning} className="w-full">
+                        {activeTask === 'seed' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Popular Dados Essenciais
+                    </Button>
                 </div>
+
+                <Separator className="my-2"/>
+
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium">Popular Dados de Teste (Fracionado)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button onClick={() => handleTask('base', populateBaseEntities, 'Usuários e Prédios de teste criados.')} disabled={isAnyTaskRunning}>
+                            {activeTask === 'base' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "1."} Pop. Base
+                        </Button>
+                         <Button onClick={() => handleTask('rooms', populateRooms, 'Salas de teste criadas.')} disabled={isAnyTaskRunning}>
+                            {activeTask === 'rooms' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "2."} Pop. Salas
+                        </Button>
+                         <Button onClick={() => handleTask('parentItems', populateParentItems, 'Itens pais (racks) de teste criados.')} disabled={isAnyTaskRunning}>
+                            {activeTask === 'parentItems' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "3."} Pop. Pais
+                        </Button>
+                        <Button onClick={() => handleTask('childItems', populateChildItems, 'Itens filhos (equipamentos) de teste criados.')} disabled={isAnyTaskRunning}>
+                            {activeTask === 'childItems' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "4."} Pop. Filhos
+                        </Button>
+                        <Button onClick={() => handleTask('connections', populatePortsAndConnections, 'Portas e conexões de teste criadas.')} disabled={isAnyTaskRunning} className="col-span-2">
+                            {activeTask === 'connections' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "5."} Pop. Conexões
+                        </Button>
+                    </div>
+                </div>
+
             </CardContent>
+            
             <Separator className="my-2"/>
             <CardFooter className="flex flex-col gap-2 !p-4">
-                 <Button onClick={handleEnsureSchema} disabled={isAnyTaskRunning} className="w-full">
-                    {isCheckingSchema ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                    Verificar/Criar Schema DB
+                <Button variant="destructive" onClick={() => handleTask('clean', cleanTestData, 'Dados de teste removidos do banco de dados.')} disabled={isAnyTaskRunning} className="w-full">
+                    {activeTask === 'clean' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Limpar Todos os Dados de Teste
                 </Button>
-                <Button onClick={handleSeed} disabled={isAnyTaskRunning} className="w-full">
-                    {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Popular Dados Essenciais
-                </Button>
-                <Button onClick={handlePopulate} disabled={isAnyTaskRunning} className="w-full">
-                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
-                    Popular Dados de Teste
-                </Button>
-                <Button variant="destructive" onClick={handleClean} disabled={isAnyTaskRunning} className="w-full">
-                    {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    Limpar Dados de Teste
-                </Button>
-                <Separator className="my-2"/>
                 <Button variant="outline" asChild className="w-full">
                     <a href="/infra_setup.sql" download="infra_setup.sql">
                         <FileCode className="mr-2 h-4 w-4" />
