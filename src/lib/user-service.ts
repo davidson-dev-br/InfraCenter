@@ -476,9 +476,6 @@ async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
             FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)
         );
     `);
-
-    // A lógica de migração foi removida daqui, pois a criação da tabela agora está correta.
-    // Em um sistema de produção real, usaríamos uma ferramenta de migração de schema dedicada.
 }
 
 
@@ -534,7 +531,7 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
         CREATE TABLE Connections (
             id NVARCHAR(50) PRIMARY KEY,
             portA_id NVARCHAR(50) NOT NULL,
-            portB_id NVARCHAR(50), -- Can be NULL for unresolved connections
+            portB_id NVARCHAR(50) NULL, -- Corrected to allow NULL
             connectionTypeId NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'active',
             isTestData BIT NOT NULL DEFAULT 0,
@@ -735,3 +732,5 @@ export async function _deleteUser(userId: string): Promise<void> {
         throw new Error("Falha ao excluir o registro do usuário do banco de dados.");
     }
 }
+
+    
