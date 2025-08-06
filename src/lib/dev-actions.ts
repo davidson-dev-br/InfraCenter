@@ -1,4 +1,3 @@
-
 'use server';
 
 import sql from 'mssql';
@@ -35,10 +34,6 @@ const testChildItems = [
     { id: 'citem_003', label: 'DIO-01-A', parentId: 'pitem_002', type: 'Patch Panel', status: 'active', modelo: 'DIO 24 Fibras LC Duplex', tamanhoU: 1, posicaoU: 41, brand: 'Furukawa'},
     { id: 'citem_004', label: 'PDU-01-L', parentId: 'pitem_001', type: 'PDU', status: 'active', modelo: 'Liebert MPH2 Vertical PDU', tamanhoU: 0, posicaoU: 1, brand: 'Vertiv' }
 ];
-
-const testConnections = [
-    { portA: {equipmentLabel: 'SW-CORE-01', portLabel: 'RJ45-1'}, portB: {equipmentLabel: 'SRV-WEB-01', portLabel: 'RJ45-1'}, connectionType: 'Dados UTP'}
-]
 
 // --- DADOS ESSENCIAIS (JOIA RARA DO PROJETO) ---
 
@@ -105,13 +100,20 @@ const essentialPortTypes = [
     { id: 'port_tomada_20a', name: 'Tomada_20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false }, { id: 'port_c13', name: 'C13', description: 'Conector de energia padrão para PDUs.', isDefault: false },
     { id: 'port_c19', name: 'C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false }, { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
     { id: 'port_rsp_slot', name: 'RSP_Slot', description: 'Slot para processador de roteamento.', isDefault: false }, { id: 'port_controller_slot', name: 'Controller_Slot', description: 'Slot para placa controladora.', isDefault: false },
-    { id: 'port_switchfabric_slot', name: 'SwitchFabric_Slot', description: 'Slot para malha de comutação.', isDefault: false }, { id: 'port_psu_slot', name: 'PSU_Slot', description: 'Slot para fonte de alimentação.', isDefault: false },
-    { id: 'port_fan_slot', name: 'FAN_Slot', description: 'Slot para módulo de ventilação.', isDefault: false }, { id: 'port_blade_slot', name: 'Blade_Slot', description: 'Slot para servidor blade.', isDefault: false },
-    { id: 'port_routingengine_slot', name: 'RoutingEngine_Slot', description: 'Slot para motor de roteamento Juniper.', isDefault: false }, { id: 'port_sfb_slot', name: 'SFB_Slot', description: 'Slot para Switch Fabric Board Juniper.', isDefault: false },
-    { id: 'port_interface_module', name: 'Interface_Module', description: 'Módulo de interface genérico.', isDefault: false }, { id: 'port_multiple_rf_ports', name: 'Multiple_RF_Ports', description: 'Múltiplas portas de rádio frequência.', isDefault: false },
-    { id: 'port_rack_space', name: 'Rack_Space', description: 'Espaço utilizável dentro de um rack.', isDefault: false }, { id: 'port_pon_card_slot', name: 'PON_Card_Slot', description: 'Slot para placa de rede óptica passiva.', isDefault: false },
-    { id: 'port_uplink_slot', name: 'Uplink_Slot', description: 'Slot para placa de uplink.', isDefault: false }, { id: 'port_vga', name: 'VGA', description: 'Conector de vídeo analógico.', isDefault: false },
-    { id: 'port_usb', name: 'USB', description: 'Porta USB para periféricos.', isDefault: false }, { id: 'port_console', name: 'Console', description: 'Porta serial de console para gerenciamento.', isDefault: false },
+    { id: 'port_switchfabric_slot', name: 'SwitchFabric_Slot', description: 'Slot para malha de comutação.', isDefault: false },
+    { id: 'port_psu_slot', name: 'PSU_Slot', description: 'Slot para fonte de alimentação.', isDefault: false },
+    { id: 'port_fan_slot', name: 'FAN_Slot', description: 'Slot para módulo de ventilação.', isDefault: false },
+    { id: 'port_blade_slot', name: 'Blade_Slot', description: 'Slot para servidor blade.', isDefault: false },
+    { id: 'port_routingengine_slot', name: 'RoutingEngine_Slot', description: 'Slot para motor de roteamento Juniper.', isDefault: false },
+    { id: 'port_sfb_slot', name: 'SFB_Slot', description: 'Slot para Switch Fabric Board Juniper.', isDefault: false },
+    { id: 'port_interface_module', name: 'Interface_Module', description: 'Módulo de interface genérico.', isDefault: false },
+    { id: 'port_multiple_rf_ports', name: 'Multiple_RF_Ports', description: 'Múltiplas portas de rádio frequência.', isDefault: false },
+    { id: 'port_rack_space', name: 'Rack_Space', description: 'Espaço utilizável dentro de um rack.', isDefault: false },
+    { id: 'port_pon_card_slot', name: 'PON_Card_Slot', description: 'Slot para placa de rede óptica passiva.', isDefault: false },
+    { id: 'port_uplink_slot', name: 'Uplink_Slot', description: 'Slot para placa de uplink.', isDefault: false },
+    { id: 'port_vga', name: 'VGA', description: 'Conector de vídeo analógico.', isDefault: false },
+    { id: 'port_usb', name: 'USB', description: 'Porta USB para periféricos.', isDefault: false },
+    { id: 'port_console', name: 'Console', description: 'Porta serial de console para gerenciamento.', isDefault: false },
 ];
 
 const essentialConnectionTypes = [
@@ -135,7 +137,7 @@ export async function populateEssentialData() {
         await transaction.begin();
         console.log("Iniciando a população de dados essenciais...");
 
-        // 1. Base entities without dependencies
+        // 1. Entidades base (sem dependências)
         for (const man of essentialManufacturers) {
             await new sql.Request(transaction).input('id', man.id).input('name', man.name)
                 .query(`MERGE INTO Manufacturers AS T USING (SELECT @id AS id, @name AS name) AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET T.name = S.name WHEN NOT MATCHED THEN INSERT (id, name, isTestData) VALUES (S.id, S.name, 0);`);
@@ -157,7 +159,7 @@ export async function populateEssentialData() {
                 .query(`MERGE INTO ItemTypesEqp AS T USING(SELECT @id,@name,@category,@defaultWidthM,@defaultHeightM,@iconName,@status,@defaultColor) AS S(id,name,category,defaultWidthM,defaultHeightM,iconName,status,defaultColor) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.category=S.category,T.defaultWidthM=S.defaultWidthM,T.defaultHeightM=S.defaultHeightM,T.iconName=S.iconName,T.status=S.status,T.defaultColor=S.defaultColor WHEN NOT MATCHED THEN INSERT (id,name,category,defaultWidthM,defaultHeightM,iconName,status,isTestData,defaultColor) VALUES(S.id,S.name,S.category,S.defaultWidthM,S.defaultHeightM,S.iconName,S.status,0,S.defaultColor);`);
         }
         
-        // 2. Models, which depend on Manufacturers
+        // 2. Models, que dependem de Manufacturers
         for (const model of essentialModels) {
             await new sql.Request(transaction).input('id', model.id).input('name', model.name).input('manufacturerId', model.manufacturerId).input('portConfig', model.portConfig).input('tamanhoU', model.tamanhoU)
                 .query(`MERGE INTO Models AS T USING (SELECT @id, @name, @manufacturerId, @portConfig, @tamanhoU) AS S(id,name,manufacturerId,portConfig,tamanhoU) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.manufacturerId=S.manufacturerId,T.portConfig=S.portConfig,T.tamanhoU=S.tamanhoU WHEN NOT MATCHED THEN INSERT (id,name,manufacturerId,portConfig,tamanhoU,isTestData) VALUES(S.id,S.name,S.manufacturerId,S.portConfig,S.tamanhoU,0);`);
@@ -175,22 +177,19 @@ export async function populateEssentialData() {
 
 /**
  * Cleans ALL data marked as 'isTestData' from the database.
+ * The order is reversed from creation to respect foreign key constraints.
  */
 export async function cleanTestData() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
 
-    const tablesToDeleteFrom = [
-        'Connections', 'EquipmentPorts', 'ChildItems', 'ParentItems', 'Users', 'Rooms', 'Buildings'
-    ];
-
     try {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
-        // Delete from child tables first, then parent tables to avoid FK violations
+        // A ordem de exclusão é a inversa da criação para evitar violações de FK.
         await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE id IN (SELECT id FROM ChildItems WHERE isTestData = 1)`); // This is an approximation
+        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
         await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
         await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
         await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
@@ -208,11 +207,15 @@ export async function cleanTestData() {
 
 
 export async function populateBaseEntities() {
-    await _ensureDatabaseSchema();
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
+
+        // Limpa dados de teste das tabelas afetadas antes de inserir
+        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
+        
         for(const user of testUsers) {
             await new sql.Request(transaction)
                 .input('id', user.id).input('email', user.email).input('displayName', user.displayName).input('photoURL', user.photoURL).input('role', user.role).input('permissions', JSON.stringify(user.permissions)).input('accessibleBuildingIds', JSON.stringify(user.accessibleBuildingIds)).input('lastLoginAt', new Date(user.lastLoginAt)).input('preferences', JSON.stringify(user.preferences))
@@ -236,6 +239,7 @@ export async function populateRooms() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
         for(const room of testRooms) {
             await new sql.Request(transaction)
                 .input('id', room.id).input('name', room.name).input('buildingId', room.buildingId).input('largura', room.largura).input('widthM', room.widthM).input('tileWidthCm', room.tileWidthCm).input('tileHeightCm', room.tileHeightCm).input('xAxisNaming', room.xAxisNaming).input('yAxisNaming', room.yAxisNaming)
@@ -254,6 +258,7 @@ export async function populateParentItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
         for(const item of testParentItems) {
             await new sql.Request(transaction)
                 .input('id', item.id).input('label', item.label).input('x', item.x).input('y', item.y).input('width', item.width).input('height', item.height).input('type', item.type).input('status', item.status).input('roomId', item.roomId).input('tamanhoU', item.tamanhoU)
@@ -272,6 +277,7 @@ export async function populateChildItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
         for(const item of testChildItems) {
             await new sql.Request(transaction)
                 .input('id', item.id).input('label', item.label).input('parentId', item.parentId).input('type', item.type).input('status', item.status).input('modelo', item.modelo).input('tamanhoU', item.tamanhoU).input('posicaoU', item.posicaoU).input('brand', item.brand)
@@ -287,13 +293,14 @@ export async function populateChildItems() {
 
 
 export async function populatePortsAndConnections() {
-    await _ensureDatabaseSchema(); // Garante que as tabelas de tipos existem
+    await _ensureDatabaseSchema();
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
 
-        // Criar portas para todos os child items de teste
         for (const child of testChildItems) {
             const modelResult = await new sql.Request(transaction).input('modelName', sql.NVarChar, child.modelo).query`SELECT portConfig FROM Models WHERE name = @modelName`;
             if (modelResult.recordset.length > 0 && modelResult.recordset[0].portConfig) {
@@ -323,26 +330,6 @@ export async function populatePortsAndConnections() {
             }
         }
         
-        // Criar as conexões de teste
-        for (const conn of testConnections) {
-             const portAInfo = await new sql.Request(transaction).query(`SELECT ep.id FROM EquipmentPorts ep JOIN ChildItems ci ON ep.childItemId = ci.id WHERE ci.label = '${conn.portA.equipmentLabel}' AND ep.label = '${conn.portA.portLabel}'`);
-             const portBInfo = await new sql.Request(transaction).query(`SELECT ep.id FROM EquipmentPorts ep JOIN ChildItems ci ON ep.childItemId = ci.id WHERE ci.label = '${conn.portB.equipmentLabel}' AND ep.label = '${conn.portB.portLabel}'`);
-             const connTypeInfo = await new sql.Request(transaction).query(`SELECT id FROM ConnectionTypes WHERE name = '${conn.connectionType}'`);
-
-             if (portAInfo.recordset.length > 0 && portBInfo.recordset.length > 0 && connTypeInfo.recordset.length > 0) {
-                 const portAId = portAInfo.recordset[0].id;
-                 const portBId = portBInfo.recordset[0].id;
-                 const connTypeId = connTypeInfo.recordset[0].id;
-
-                 await new sql.Request(transaction)
-                    .input('id', `conn_${Date.now()}`).input('portA_id', portAId).input('portB_id', portBId).input('connectionTypeId', connTypeId)
-                    .query(`INSERT INTO Connections (id, portA_id, portB_id, connectionTypeId, status, isTestData) VALUES (@id, @portA_id, @portB_id, @connectionTypeId, 'active', 1)`);
-                
-                 await new sql.Request(transaction).query(`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = '${portBId}' WHERE id = '${portAId}'`);
-                 await new sql.Request(transaction).query(`UPDATE EquipmentPorts SET status = 'up', connectedToPortId = '${portAId}' WHERE id = '${portBId}'`);
-             }
-        }
-
         await transaction.commit();
     } catch (error) {
         await transaction.rollback();
@@ -351,8 +338,8 @@ export async function populatePortsAndConnections() {
     }
 }
 
-
 export async function ensureDatabaseSchema(): Promise<string> {
     return _ensureDatabaseSchema();
 }
 
+    
