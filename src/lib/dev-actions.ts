@@ -48,17 +48,22 @@ const essentialManufacturers = [
     { id: 'man_arista', name: 'Arista Networks' },
     { id: 'man_legrand', name: 'Legrand' },
     { id: 'man_furukawa', name: 'Furukawa' },
+    { id: 'man_nokia', name: 'Nokia' },
+    { id: 'man_ericsson', name: 'Ericsson' },
 ];
 
 const essentialModels = [
-    // Cisco Switches
+    // Cisco Switches & Routers
     { id: 'model_c9300_48', name: 'Catalyst 9300 48-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;8xSFP+' },
     { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
     { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP' },
     { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
+    { id: 'model_asr9k', name: 'ASR 9000 Series', manufacturerId: 'man_cisco', tamanhoU: 22, portConfig: '8xLineCard_Slot;2xRSP_Slot' },
 
     // Huawei Switches
     { id: 'model_hw_ce6865', name: 'CloudEngine 6865', manufacturerId: 'man_huawei', tamanhoU: 1, portConfig: '48xSFP28;8xQSFP28' },
+    { id: 'model_hw_ce12800', name: 'CloudEngine 12800', manufacturerId: 'man_huawei', tamanhoU: 16, portConfig: '8xLineCard_Slot;4xSwitchFabric_Slot' },
+
 
     // Dell Servers
     { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
@@ -74,6 +79,12 @@ const essentialModels = [
     
     // Arista Switches
     { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
+
+    // Nokia Routers
+    { id: 'model_nokia_7750', name: '7750 Service Router', manufacturerId: 'man_nokia', tamanhoU: 14, portConfig: '12xCard_Slot' },
+    
+    // Ericsson Routers
+    { id: 'model_ericsson_6000', name: 'Router 6000 Series', manufacturerId: 'man_ericsson', tamanhoU: 4, portConfig: '4xInterface_Module' },
 
     // Patch Panels (Legrand & Furukawa)
     { id: 'model_l_pp24', name: 'Patch Panel 24 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 1, portConfig: '24xRJ45_Keystone' },
@@ -95,6 +106,7 @@ const essentialItemTypes = [
     { id: 'type_ac_row', name: 'Ar Condicionado In-Row', category: 'Climatização', defaultWidthM: 0.3, defaultHeightM: 1, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#34d399' },
     { id: 'type_qdf', name: 'QDF', category: 'Distribuição', defaultWidthM: 0.8, defaultHeightM: 2.2, iconName: 'Network', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#f59e0b' },
     { id: 'type_ups', name: 'UPS/Nobreak', category: 'Energia', defaultWidthM: 0.6, defaultHeightM: 1.2, iconName: 'Power', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#ef4444' },
+    { id: 'type_roteador_borda', name: 'Roteador de Borda', category: 'Rede Core', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Router', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#8b5cf6' },
 
     // Tipos de Equipamentos Aninhados (Filhos)
     { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
@@ -102,6 +114,7 @@ const essentialItemTypes = [
     { id: 'type_eqp_patch', name: 'Patch Panel', category: 'Equipamentos', iconName: 'PanelTop', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
     { id: 'type_eqp_storage', name: 'Storage Array', category: 'Equipamentos', iconName: 'Database', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
     { id: 'type_eqp_blade', name: 'Servidor Blade', category: 'Equipamentos', iconName: 'Server', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_roteador', name: 'Roteador', category: 'Equipamentos', iconName: 'Router', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
 ];
 
 const essentialPortTypes = [
@@ -110,6 +123,11 @@ const essentialPortTypes = [
     { id: 'ptype_lc', name: 'Fibra LC', description: 'Conector padrão para fibra óptica (Lucent Connector).', isDefault: false },
     { id: 'ptype_sc', name: 'Fibra SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
     { id: 'ptype_tomada_20a', name: 'Tomada 20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
+    { id: 'ptype_rj45_keystone', name: 'RJ45 Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
+    { id: 'ptype_lc_duplex', name: 'LC Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
+    { id: 'ptype_qsfp28', name: 'QSFP28', description: 'Porta de alta velocidade (100Gbps).', isDefault: false },
+    { id: 'ptype_idrac', name: 'iDRAC', description: 'Porta de gerenciamento Dell.', isDefault: false },
+    { id: 'ptype_ilo', name: 'iLO', description: 'Porta de gerenciamento HPE.', isDefault: false },
 ];
 
 
