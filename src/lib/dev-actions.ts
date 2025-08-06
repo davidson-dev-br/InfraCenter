@@ -47,6 +47,7 @@ const essentialManufacturers = [
     { id: 'man_juniper', name: 'Juniper Networks' },
     { id: 'man_arista', name: 'Arista Networks' },
     { id: 'man_legrand', name: 'Legrand' },
+    { id: 'man_furukawa', name: 'Furukawa' },
 ];
 
 const essentialModels = [
@@ -56,9 +57,12 @@ const essentialModels = [
     { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP' },
     { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
 
+    // Huawei Switches
+    { id: 'model_hw_ce6865', name: 'CloudEngine 6865', manufacturerId: 'man_huawei', tamanhoU: 1, portConfig: '48xSFP28;8xQSFP28' },
+
     // Dell Servers
-    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xSerial;1xiDRAC' },
-    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xSerial;1xiDRAC' },
+    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
+    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
     { id: 'model_mx7000', name: 'PowerEdge MX7000', manufacturerId: 'man_dell', tamanhoU: 7, portConfig: '8xPSU;4xFAN' }, // Chassis de Blade
     
     // HPE Servers
@@ -71,12 +75,17 @@ const essentialModels = [
     // Arista Switches
     { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
 
-    // Patch Panels (Legrand)
+    // Patch Panels (Legrand & Furukawa)
     { id: 'model_l_pp24', name: 'Patch Panel 24 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 1, portConfig: '24xRJ45_Keystone' },
     { id: 'model_l_pp48', name: 'Patch Panel 48 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 2, portConfig: '48xRJ45_Keystone' },
+    { id: 'model_f_dio24', name: 'DIO 24 Fibras LC Duplex', manufacturerId: 'man_furukawa', tamanhoU: 1, portConfig: '24xLC_Duplex' },
+    { id: 'model_f_dio48', name: 'DIO 48 Fibras LC Duplex', manufacturerId: 'man_furukawa', tamanhoU: 2, portConfig: '48xLC_Duplex' },
 
     // PDU (Vertiv)
     { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' }, // 0U para PDUs verticais
+
+    // UPS (Schneider)
+    { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
 ];
 
 const essentialItemTypes = [
@@ -95,6 +104,14 @@ const essentialItemTypes = [
     { id: 'type_eqp_blade', name: 'Servidor Blade', category: 'Equipamentos', iconName: 'Server', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
 ];
 
+const essentialPortTypes = [
+    { id: 'ptype_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP (par trançado).', isDefault: true },
+    { id: 'ptype_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre de pequena dimensão.', isDefault: true },
+    { id: 'ptype_lc', name: 'Fibra LC', description: 'Conector padrão para fibra óptica (Lucent Connector).', isDefault: false },
+    { id: 'ptype_sc', name: 'Fibra SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
+    { id: 'ptype_tomada_20a', name: 'Tomada 20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
+];
+
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
@@ -110,7 +127,7 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
     
     const addInput = (key: string, value: any) => {
         const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
-        const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable'];
+        const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable', 'isDefault'];
 
         if (value === null || value === undefined) {
             if (numericColumns.includes(key)) request.input(key, sql.Float, null);
@@ -201,6 +218,7 @@ export async function populateEssentialData() {
         ...essentialModels.map(item => () => upsertRecord(pool, 'Models', { ...item, isTestData: false })),
         ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', { ...item, isTestData: false })),
         ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', { ...item, isTestData: false })),
+        ...essentialPortTypes.map(item => () => upsertRecord(pool, 'PortTypes', item)),
     ];
 
     try {
