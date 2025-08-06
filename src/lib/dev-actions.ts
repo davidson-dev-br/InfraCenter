@@ -158,6 +158,14 @@ const essentialPortTypes = [
     { id: 'port_console', name: 'Console', description: 'Porta serial de console para gerenciamento.', isDefault: false },
 ];
 
+const essentialConnectionTypes = [
+    { id: 'conn_utp', name: 'Dados UTP', description: 'Conexão de dados via cabo de par trançado.', isDefault: true },
+    { id: 'conn_fibra', name: 'Fibra Óptica', description: 'Conexão de dados via fibra óptica monomodo ou multimodo.', isDefault: true },
+    { id: 'conn_power_ac', name: 'Energia AC', description: 'Cabo de alimentação de corrente alternada.', isDefault: false },
+    { id: 'conn_power_dc', name: 'Energia DC', description: 'Cabo de alimentação de corrente contínua (-48V).', isDefault: false },
+    { id: 'conn_dac', name: 'Direct Attach Copper (DAC)', description: 'Cabo de cobre de alta velocidade para conexões curtas.', isDefault: false },
+];
+
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
@@ -272,6 +280,7 @@ export async function populateEssentialData() {
         ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', { ...item, isTestData: false })),
         ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', { ...item, isTestData: false })),
         ...essentialPortTypes.map(item => () => upsertRecord(pool, 'PortTypes', item)),
+        ...essentialConnectionTypes.map(item => () => upsertRecord(pool, 'ConnectionTypes', item)),
     ];
 
     try {
