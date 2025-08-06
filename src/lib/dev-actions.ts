@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -126,6 +125,7 @@ const essentialConnectionTypes = [
 /**
  * Populates the database with essential configuration data.
  * Uses MERGE query to insert or update records, ensuring idempotency.
+ * The order of operations is crucial to respect foreign key constraints.
  */
 export async function populateEssentialData() {
     const pool = await getDbPool();
@@ -135,21 +135,10 @@ export async function populateEssentialData() {
         await transaction.begin();
         console.log("Iniciando a população de dados essenciais...");
 
+        // 1. Base entities without dependencies
         for (const man of essentialManufacturers) {
             await new sql.Request(transaction).input('id', man.id).input('name', man.name)
                 .query(`MERGE INTO Manufacturers AS T USING (SELECT @id AS id, @name AS name) AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET T.name = S.name WHEN NOT MATCHED THEN INSERT (id, name, isTestData) VALUES (S.id, S.name, 0);`);
-        }
-        for (const model of essentialModels) {
-            await new sql.Request(transaction).input('id', model.id).input('name', model.name).input('manufacturerId', model.manufacturerId).input('portConfig', model.portConfig).input('tamanhoU', model.tamanhoU)
-                .query(`MERGE INTO Models AS T USING (SELECT @id, @name, @manufacturerId, @portConfig, @tamanhoU) AS S(id,name,manufacturerId,portConfig,tamanhoU) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.manufacturerId=S.manufacturerId,T.portConfig=S.portConfig,T.tamanhoU=S.tamanhoU WHEN NOT MATCHED THEN INSERT (id,name,manufacturerId,portConfig,tamanhoU,isTestData) VALUES(S.id,S.name,S.manufacturerId,S.portConfig,S.tamanhoU,0);`);
-        }
-        for (const itype of essentialItemTypes.filter(it => it.isParent)) {
-            await new sql.Request(transaction).input('id', itype.id).input('name', itype.name).input('category', itype.category).input('defaultWidthM', itype.defaultWidthM).input('defaultHeightM', itype.defaultHeightM).input('iconName', itype.iconName).input('canHaveChildren', itype.canHaveChildren).input('isResizable', itype.isResizable).input('status', itype.status).input('defaultColor', itype.defaultColor)
-                .query(`MERGE INTO ItemTypes AS T USING(SELECT @id,@name,@category,@defaultWidthM,@defaultHeightM,@iconName,@canHaveChildren,@isResizable,@status,@defaultColor) AS S(id,name,category,defaultWidthM,defaultHeightM,iconName,canHaveChildren,isResizable,status,defaultColor) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.category=S.category,T.defaultWidthM=S.defaultWidthM,T.defaultHeightM=S.defaultHeightM,T.iconName=S.iconName,T.canHaveChildren=S.canHaveChildren,T.isResizable=S.isResizable,T.status=S.status,T.defaultColor=S.defaultColor WHEN NOT MATCHED THEN INSERT (id,name,category,defaultWidthM,defaultHeightM,iconName,canHaveChildren,isResizable,status,isTestData,defaultColor) VALUES(S.id,S.name,S.category,S.defaultWidthM,S.defaultHeightM,S.iconName,S.canHaveChildren,S.isResizable,S.status,0,S.defaultColor);`);
-        }
-        for (const itype of essentialItemTypes.filter(it => !it.isParent)) {
-            await new sql.Request(transaction).input('id', itype.id).input('name', itype.name).input('category', itype.category).input('defaultWidthM', itype.defaultWidthM).input('defaultHeightM', itype.defaultHeightM).input('iconName', itype.iconName).input('status', itype.status).input('defaultColor', itype.defaultColor)
-                .query(`MERGE INTO ItemTypesEqp AS T USING(SELECT @id,@name,@category,@defaultWidthM,@defaultHeightM,@iconName,@status,@defaultColor) AS S(id,name,category,defaultWidthM,defaultHeightM,iconName,status,defaultColor) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.category=S.category,T.defaultWidthM=S.defaultWidthM,T.defaultHeightM=S.defaultHeightM,T.iconName=S.iconName,T.status=S.status,T.defaultColor=S.defaultColor WHEN NOT MATCHED THEN INSERT (id,name,category,defaultWidthM,defaultHeightM,iconName,status,isTestData,defaultColor) VALUES(S.id,S.name,S.category,S.defaultWidthM,S.defaultHeightM,S.iconName,S.status,0,S.defaultColor);`);
         }
         for (const ptype of essentialPortTypes) {
             await new sql.Request(transaction).input('id', ptype.id).input('name', ptype.name).input('description', ptype.description).input('isDefault', ptype.isDefault)
@@ -159,7 +148,21 @@ export async function populateEssentialData() {
             await new sql.Request(transaction).input('id', ctype.id).input('name', ctype.name).input('description', ctype.description).input('isDefault', ctype.isDefault)
                 .query(`MERGE INTO ConnectionTypes AS T USING(SELECT @id,@name,@description,@isDefault) AS S(id,name,description,isDefault) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.description=S.description,T.isDefault=S.isDefault WHEN NOT MATCHED THEN INSERT(id,name,description,isDefault)VALUES(S.id,S.name,S.description,S.isDefault);`);
         }
+        for (const itype of essentialItemTypes.filter(it => it.isParent)) {
+            await new sql.Request(transaction).input('id', itype.id).input('name', itype.name).input('category', itype.category).input('defaultWidthM', itype.defaultWidthM).input('defaultHeightM', itype.defaultHeightM).input('iconName', itype.iconName).input('canHaveChildren', itype.canHaveChildren).input('isResizable', itype.isResizable).input('status', itype.status).input('defaultColor', itype.defaultColor)
+                .query(`MERGE INTO ItemTypes AS T USING(SELECT @id,@name,@category,@defaultWidthM,@defaultHeightM,@iconName,@canHaveChildren,@isResizable,@status,@defaultColor) AS S(id,name,category,defaultWidthM,defaultHeightM,iconName,canHaveChildren,isResizable,status,defaultColor) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.category=S.category,T.defaultWidthM=S.defaultWidthM,T.defaultHeightM=S.defaultHeightM,T.iconName=S.iconName,T.canHaveChildren=S.canHaveChildren,T.isResizable=S.isResizable,T.status=S.status,T.defaultColor=S.defaultColor WHEN NOT MATCHED THEN INSERT (id,name,category,defaultWidthM,defaultHeightM,iconName,canHaveChildren,isResizable,status,isTestData,defaultColor) VALUES(S.id,S.name,S.category,S.defaultWidthM,S.defaultHeightM,S.iconName,S.canHaveChildren,S.isResizable,S.status,0,S.defaultColor);`);
+        }
+        for (const itype of essentialItemTypes.filter(it => !it.isParent)) {
+            await new sql.Request(transaction).input('id', itype.id).input('name', itype.name).input('category', itype.category).input('defaultWidthM', itype.defaultWidthM).input('defaultHeightM', itype.defaultHeightM).input('iconName', itype.iconName).input('status', itype.status).input('defaultColor', itype.defaultColor)
+                .query(`MERGE INTO ItemTypesEqp AS T USING(SELECT @id,@name,@category,@defaultWidthM,@defaultHeightM,@iconName,@status,@defaultColor) AS S(id,name,category,defaultWidthM,defaultHeightM,iconName,status,defaultColor) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.category=S.category,T.defaultWidthM=S.defaultWidthM,T.defaultHeightM=S.defaultHeightM,T.iconName=S.iconName,T.status=S.status,T.defaultColor=S.defaultColor WHEN NOT MATCHED THEN INSERT (id,name,category,defaultWidthM,defaultHeightM,iconName,status,isTestData,defaultColor) VALUES(S.id,S.name,S.category,S.defaultWidthM,S.defaultHeightM,S.iconName,S.status,0,S.defaultColor);`);
+        }
         
+        // 2. Models, which depend on Manufacturers
+        for (const model of essentialModels) {
+            await new sql.Request(transaction).input('id', model.id).input('name', model.name).input('manufacturerId', model.manufacturerId).input('portConfig', model.portConfig).input('tamanhoU', model.tamanhoU)
+                .query(`MERGE INTO Models AS T USING (SELECT @id, @name, @manufacturerId, @portConfig, @tamanhoU) AS S(id,name,manufacturerId,portConfig,tamanhoU) ON T.id=S.id WHEN MATCHED THEN UPDATE SET T.name=S.name,T.manufacturerId=S.manufacturerId,T.portConfig=S.portConfig,T.tamanhoU=S.tamanhoU WHEN NOT MATCHED THEN INSERT (id,name,manufacturerId,portConfig,tamanhoU,isTestData) VALUES(S.id,S.name,S.manufacturerId,S.portConfig,S.tamanhoU,0);`);
+        }
+
         await transaction.commit();
         console.log("Banco de dados populado com dados essenciais com sucesso.");
     } catch (error) {
@@ -185,14 +188,14 @@ export async function cleanTestData() {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
-        for (const table of tablesToDeleteFrom) {
-            const request = new sql.Request(transaction);
-            if (table === 'Users') {
-                await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
-            } else {
-                await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
-            }
-        }
+        // Delete from child tables first, then parent tables to avoid FK violations
+        await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE id IN (SELECT id FROM ChildItems WHERE isTestData = 1)`); // This is an approximation
+        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
 
         await transaction.commit();
         console.log("Limpeza dos dados de teste concluída com sucesso.");
@@ -200,19 +203,6 @@ export async function cleanTestData() {
         await transaction.rollback();
         console.error("Erro ao limpar dados de teste. A transação foi revertida.", error);
         throw new Error("Falha ao limpar dados de teste.");
-    }
-}
-
-async function insertWithTransaction(transaction: sql.Transaction, tableName: string, data: Record<string, any>[]) {
-    if (data.length === 0) return;
-    for (const record of data) {
-        const columns = Object.keys(record).join(', ');
-        const values = Object.keys(record).map(k => `@${k}`).join(', ');
-        const request = new sql.Request(transaction);
-        for (const key in record) {
-            request.input(key, record[key]);
-        }
-        await request.query(`INSERT INTO ${tableName} (${columns}) VALUES (${values})`);
     }
 }
 
@@ -297,6 +287,7 @@ export async function populateChildItems() {
 
 
 export async function populatePortsAndConnections() {
+    await _ensureDatabaseSchema(); // Garante que as tabelas de tipos existem
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
@@ -364,3 +355,4 @@ export async function populatePortsAndConnections() {
 export async function ensureDatabaseSchema(): Promise<string> {
     return _ensureDatabaseSchema();
 }
+
