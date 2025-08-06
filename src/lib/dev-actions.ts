@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import sql from 'mssql';
@@ -29,7 +30,7 @@ const testParentItems = [
 ];
 
 const testChildItems = [
-    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, brand: 'Cisco' },
+    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300 48-port', tamanhoU: 1, posicaoU: 40, brand: 'Cisco' },
     { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, brand: 'Dell EMC' },
 ];
 
@@ -308,7 +309,7 @@ export async function populateEssentialData() {
  */
 export async function populateTestData() {
     
-    // CORREÇÃO CRÍTICA: Garante que o schema e os dados padrão existam ANTES de inserir os dados de teste.
+    // GARANTIR A ORDEM CORRETA: Primeiro garante que o schema e os dados padrão existem.
     await _ensureDatabaseSchema();
     await cleanTestData();
 
@@ -319,7 +320,8 @@ export async function populateTestData() {
         await transaction.begin();
         console.log("Iniciando a inserção de dados de teste...");
 
-        // Inserção explícita para cada tabela
+        // ORDEM DE DEPENDÊNCIA:
+        // 1. Usuários e Prédios (não têm dependências de teste)
         for(const user of testUsers) {
             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, user.id)
@@ -347,6 +349,8 @@ export async function populateTestData() {
                     VALUES (@id, @name, @address, 1)
                 `);
         }
+        
+        // 2. Salas (dependem de Prédios)
         for(const room of testRooms) {
             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, room.id)
@@ -364,6 +368,7 @@ export async function populateTestData() {
                 `);
         }
 
+        // 3. Itens Pais (dependem de Salas e ItemStatuses)
         for(const item of testParentItems) {
             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, item.id)
@@ -382,6 +387,7 @@ export async function populateTestData() {
                 `);
         }
 
+        // 4. Itens Filhos (dependem de Itens Pais e ItemStatuses)
         for(const item of testChildItems) {
             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, item.id)
