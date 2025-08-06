@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import React, { useState } from 'react';
@@ -6,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
-import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle, FileCode } from 'lucide-react';
+import { Settings, X, Loader2, Database, Trash2, Download, CheckCircle, FileCode, Package, Sparkles } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { populateTestData, cleanTestData } from '@/lib/dev-actions';
+import { populateTestData, cleanTestData, populateEssentialData } from '@/lib/dev-actions';
 import { ensureDatabaseSchema } from '@/lib/user-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
@@ -21,6 +22,7 @@ export const DeveloperMenu = () => {
     const [isCheckingSchema, setIsCheckingSchema] = useState(false);
     const [isPopulating, setIsPopulating] = useState(false);
     const [isCleaning, setIsCleaning] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
     
     const handleEnsureSchema = async () => {
         setIsCheckingSchema(true);
@@ -43,6 +45,18 @@ export const DeveloperMenu = () => {
             toast({ title: 'Erro ao Popular', description: error.message, variant: 'destructive' });
         } finally {
             setIsPopulating(false);
+        }
+    }
+
+    const handleSeed = async () => {
+        setIsSeeding(true);
+        try {
+            await populateEssentialData();
+            toast({ title: 'Sucesso', description: 'Dados essenciais (fabricantes, modelos, etc.) foram carregados. Recarregue a página.' });
+        } catch (error: any) {
+            toast({ title: 'Erro ao Carregar Dados', description: (error as Error).message, variant: 'destructive' });
+        } finally {
+            setIsSeeding(false);
         }
     }
 
@@ -69,7 +83,7 @@ export const DeveloperMenu = () => {
         )
     }
 
-    const isAnyTaskRunning = isCheckingSchema || isPopulating || isCleaning;
+    const isAnyTaskRunning = isCheckingSchema || isPopulating || isCleaning || isSeeding;
 
     return (
         <Card className="fixed bottom-4 right-4 z-50 w-80 shadow-2xl">
@@ -103,8 +117,12 @@ export const DeveloperMenu = () => {
                     {isCheckingSchema ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                     Verificar/Criar Schema DB
                 </Button>
+                <Button onClick={handleSeed} disabled={isAnyTaskRunning} className="w-full">
+                    {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Popular Dados Essenciais
+                </Button>
                 <Button onClick={handlePopulate} disabled={isAnyTaskRunning} className="w-full">
-                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
                     Popular Dados de Teste
                 </Button>
                 <Button variant="destructive" onClick={handleClean} disabled={isAnyTaskRunning} className="w-full">

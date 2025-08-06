@@ -26,28 +26,6 @@ const testRooms = [
     { id: 'R1722382741544', name: 'Sala de Servidores 2A', buildingId: 'B1722382604646', largura: 25, widthM: 30, tileWidthCm: 50, tileHeightCm: 50, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true }
 ];
 
-const testParentItemTypes = [
-    { id: 'type_rack_default', name: 'Rack 42U', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isTestData: true, defaultColor: '#3b82f6' },
-    { id: 'type_ac_default', name: 'Ar Condicionado', category: 'Climatização', defaultWidthM: 0.8, defaultHeightM: 2, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isTestData: true, defaultColor: '#60a5fa' },
-];
-
-const testChildItemTypes = [
-    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
-    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isTestData: true, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
-];
-
-const testManufacturers = [
-    { id: 'man_cisco', name: 'Cisco', isTestData: true },
-    { id: 'man_dell', name: 'Dell EMC', isTestData: true },
-    { id: 'man_hpe', name: 'HPE', isTestData: true },
-];
-
-const testModels = [
-    { id: 'model_c9300', name: 'Catalyst 9300', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;4xSFP+', isTestData: true },
-    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB', isTestData: true },
-    { id: 'model_dl380', name: 'ProLiant DL380', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: null, isTestData: true },
-];
-
 const testParentItems = [
     { id: 'item_1722382897042', label: 'RACK-A01', x: 2, y: 2, width: 0.6, height: 1, type: 'Rack 42U', status: 'active', roomId: 'R1722382686121', tamanhoU: 42, isTestData: true },
 ];
@@ -55,6 +33,37 @@ const testParentItems = [
 const testChildItems = [
     { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, isTestData: true, brand: 'Cisco' },
     { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, isTestData: true, brand: 'Dell EMC' },
+];
+
+// --- DADOS ESSENCIAIS ---
+
+const essentialManufacturers = [
+    { id: 'man_cisco', name: 'Cisco' },
+    { id: 'man_dell', name: 'Dell EMC' },
+    { id: 'man_hpe', name: 'HPE' },
+    { id: 'man_huawei', name: 'Huawei' },
+    { id: 'man_vertiv', name: 'Vertiv' },
+    { id: 'man_schneider', name: 'Schneider Electric' },
+];
+
+const essentialModels = [
+    // Cisco
+    { id: 'model_c9300', name: 'Catalyst 9300', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;4xSFP+' },
+    { id: 'model_c2960', name: 'Catalyst 2960', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;2xSFP' },
+    // Dell
+    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB' },
+    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB' },
+    // HPE
+    { id: 'model_dl380', name: 'ProLiant DL380 G10', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: null },
+];
+
+const essentialItemTypes = [
+    { id: 'type_rack_default', name: 'Rack 42U', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#3b82f6' },
+    { id: 'type_ac_default', name: 'Ar Condicionado', category: 'Climatização', defaultWidthM: 0.8, defaultHeightM: 2, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#60a5fa' },
+    { id: 'type_qdf_default', name: 'QDF', category: 'Distribuição', defaultWidthM: 0.8, defaultHeightM: 2.2, iconName: 'Network', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#f59e0b' },
+    { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_patch', name: 'Patch Panel', category: 'Equipamentos', iconName: 'PanelTop', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
 ];
 
 
@@ -132,26 +141,45 @@ export async function populateTestData() {
 
 
     const operationsInOrder = [
-        ...testUsers.map(item => () => upsertRecord(pool, 'Users', item)),
-        ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', item)),
-        ...testParentItemTypes.map(item => () => upsertRecord(pool, 'ItemTypes', item)),
-        ...testChildItemTypes.map(item => () => upsertRecord(pool, 'ItemTypesEqp', item)),
-        ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
-        ...testModels.map(item => () => upsertRecord(pool, 'Models', item)),
-        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', item)),
-        ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', item)),
-        ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', item)),
+        ...testUsers.map(item => () => upsertRecord(pool, 'Users', { ...item, isTestData: true })),
+        ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', { ...item, isTestData: true })),
+        ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', { ...item, isTestData: true })),
+        ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', { ...item, isTestData: true })),
     ];
 
     try {
         for (const operation of operationsInOrder) {
             await operation();
         }
-        console.log("Banco de dados populado com sucesso.");
+        console.log("Banco de dados populado com dados de teste com sucesso.");
 
     } catch (error) {
-        console.error("Erro detalhado ao popular banco de dados:", error);
+        console.error("Erro detalhado ao popular banco de dados com dados de teste:", error);
         throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor para detalhes.");
+    }
+}
+
+/**
+ * Popula o banco de dados com dados essenciais de configuração.
+ */
+export async function populateEssentialData() {
+    const pool = await getDbPool();
+
+    const operationsInOrder = [
+        ...essentialManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', { ...item, isTestData: false })),
+        ...essentialModels.map(item => () => upsertRecord(pool, 'Models', { ...item, isTestData: false })),
+        ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', { ...item, isTestData: false })),
+        ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', { ...item, isTestData: false })),
+    ];
+
+    try {
+        for (const operation of operationsInOrder) {
+            await operation();
+        }
+        console.log("Banco de dados populado com dados essenciais com sucesso.");
+    } catch (error) {
+        console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
+        throw new Error("Falha ao popular dados essenciais. Verifique os logs do servidor.");
     }
 }
 
