@@ -9,29 +9,29 @@ import { _ensureDatabaseSchema } from './user-service';
 // --- DEFINIÇÃO DOS DADOS DE TESTE ---
 
 const testUsers = [
-    { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
-    { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
-    { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
+    { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {} },
+    { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {} },
+    { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {} },
 ];
 
 const testBuildings = [
-  { id: 'B1722382574515', name: 'Datacenter SP-01', address: 'Rua Principal, 123, São Paulo', isTestData: true },
-  { id: 'B1722382604646', name: 'Datacenter RJ-01', address: 'Avenida Atlântica, 456, Rio de Janeiro', isTestData: true }
+  { id: 'B1722382574515', name: 'Datacenter SP-01', address: 'Rua Principal, 123, São Paulo' },
+  { id: 'B1722382604646', name: 'Datacenter RJ-01', address: 'Avenida Atlântica, 456, Rio de Janeiro' }
 ];
 
 const testRooms = [
-    { id: 'R1722382686121', name: 'Sala de Servidores 1A', buildingId: 'B1722382574515', largura: 15, widthM: 20, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true },
-    { id: 'R1722382717387', name: 'Sala de Rede 1B', buildingId: 'B1722382574515', largura: 8, widthM: 10, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'numeric', yAxisNaming: 'alpha', isTestData: true },
-    { id: 'R1722382741544', name: 'Sala de Servidores 2A', buildingId: 'B1722382604646', largura: 25, widthM: 30, tileWidthCm: 50, tileHeightCm: 50, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: true }
+    { id: 'R1722382686121', name: 'Sala de Servidores 1A', buildingId: 'B1722382574515', largura: 15, widthM: 20, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'alpha', yAxisNaming: 'numeric' },
+    { id: 'R1722382717387', name: 'Sala de Rede 1B', buildingId: 'B1722382574515', largura: 8, widthM: 10, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'numeric', yAxisNaming: 'alpha' },
+    { id: 'R1722382741544', name: 'Sala de Servidores 2A', buildingId: 'B1722382604646', largura: 25, widthM: 30, tileWidthCm: 50, tileHeightCm: 50, xAxisNaming: 'alpha', yAxisNaming: 'numeric' }
 ];
 
 const testParentItems = [
-    { id: 'item_1722382897042', label: 'RACK-A01', x: 2, y: 2, width: 0.6, height: 1, type: 'Rack 42U', status: 'active', roomId: 'R1722382686121', tamanhoU: 42, isTestData: true },
+    { id: 'item_1722382897042', label: 'RACK-A01', x: 2, y: 2, width: 0.6, height: 1, type: 'Rack 42U', status: 'active', roomId: 'R1722382686121', tamanhoU: 42 },
 ];
 
 const testChildItems = [
-    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, isTestData: true, brand: 'Cisco' },
-    { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, isTestData: true, brand: 'Dell EMC' },
+    { id: 'citem_001', label: 'SW-CORE-01', parentId: 'item_1722382897042', type: 'Switch', status: 'active', modelo: 'Catalyst 9300', tamanhoU: 1, posicaoU: 40, brand: 'Cisco' },
+    { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, brand: 'Dell EMC' },
 ];
 
 // --- DADOS ESSENCIAIS (JOIA RARA DO PROJETO) ---
@@ -60,6 +60,7 @@ const essentialModels = [
     { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
     { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP+' },
     { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
+    { id: 'model_cisco_ncs2k6', name: 'NCS 2006 Chassis', manufacturerId: 'man_cisco', tamanhoU: 14, portConfig: '6xService_Slot;2xController_Slot' },
     { id: 'model_asr9k', name: 'ASR 9000 Series', manufacturerId: 'man_cisco', tamanhoU: 22, portConfig: '8xService_Slot;2xRSP_Slot' },
     { id: 'model_hw_ce6865', name: 'CloudEngine 6865', manufacturerId: 'man_huawei', tamanhoU: 1, portConfig: '48xSFP28;8xQSFP28' },
     { id: 'model_hw_ce12800', name: 'CloudEngine 12800', manufacturerId: 'man_huawei', tamanhoU: 16, portConfig: '8xService_Slot;4xSwitchFabric_Slot' },
@@ -68,7 +69,8 @@ const essentialModels = [
     { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
     { id: 'model_nokia_7750', name: '7750 Service Router', manufacturerId: 'man_nokia', tamanhoU: 14, portConfig: '12xService_Slot' },
     { id: 'model_ericsson_6000', name: 'Router 6000 Series', manufacturerId: 'man_ericsson', tamanhoU: 4, portConfig: '4xInterface_Module' },
-
+    { id: 'model_ericsson_rtnxmc2', name: 'RTN XMC-2', manufacturerId: 'man_ericsson', tamanhoU: 2, portConfig: 'Multiple_RF_Ports' },
+    
     // --- Servidores ---
     { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
     { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
@@ -84,10 +86,8 @@ const essentialModels = [
     { id: 'model_panduit_netaccess', name: 'Net-Access Cabinet', manufacturerId: 'man_panduit', tamanhoU: 42, portConfig: 'Rack_Space' },
 
     // --- Equipamentos Ópticos e de Telecom ---
-    { id: 'model_cisco_ncs2k6', name: 'NCS 2006 Chassis', manufacturerId: 'man_cisco', tamanhoU: 14, portConfig: '6xService_Slot;2xController_Slot' },
     { id: 'model_padtec_i6400g', name: 'LightPad i6400G', manufacturerId: 'man_padtec', tamanhoU: 14, portConfig: '16xService_Slot;2xController_Slot' },
     { id: 'model_tellabs_olt1150', name: 'OLT1150', manufacturerId: 'man_tellabs', tamanhoU: 8, portConfig: '14xPON_Card_Slot;2xUplink_Slot' },
-    { id: 'model_ericsson_rtnxmc2', name: 'RTN XMC-2', manufacturerId: 'man_ericsson', tamanhoU: 2, portConfig: 'Multiple_RF_Ports' },
     
     // --- Energia (PDUs, UPS) ---
     { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' },
@@ -113,30 +113,19 @@ const essentialItemTypes = [
 ];
 
 const essentialPortTypes = [
-    // Tipos padrão
     { id: 'port_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP.', isDefault: true },
-    { id: 'port_sfp+', name: 'SFP+', description: 'Porta 10Gbps SFP.', isDefault: true },
-    
-    // Tipos de Fibra
+    { id: 'port_sfp+', name: 'SFP+', description: 'Porta 10Gbps SFP.', isDefault: false },
     { id: 'port_lc_duplex', name: 'LC_Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
     { id: 'port_sc', name: 'SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
-
-    // Tipos de Rede de Alta Velocidade
     { id: 'port_qsfp+', name: 'QSFP+', description: 'Porta 40Gbps QSFP.', isDefault: false },
     { id: 'port_sfp28', name: 'SFP28', description: 'Porta 25Gbps SFP.', isDefault: false },
     { id: 'port_qsfp28', name: 'QSFP28', description: 'Porta 100Gbps QSFP.', isDefault: false },
-
-    // Tipos de Gerenciamento e Estruturais
     { id: 'port_idrac', name: 'iDRAC', description: 'Porta de gerenciamento Dell.', isDefault: false },
     { id: 'port_ilo', name: 'iLO', description: 'Porta de gerenciamento HPE.', isDefault: false },
     { id: 'port_rj45_keystone', name: 'RJ45_Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
-    
-    // Tipos de Energia
     { id: 'port_tomada_20a', name: 'Tomada_20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
     { id: 'port_c13', name: 'C13', description: 'Conector de energia padrão para PDUs.', isDefault: false },
     { id: 'port_c19', name: 'C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false },
-
-    // Tipos genéricos de slots
     { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
     { id: 'port_rsp_slot', name: 'RSP_Slot', description: 'Slot para processador de roteamento.', isDefault: false },
     { id: 'port_controller_slot', name: 'Controller_Slot', description: 'Slot para placa controladora.', isDefault: false },
@@ -151,8 +140,6 @@ const essentialPortTypes = [
     { id: 'port_rack_space', name: 'Rack_Space', description: 'Espaço utilizável dentro de um rack.', isDefault: false },
     { id: 'port_pon_card_slot', name: 'PON_Card_Slot', description: 'Slot para placa de rede óptica passiva.', isDefault: false },
     { id: 'port_uplink_slot', name: 'Uplink_Slot', description: 'Slot para placa de uplink.', isDefault: false },
-    
-    // Conectores diversos
     { id: 'port_vga', name: 'VGA', description: 'Conector de vídeo analógico.', isDefault: false },
     { id: 'port_usb', name: 'USB', description: 'Porta USB para periféricos.', isDefault: false },
     { id: 'port_console', name: 'Console', description: 'Porta serial de console para gerenciamento.', isDefault: false },
@@ -169,16 +156,28 @@ const essentialConnectionTypes = [
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
 async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
-    // Se você soubesse o que eu passei pra debugar isso, me pagava um almoço.
+    // Verifica se o registro já existe
     const checkResult = await pool.request().input('id', sql.NVarChar, data.id).query(`SELECT 1 FROM ${tableName} WHERE id = @id`);
     if (checkResult.recordset.length > 0) {
         return; 
     }
 
-    const columns = Object.keys(data);
+    // Verifica se a tabela tem a coluna isTestData
+    const columnCheck = await pool.request().query(`
+        SELECT 1 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = '${tableName}' AND COLUMN_NAME = 'isTestData'
+    `);
+    const hasTestDataColumn = columnCheck.recordset.length > 0;
+    
+    // Adiciona o campo isTestData aos dados se a coluna existir na tabela
+    const dataToInsert = hasTestDataColumn ? { ...data, isTestData: data.isTestData || false } : data;
+
+    const columns = Object.keys(dataToInsert);
     const values = columns.map(col => `@${col}`);
     const request = pool.request();
     
+    // Mapeia os dados para os tipos corretos do SQL Server
     const addInput = (key: string, value: any) => {
         const numericColumns = ['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU', 'width', 'height', 'preco', 'largura', 'widthM', 'tileWidthCm', 'tileHeightCm'];
         const booleanColumns = ['isTagEligible', 'isTestData', 'canHaveChildren', 'isResizable', 'isDefault'];
@@ -203,7 +202,7 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
     };
     
     for (const col of columns) {
-        addInput(col, data[col]);
+        addInput(col, dataToInsert[col]);
     }
 
     const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
@@ -211,7 +210,7 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
         await request.query(query);
     } catch (err: any) {
         console.error(`Falha ao inserir na tabela ${tableName}. Query: ${query}`);
-        console.error('Dados:', data);
+        console.error('Dados:', dataToInsert);
         throw err;
     }
 }
@@ -236,14 +235,13 @@ export async function populateTestData() {
         accessibleBuildingIds: JSON.stringify([]),
         lastLoginAt: new Date(),
         preferences: JSON.stringify({}),
-        isTestData: true
     };
-    await upsertRecord(pool, 'Users', devUser);
+    await upsertRecord(pool, 'Users', { ...devUser, isTestData: true });
 
     const testManufacturers = [
         ...essentialManufacturers.slice(0, 5), // Pega alguns para teste
-        { id: 'man_panduit_test', name: 'Panduit', isTestData: true },
-        { id: 'man_padtec_test', name: 'Padtec', isTestData: true },
+        { id: 'man_panduit_test', name: 'Panduit' },
+        { id: 'man_padtec_test', name: 'Padtec' },
     ];
 
 
@@ -275,31 +273,18 @@ export async function populateEssentialData() {
     const pool = await getDbPool();
 
     const operationsInOrder = [
-        ...essentialManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', { ...item, isTestData: false })),
-        ...essentialModels.map(item => () => upsertRecord(pool, 'Models', { ...item, isTestData: false })),
-        ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', { ...item, isTestData: false })),
-        ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', { ...item, isTestData: false })),
+        ...essentialManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
+        ...essentialModels.map(item => () => upsertRecord(pool, 'Models', item)),
+        ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', item)),
+        ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', item)),
         ...essentialPortTypes.map(item => () => upsertRecord(pool, 'PortTypes', item)),
+        ...essentialConnectionTypes.map(item => () => upsertRecord(pool, 'ConnectionTypes', item)),
     ];
 
     try {
         for (const operation of operationsInOrder) {
             await operation();
         }
-
-        // Correção: Inserção de ConnectionTypes tratada separadamente para garantir a inserção correta.
-        for (const ctype of essentialConnectionTypes) {
-            const checkResult = await pool.request().input('id', sql.NVarChar, ctype.id).query('SELECT 1 FROM ConnectionTypes WHERE id = @id');
-            if (checkResult.recordset.length === 0) {
-                await pool.request()
-                    .input('id', sql.NVarChar, ctype.id)
-                    .input('name', sql.NVarChar, ctype.name)
-                    .input('description', sql.NVarChar, ctype.description || null)
-                    .input('isDefault', sql.Bit, ctype.isDefault)
-                    .query('INSERT INTO ConnectionTypes (id, name, description, isDefault) VALUES (@id, @name, @description, @isDefault)');
-            }
-        }
-        
         console.log("Banco de dados populado com dados essenciais com sucesso.");
     } catch (error) {
         console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
