@@ -154,47 +154,33 @@ const essentialConnectionTypes = [
 ];
 
 // --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
-async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: Record<string, any>) {
+async function upsertRecord(transaction: sql.Transaction, tableName: string, data: Record<string, any>) {
     const updateColumns = Object.keys(data).filter(key => key !== 'id');
     const setClauses = updateColumns.map(col => `${col} = @${col}`);
 
-    const transaction = new sql.Transaction(pool);
-    try {
-        await transaction.begin();
-        const request = new sql.Request(transaction);
+    const request = new sql.Request(transaction);
 
-        // Adiciona todos os inputs para a query
-        for (const col of Object.keys(data)) {
-            const value = data[col];
-            if (value === null || value === undefined) {
-                request.input(col, null);
-            } else if (typeof value === 'boolean') {
-                request.input(col, sql.Bit, value);
-            } else if (typeof value === 'number') {
-                request.input(col, sql.Float, value);
-            } else {
-                request.input(col, sql.NVarChar, String(value));
-            }
+    for (const col of Object.keys(data)) {
+        const value = data[col];
+        if (value === null || value === undefined) {
+            request.input(col, null);
+        } else if (typeof value === 'boolean') {
+            request.input(col, sql.Bit, value);
+        } else if (typeof value === 'number') {
+            request.input(col, sql.Float, value);
+        } else {
+            request.input(col, sql.NVarChar, String(value));
         }
-        
-        // Tenta o UPDATE primeiro
-        const updateQuery = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = @id`;
-        const result = await request.query(updateQuery);
+    }
+    
+    const updateQuery = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = @id`;
+    const result = await request.query(updateQuery);
 
-        // Se nenhuma linha foi afetada, faz o INSERT
-        if (result.rowsAffected[0] === 0) {
-            const insertColumns = Object.keys(data);
-            const insertValues = insertColumns.map(col => `@${col}`);
-            const insertQuery = `INSERT INTO ${tableName} (${insertColumns.join(', ')}) VALUES (${insertValues.join(', ')})`;
-            await request.query(insertQuery);
-        }
-
-        await transaction.commit();
-    } catch (err: any) {
-        await transaction.rollback();
-        console.error(`Falha no UPSERT na tabela ${tableName}. Dados:`, data);
-        console.error('Erro SQL:', err.message);
-        throw err;
+    if (result.rowsAffected[0] === 0) {
+        const insertColumns = Object.keys(data);
+        const insertValues = insertColumns.map(col => `@${col}`);
+        const insertQuery = `INSERT INTO ${tableName} (${insertColumns.join(', ')}) VALUES (${insertValues.join(', ')})`;
+        await request.query(insertQuery);
     }
 }
 
@@ -205,45 +191,37 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
 export async function populateTestData() {
     
     const pool = await getDbPool();
+    await cleanTestData(); // Limpa dados de teste anteriores
+    const transaction = new sql.Transaction(pool);
     
-    await cleanTestData();
-
-    const devUser = {
-        id: 'dev_user_placeholder_id', 
-        email: 'dev@dev.com',
-        displayName: 'Desenvolvedor Padrão',
-        photoURL: null,
-        role: 'developer',
-        permissions: JSON.stringify(['*']),
-        accessibleBuildingIds: JSON.stringify([]),
-        lastLoginAt: new Date(),
-        preferences: JSON.stringify({}),
-    };
-    await upsertRecord(pool, 'Users', { ...devUser, isTestData: true });
-
-    const testManufacturers = [
-        ...essentialManufacturers.slice(0, 5), // Pega alguns para teste
-        { id: 'man_panduit_test', name: 'Panduit', isTestData: true },
-        { id: 'man_padtec_test', name: 'Padtec', isTestData: true },
-    ];
-
-
-    const operationsInOrder = [
-        ...testUsers.map(item => () => upsertRecord(pool, 'Users', { ...item, isTestData: true })),
-        ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', { ...item, isTestData: true })),
-        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', { ...item, isTestData: true })),
-        ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', { ...item, isTestData: true })),
-        ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', { ...item, isTestData: true })),
-        ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', { ...item, isTestData: true })),
-    ];
-
     try {
-        for (const operation of operationsInOrder) {
-            await operation();
-        }
+        await transaction.begin();
+
+        const devUser = {
+            id: 'dev_user_placeholder_id', 
+            email: 'dev@dev.com',
+            displayName: 'Desenvolvedor Padrão',
+            photoURL: null,
+            role: 'developer',
+            permissions: JSON.stringify(['*']),
+            accessibleBuildingIds: JSON.stringify([]),
+            lastLoginAt: new Date(),
+            preferences: JSON.stringify({}),
+            isTestData: true
+        };
+        await upsertRecord(transaction, 'Users', devUser);
+
+        for(const user of testUsers) await upsertRecord(transaction, 'Users', { ...user, isTestData: true });
+        for(const building of testBuildings) await upsertRecord(transaction, 'Buildings', { ...building, isTestData: true });
+        for(const room of testRooms) await upsertRecord(transaction, 'Rooms', { ...room, isTestData: true });
+        for(const item of testParentItems) await upsertRecord(transaction, 'ParentItems', { ...item, isTestData: true });
+        for(const item of testChildItems) await upsertRecord(transaction, 'ChildItems', { ...item, isTestData: true });
+
+        await transaction.commit();
         console.log("Banco de dados populado com dados de teste com sucesso.");
 
     } catch (error) {
+        await transaction.rollback();
         console.error("Erro detalhado ao popular banco de dados com dados de teste:", error);
         throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor para detalhes.");
     }
@@ -254,22 +232,23 @@ export async function populateTestData() {
  */
 export async function populateEssentialData() {
     const pool = await getDbPool();
-
-    const operationsInOrder = [
-        ...essentialManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', item)),
-        ...essentialModels.map(item => () => upsertRecord(pool, 'Models', item)),
-        ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', item)),
-        ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', item)),
-        ...essentialPortTypes.map(item => () => upsertRecord(pool, 'PortTypes', item)),
-        ...essentialConnectionTypes.map(item => () => upsertRecord(pool, 'ConnectionTypes', item)),
-    ];
+    const transaction = new sql.Transaction(pool);
 
     try {
-        for (const operation of operationsInOrder) {
-            await operation();
-        }
+        await transaction.begin();
+        console.log("Iniciando a população de dados essenciais...");
+
+        for (const manufacturer of essentialManufacturers) await upsertRecord(transaction, 'Manufacturers', manufacturer);
+        for (const model of essentialModels) await upsertRecord(transaction, 'Models', model);
+        for (const itemType of essentialItemTypes.filter(it => it.isParent)) await upsertRecord(transaction, 'ItemTypes', itemType);
+        for (const itemType of essentialItemTypes.filter(it => !it.isParent)) await upsertRecord(transaction, 'ItemTypesEqp', itemType);
+        for (const portType of essentialPortTypes) await upsertRecord(transaction, 'PortTypes', portType);
+        for (const connType of essentialConnectionTypes) await upsertRecord(transaction, 'ConnectionTypes', connType);
+        
+        await transaction.commit();
         console.log("Banco de dados populado com dados essenciais com sucesso.");
     } catch (error) {
+        await transaction.rollback();
         console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
         throw new Error("Falha ao popular dados essenciais. Verifique os logs do servidor.");
     }
@@ -292,15 +271,18 @@ export async function cleanTestData() {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
+        // A ordem aqui é invertida para respeitar as chaves estrangeiras
         for (const table of tablesToDeleteFrom) {
-            const columnCheck = await pool.request().query(`
+            // Verifica se a tabela existe e tem a coluna 'isTestData' antes de tentar deletar
+            const checkResult = await new sql.Request(transaction).query(`
                 SELECT 1 
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_NAME = '${table}' AND COLUMN_NAME = 'isTestData'
+                FROM INFORMATION_SCHEMA.TABLES t
+                JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
+                WHERE t.TABLE_NAME = '${table}' AND c.COLUMN_NAME = 'isTestData'
             `);
             
-            if (columnCheck.recordset.length > 0) {
-                const request = new sql.Request(transaction);
+            if (checkResult.recordset.length > 0) {
+                 const request = new sql.Request(transaction);
                 // O usuário 'dev' não deve ser removido na limpeza
                 if (table === 'Users') {
                     await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
@@ -308,8 +290,6 @@ export async function cleanTestData() {
                     await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
                 }
                 console.log(`Dados de teste limpos da tabela: ${table}`);
-            } else {
-                 console.log(`Tabela ${table} não possui coluna isTestData, pulando limpeza.`);
             }
         }
 
