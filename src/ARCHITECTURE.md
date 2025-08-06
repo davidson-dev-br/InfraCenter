@@ -80,11 +80,11 @@ Módulo central para mapear conexões e garantir a integridade dos dados de form
 
 3.  **8.3. Desenvolver Interface De/Para:**
     *   **Descrição:** Construir a interface visual na página `/depara` para permitir que os usuários conectem `Porta A` à `Porta B`, com suporte a conexão rápida e conexão com evidência (foto e texto da etiqueta). Implementar o fluxo de "conexão não resolvida" (lado único).
-    *   **Status:** `Próximo Passo`.
+    *   **Status:** `Concluído`.
 
 4.  **8.4. Central de Incidentes de Integridade:**
     *   **Descrição:** Desenvolver a página `/incidents`. O sistema irá gerar "incidentes" automaticamente para inconsistências de dados, como conexões não resolvidas.
-    *   **Status:** Em Andamento (geração automática de incidentes implementada; visualização a fazer).
+    *   **Status:** Próximo Passo (geração automática de incidentes implementada; visualização a fazer).
 
 ### Fase 9: Logs, Aprovações e Visualizações Avançadas
 **Status:** `A Fazer`

@@ -4,6 +4,17 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 ## [Unreleased]
 
+## [2024-08-09]
+
+### Melhorado
+- **Estabilizado o Fluxo de Criação de Usuário**: Revertida a tentativa de usar o Firebase Admin SDK no servidor, que causava instabilidade.
+- **Melhoria de UX**: Adicionado um diálogo de confirmação (`AlertDialog`) na criação de usuário que informa ao administrador que ele será logado como o novo usuário para fins de teste de permissão. Isso transforma o comportamento anterior (que era uma falha) em uma funcionalidade clara e intencional.
+
+### Corrigido
+- Resolvido erro "Maximum update depth exceeded" que causava um loop infinito de renderização, ajustando a lógica no `BuildingProvider`.
+- Corrigida a `server action` `updateItem` que não salvava as posições `x` ou `y` quando eram `0`.
+- Corrigido o erro "Usuário não autenticado" ao salvar a posição de um item, passando o `userId` diretamente do cliente para a `server action`.
+
 ## [2024-08-07]
 
 ### Adicionado
