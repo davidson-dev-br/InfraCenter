@@ -1,4 +1,5 @@
 
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,31 +13,36 @@ import { Badge } from "@/components/ui/badge";
 import { getIncidents, Incident } from "@/lib/incident-service";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
+import * as React from "react";
 
 // Este código passou no teste do "confia na call".
 // Esta página lida com incidentes, então se ela quebrar, a ironia será deliciosa.
 export const dynamic = 'force-dynamic';
 
-const severityStyles: Record<Incident['severity'], string> = {
-  critical: "bg-red-500/20 text-red-400 border-red-500/30",
-  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+const colorVariants: Record<string, string> = {
+  red: "bg-red-500/20 text-red-400 border-red-500/30",
+  orange: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  yellow: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  blue: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  green: "bg-green-500/20 text-green-400 border-green-500/30",
+  gray: "bg-gray-500/20 text-gray-400 border-gray-500/30",
 };
 
-const statusStyles: Record<Incident['status'], string> = {
-    open: "bg-red-500/10 text-red-500",
-    investigating: "bg-yellow-500/10 text-yellow-500",
-    closed: "bg-green-500/10 text-green-500",
-}
+const iconMap: Record<string, React.ElementType> = {
+  AlertTriangle,
+  Clock,
+  CheckCircle,
+  Info,
+};
 
-const StatusIcon = ({ status }: { status: Incident['status']}) => {
-    switch(status) {
-        case 'open': return <AlertTriangle className="h-4 w-4 mr-2" />;
-        case 'investigating': return <Clock className="h-4 w-4 mr-2" />;
-        case 'closed': return <CheckCircle className="h-4 w-4 mr-2" />;
-        default: return <Info className="h-4 w-4 mr-2" />;
-    }
+const StatusBadge = ({ status, color, iconName }: { status: string, color: string, iconName: string }) => {
+    const IconComponent = iconMap[iconName] || Info;
+    return (
+        <Badge variant="outline" className={cn("capitalize", colorVariants[color] || colorVariants.gray)}>
+            <IconComponent className="h-4 w-4 mr-2" />
+            {status}
+        </Badge>
+    )
 }
 
 export default async function IncidentsPage() {
@@ -73,14 +79,11 @@ export default async function IncidentsPage() {
                                 <p className="text-xs text-muted-foreground font-mono">ID: {incident.id}</p>
                             </TableCell>
                              <TableCell>
-                                <Badge variant="outline" className={cn("capitalize", statusStyles[incident.status])}>
-                                    <StatusIcon status={incident.status} />
-                                    {incident.status}
-                                </Badge>
+                               <StatusBadge status={incident.status} color={incident.statusColor} iconName={incident.statusIcon} />
                             </TableCell>
                             <TableCell>
-                                <Badge variant="outline" className={cn("capitalize", severityStyles[incident.severity])}>
-                                {incident.severity}
+                                <Badge variant="outline" className={cn("capitalize", colorVariants[incident.severityColor] || colorVariants.gray)}>
+                                    {incident.severity}
                                 </Badge>
                             </TableCell>
                             <TableCell>{new Date(incident.detectedAt).toLocaleString()}</TableCell>

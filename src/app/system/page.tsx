@@ -1,4 +1,5 @@
 
+
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +7,7 @@ import { AddItemTypeDialog } from '@/components/add-item-type-dialog';
 import { AddStatusButton } from '@/components/system/add-status-button';
 import { ItemTypesTable } from '@/components/system/item-types-table';
 import { StatusesTable } from '@/components/system/statuses-table';
-import { Puzzle, RefreshCcwDot, HardDrive, LayoutGrid, Tag, Plus, Library, Network, Plug, Link2 } from 'lucide-react';
+import { Puzzle, RefreshCcwDot, HardDrive, LayoutGrid, Tag, Plus, Library, Network, Plug, Link2, AlertTriangle, BadgeAlert, ShieldCheck } from 'lucide-react';
 import { ParentColumnConfig } from '@/components/system/parent-column-config';
 import { ChildColumnConfig } from '@/components/system/child-column-config';
 import { Separator } from '@/components/ui/separator';
@@ -151,6 +152,34 @@ async function SystemPage() {
                         </ManageConnectionTypeDialog>
                     </div>
                     <ConnectionTypesTable />
+                 </TabsContent>
+             </Tabs>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6" />
+                <CardTitle>Gerenciamento de Incidentes</CardTitle>
+            </div>
+            <CardDescription className="mt-1.5">
+                Configure os status e severidades que podem ser atribuídos a um incidente de integridade.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+             <Tabs defaultValue="incident_statuses">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="incident_statuses"><BadgeAlert className="mr-2 h-4 w-4"/>Status de Incidente</TabsTrigger>
+                    <TabsTrigger value="incident_severities"><ShieldCheck className="mr-2 h-4 w-4"/>Severidades</TabsTrigger>
+                </TabsList>
+                 <TabsContent value="incident_statuses" className="mt-6 space-y-6">
+                    <p className="text-muted-foreground text-sm">Gerencie os status do ciclo de vida de um incidente (Aberto, Investigando, Fechado).</p>
+                    {/* Placeholder para tabela de status de incidente */}
+                 </TabsContent>
+                 <TabsContent value="incident_severities" className="mt-6 space-y-6">
+                    <p className="text-muted-foreground text-sm">Gerencie os níveis de criticidade de um incidente.</p>
+                    {/* Placeholder para tabela de severidades */}
                  </TabsContent>
              </Tabs>
         </CardContent>

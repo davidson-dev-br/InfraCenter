@@ -74,7 +74,12 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureEquipmentPortsTableExists(pool); 
     await ensureConnectionsTableExists(pool); 
     await ensureAuditLogTableExists(pool);
-    await ensureIncidentsTableExists(pool);
+    
+    // Novas tabelas de configuração de incidentes
+    await ensureIncidentStatusesTableExists(pool);
+    await ensureIncidentSeveritiesTableExists(pool);
+    
+    await ensureIncidentsTableExists(pool); // Agora depende das tabelas acima
     await ensureApprovalsTableExists(pool);
     await ensureEvidenceTableExists(pool);
     await ensureSensorsTableExists(pool);
@@ -386,20 +391,119 @@ async function ensureAuditLogTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
+async function ensureIncidentStatusesTableExists(pool: sql.ConnectionPool) {
+    const wasCreated = await ensureTableExists(pool, 'IncidentStatuses', `
+        CREATE TABLE IncidentStatuses (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            description NVARCHAR(255),
+            color NVARCHAR(20) NOT NULL,
+            iconName NVARCHAR(50),
+            isDefault BIT NOT NULL DEFAULT 0
+        );
+    `);
+    if(wasCreated) {
+        const defaultStatuses = [
+            { id: 'open', name: 'Aberto', description: 'O incidente foi detectado e precisa de atenção.', color: 'red', iconName: 'AlertTriangle', isDefault: 1 },
+            { id: 'investigating', name: 'Investigando', description: 'Alguém está ativamente trabalhando no incidente.', color: 'yellow', iconName: 'Clock', isDefault: 1 },
+            { id: 'closed', name: 'Fechado', description: 'O incidente foi resolvido.', color: 'green', iconName: 'CheckCircle', isDefault: 1 },
+        ];
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            for (const status of defaultStatuses) {
+                 await new sql.Request(transaction).query`
+                    INSERT INTO IncidentStatuses (id, name, description, color, iconName, isDefault)
+                    VALUES (${status.id}, ${status.name}, ${status.description}, ${status.color}, ${status.iconName}, ${status.isDefault})
+                `;
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback(); throw err;
+        }
+    }
+}
+
+async function ensureIncidentSeveritiesTableExists(pool: sql.ConnectionPool) {
+    const wasCreated = await ensureTableExists(pool, 'IncidentSeverities', `
+        CREATE TABLE IncidentSeverities (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            description NVARCHAR(255),
+            color NVARCHAR(20) NOT NULL,
+            rank INT NOT NULL UNIQUE,
+            isDefault BIT NOT NULL DEFAULT 0
+        );
+    `);
+     if(wasCreated) {
+        const defaultSeverities = [
+            { id: 'critical', name: 'Crítica', description: 'Impacto severo no serviço.', color: 'red', rank: 1, isDefault: 1 },
+            { id: 'high', name: 'Alta', description: 'Impacto significativo no serviço.', color: 'orange', rank: 2, isDefault: 1 },
+            { id: 'medium', name: 'Média', description: 'Impacto moderado, pode se tornar crítico.', color: 'yellow', rank: 3, isDefault: 1 },
+            { id: 'low', name: 'Baixa', description: 'Baixo impacto, não afeta o serviço diretamente.', color: 'blue', rank: 4, isDefault: 1 },
+        ];
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            for (const severity of defaultSeverities) {
+                 await new sql.Request(transaction).query`
+                    INSERT INTO IncidentSeverities (id, name, description, color, rank, isDefault)
+                    VALUES (${severity.id}, ${severity.name}, ${severity.description}, ${severity.color}, ${severity.rank}, ${severity.isDefault})
+                `;
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback(); throw err;
+        }
+    }
+}
+
+
 async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Incidents', `
         CREATE TABLE Incidents (
             id NVARCHAR(50) PRIMARY KEY,
             description NVARCHAR(MAX) NOT NULL,
-            severity NVARCHAR(50) NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
-            status NVARCHAR(50) NOT NULL CHECK (status IN ('open', 'investigating', 'closed')),
+            severityId NVARCHAR(50) NOT NULL,
+            statusId NVARCHAR(50) NOT NULL,
             detectedAt DATETIME2 NOT NULL,
             resolvedAt DATETIME2,
             entityType NVARCHAR(50),
-            entityId NVARCHAR(100)
+            entityId NVARCHAR(100),
+            FOREIGN KEY (severityId) REFERENCES IncidentSeverities(id),
+            FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)
         );
     `);
+
+    // Alterando as colunas antigas se elas existirem
+    const checkOldColumns = await pool.request().query(`
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severity', 'status')
+    `);
+    if(checkOldColumns.recordset.length > 0) {
+        console.log("Detectadas colunas antigas na tabela Incidents. Migrando dados...");
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            // Copia dados da coluna 'severity' para a nova 'severityId'
+            await new sql.Request(transaction).query(`UPDATE i SET i.severityId = s.id FROM Incidents i JOIN IncidentSeverities s ON i.severity = s.name`);
+             // Copia dados da coluna 'status' para a nova 'statusId'
+            await new sql.Request(transaction).query(`UPDATE i SET i.statusId = s.id FROM Incidents i JOIN IncidentStatuses s ON i.status = s.name`);
+            
+            // Remove as colunas antigas
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN severity`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN status`);
+            
+            await transaction.commit();
+            console.log("Migração de dados da tabela Incidents concluída.");
+        } catch (err) {
+            await transaction.rollback();
+            console.error("Erro ao migrar dados da tabela Incidents:", err);
+            throw err;
+        }
+    }
 }
+
 
 async function ensureApprovalsTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Approvals', `
