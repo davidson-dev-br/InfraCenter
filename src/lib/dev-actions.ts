@@ -12,7 +12,6 @@ const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: [], accessibleBuildingIds: ['B1722382574515','B1722382604646'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
     { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: [], accessibleBuildingIds: ['B1722382574515'], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true },
-    { id: 'dev_user_placeholder_id', email: 'dev@dev.com', displayName: 'Desenvolvedor Padrão', photoURL: null, role: 'developer', permissions: ['*'], accessibleBuildingIds: [], lastLoginAt: new Date().toISOString(), preferences: {}, isTestData: true }
 ];
 
 const testBuildings = [
@@ -56,58 +55,42 @@ const essentialManufacturers = [
 ];
 
 const essentialModels = [
-    // Cisco Switches, Routers & Optical
+    // --- Switches & Routers (Rede) ---
     { id: 'model_c9300_48', name: 'Catalyst 9300 48-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;8xSFP+' },
     { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
-    { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP' },
+    { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP+' },
     { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
-    { id: 'model_asr9k', name: 'ASR 9000 Series', manufacturerId: 'man_cisco', tamanhoU: 22, portConfig: '8xLineCard_Slot;2xRSP_Slot' },
-    { id: 'model_cisco_ncs2k6', name: 'NCS 2006 Chassis', manufacturerId: 'man_cisco', tamanhoU: 14, portConfig: '6xLineCard_Slot;2xController_Slot' },
-
-    // Huawei Switches & Routers
+    { id: 'model_asr9k', name: 'ASR 9000 Series', manufacturerId: 'man_cisco', tamanhoU: 22, portConfig: '8xService_Slot;2xRSP_Slot' },
     { id: 'model_hw_ce6865', name: 'CloudEngine 6865', manufacturerId: 'man_huawei', tamanhoU: 1, portConfig: '48xSFP28;8xQSFP28' },
-    { id: 'model_hw_ce12800', name: 'CloudEngine 12800', manufacturerId: 'man_huawei', tamanhoU: 16, portConfig: '8xLineCard_Slot;4xSwitchFabric_Slot' },
+    { id: 'model_hw_ce12800', name: 'CloudEngine 12800', manufacturerId: 'man_huawei', tamanhoU: 16, portConfig: '8xService_Slot;4xSwitchFabric_Slot' },
+    { id: 'model_ex4300', name: 'EX4300', manufacturerId: 'man_juniper', tamanhoU: 1, portConfig: '48xRJ45;4xQSFP+' },
+    { id: 'model_juniper_mx960', name: 'MX960 Chassis', manufacturerId: 'man_juniper', tamanhoU: 21, portConfig: '12xService_Slot;2xRoutingEngine_Slot;3xSFB_Slot' },
+    { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
+    { id: 'model_nokia_7750', name: '7750 Service Router', manufacturerId: 'man_nokia', tamanhoU: 14, portConfig: '12xService_Slot' },
+    { id: 'model_ericsson_6000', name: 'Router 6000 Series', manufacturerId: 'man_ericsson', tamanhoU: 4, portConfig: '4xInterface_Module' },
 
-    // Dell Servers
+    // --- Servidores ---
     { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
     { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xiDRAC' },
     { id: 'model_mx7000', name: 'PowerEdge MX7000', manufacturerId: 'man_dell', tamanhoU: 7, portConfig: '8xPSU_Slot;4xFAN_Slot;8xBlade_Slot' },
-    
-    // HPE Servers
     { id: 'model_dl380g10', name: 'ProLiant DL380 Gen10', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: '4xRJ45;1xiLO' },
     { id: 'model_c7000', name: 'BladeSystem c7000', manufacturerId: 'man_hpe', tamanhoU: 10, portConfig: '10xFAN_Slot;6xPSU_Slot;16xBlade_Slot' },
     
-    // Juniper Switches & Routers
-    { id: 'model_ex4300', name: 'EX4300', manufacturerId: 'man_juniper', tamanhoU: 1, portConfig: '48xRJ45;4xQSFP+' },
-    { id: 'model_juniper_mx960', name: 'MX960 Chassis', manufacturerId: 'man_juniper', tamanhoU: 21, portConfig: '12xLineCard_Slot;2xRoutingEngine_Slot;3xSFB_Slot' },
-    
-    // Arista Switches
-    { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
-
-    // Nokia Routers
-    { id: 'model_nokia_7750', name: '7750 Service Router', manufacturerId: 'man_nokia', tamanhoU: 14, portConfig: '12xCard_Slot' },
-    
-    // Ericsson Equipments
-    { id: 'model_ericsson_6000', name: 'Router 6000 Series', manufacturerId: 'man_ericsson', tamanhoU: 4, portConfig: '4xInterface_Module' },
-    { id: 'model_ericsson_rtnxmc2', name: 'RTN XMC-2', manufacturerId: 'man_ericsson', tamanhoU: 2, portConfig: 'Multiple_RF_Ports' },
-
-
-    // Patch Panels & Racks
+    // --- Infraestrutura Física (Patch Panels, Racks) ---
     { id: 'model_l_pp24', name: 'Patch Panel 24 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 1, portConfig: '24xRJ45_Keystone' },
     { id: 'model_l_pp48', name: 'Patch Panel 48 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 2, portConfig: '48xRJ45_Keystone' },
     { id: 'model_f_dio24', name: 'DIO 24 Fibras LC Duplex', manufacturerId: 'man_furukawa', tamanhoU: 1, portConfig: '24xLC_Duplex' },
     { id: 'model_f_dio48', name: 'DIO 48 Fibras LC Duplex', manufacturerId: 'man_furukawa', tamanhoU: 2, portConfig: '48xLC_Duplex' },
     { id: 'model_panduit_netaccess', name: 'Net-Access Cabinet', manufacturerId: 'man_panduit', tamanhoU: 42, portConfig: 'Rack_Space' },
 
-
-    // Optical & Telecom
+    // --- Equipamentos Ópticos e de Telecom ---
+    { id: 'model_cisco_ncs2k6', name: 'NCS 2006 Chassis', manufacturerId: 'man_cisco', tamanhoU: 14, portConfig: '6xService_Slot;2xController_Slot' },
     { id: 'model_padtec_i6400g', name: 'LightPad i6400G', manufacturerId: 'man_padtec', tamanhoU: 14, portConfig: '16xService_Slot;2xController_Slot' },
     { id: 'model_tellabs_olt1150', name: 'OLT1150', manufacturerId: 'man_tellabs', tamanhoU: 8, portConfig: '14xPON_Card_Slot;2xUplink_Slot' },
-
-    // PDU (Vertiv)
+    { id: 'model_ericsson_rtnxmc2', name: 'RTN XMC-2', manufacturerId: 'man_ericsson', tamanhoU: 2, portConfig: 'Multiple_RF_Ports' },
+    
+    // --- Energia (PDUs, UPS) ---
     { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' },
-
-    // UPS (Schneider)
     { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
 ];
 
@@ -132,15 +115,13 @@ const essentialItemTypes = [
 const essentialPortTypes = [
     // Tipos padrão
     { id: 'port_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP.', isDefault: true },
-    { id: 'port_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre.', isDefault: true },
+    { id: 'port_sfp+', name: 'SFP+', description: 'Porta 10Gbps SFP.', isDefault: true },
     
     // Tipos de Fibra
-    { id: 'port_lc', name: 'Fibra LC', description: 'Conector padrão para fibra óptica (Lucent Connector).', isDefault: false },
-    { id: 'port_lc_duplex', name: 'LC Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
-    { id: 'port_sc', name: 'Fibra SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
+    { id: 'port_lc_duplex', name: 'LC_Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
+    { id: 'port_sc', name: 'SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
 
     // Tipos de Rede de Alta Velocidade
-    { id: 'port_sfp+', name: 'SFP+', description: 'Porta 10Gbps SFP.', isDefault: false },
     { id: 'port_qsfp+', name: 'QSFP+', description: 'Porta 40Gbps QSFP.', isDefault: false },
     { id: 'port_sfp28', name: 'SFP28', description: 'Porta 25Gbps SFP.', isDefault: false },
     { id: 'port_qsfp28', name: 'QSFP28', description: 'Porta 100Gbps QSFP.', isDefault: false },
@@ -148,15 +129,15 @@ const essentialPortTypes = [
     // Tipos de Gerenciamento e Estruturais
     { id: 'port_idrac', name: 'iDRAC', description: 'Porta de gerenciamento Dell.', isDefault: false },
     { id: 'port_ilo', name: 'iLO', description: 'Porta de gerenciamento HPE.', isDefault: false },
-    { id: 'port_rj45_keystone', name: 'RJ45 Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
+    { id: 'port_rj45_keystone', name: 'RJ45_Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
     
     // Tipos de Energia
-    { id: 'port_tomada_20a', name: 'Tomada 20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
-    { id: 'port_c13', name: 'IEC C13', description: 'Conector de energia padrão para PDUs.', isDefault: false },
-    { id: 'port_c19', name: 'IEC C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false },
+    { id: 'port_tomada_20a', name: 'Tomada_20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
+    { id: 'port_c13', name: 'C13', description: 'Conector de energia padrão para PDUs.', isDefault: false },
+    { id: 'port_c19', name: 'C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false },
 
     // Tipos genéricos de slots
-    { id: 'port_linecard_slot', name: 'LineCard_Slot', description: 'Slot para placa de linha.', isDefault: false },
+    { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
     { id: 'port_rsp_slot', name: 'RSP_Slot', description: 'Slot para processador de roteamento.', isDefault: false },
     { id: 'port_controller_slot', name: 'Controller_Slot', description: 'Slot para placa controladora.', isDefault: false },
     { id: 'port_switchfabric_slot', name: 'SwitchFabric_Slot', description: 'Slot para malha de comutação.', isDefault: false },
@@ -165,11 +146,9 @@ const essentialPortTypes = [
     { id: 'port_blade_slot', name: 'Blade_Slot', description: 'Slot para servidor blade.', isDefault: false },
     { id: 'port_routingengine_slot', name: 'RoutingEngine_Slot', description: 'Slot para motor de roteamento Juniper.', isDefault: false },
     { id: 'port_sfb_slot', name: 'SFB_Slot', description: 'Slot para Switch Fabric Board Juniper.', isDefault: false },
-    { id: 'port_card_slot', name: 'Card_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
     { id: 'port_interface_module', name: 'Interface_Module', description: 'Módulo de interface genérico.', isDefault: false },
     { id: 'port_multiple_rf_ports', name: 'Multiple_RF_Ports', description: 'Múltiplas portas de rádio frequência.', isDefault: false },
     { id: 'port_rack_space', name: 'Rack_Space', description: 'Espaço utilizável dentro de um rack.', isDefault: false },
-    { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot para placa de serviço óptico.', isDefault: false },
     { id: 'port_pon_card_slot', name: 'PON_Card_Slot', description: 'Slot para placa de rede óptica passiva.', isDefault: false },
     { id: 'port_uplink_slot', name: 'Uplink_Slot', description: 'Slot para placa de uplink.', isDefault: false },
     
@@ -253,11 +232,18 @@ export async function populateTestData() {
     };
     await upsertRecord(pool, 'Users', devUser);
 
+    const testManufacturers = [
+        ...essentialManufacturers.slice(0, 5), // Pega alguns para teste
+        { id: 'man_panduit_test', name: 'Panduit', isTestData: true },
+        { id: 'man_padtec_test', name: 'Padtec', isTestData: true },
+    ];
+
 
     const operationsInOrder = [
         ...testUsers.map(item => () => upsertRecord(pool, 'Users', { ...item, isTestData: true })),
         ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', { ...item, isTestData: true })),
         ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', { ...item, isTestData: true })),
+        ...testManufacturers.map(item => () => upsertRecord(pool, 'Manufacturers', { ...item, isTestData: true })),
         ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', { ...item, isTestData: true })),
         ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', { ...item, isTestData: true })),
     ];
@@ -325,7 +311,12 @@ export async function cleanTestData() {
             
             if (columnCheck.recordset.length > 0) {
                 const request = new sql.Request(transaction);
-                await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
+                // O usuário 'dev' não deve ser removido na limpeza
+                if (table === 'Users') {
+                    await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
+                } else {
+                    await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
+                }
                 console.log(`Dados de teste limpos da tabela: ${table}`);
             } else {
                  console.log(`Tabela ${table} não possui coluna isTestData, pulando limpeza.`);
