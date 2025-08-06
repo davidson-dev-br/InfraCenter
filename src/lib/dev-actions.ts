@@ -74,7 +74,7 @@ const essentialModels = [
     { id: 'model_padtec_i6400g', name: 'LightPad i6400G', manufacturerId: 'man_padtec', tamanhoU: 14, portConfig: '16xService_Slot;2xController_Slot' },
     { id: 'model_tellabs_olt1150', name: 'OLT1150', manufacturerId: 'man_tellabs', tamanhoU: 8, portConfig: '14xPON_Card_Slot;2xUplink_Slot' },
     { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' },
-    { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', manufacturerIdd: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
+    { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
 ];
 
 const essentialItemTypes = [
@@ -102,8 +102,7 @@ const essentialPortTypes = [
     { id: 'port_c19', name: 'C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false }, { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
     { id: 'port_rsp_slot', name: 'RSP_Slot', description: 'Slot para processador de roteamento.', isDefault: false }, { id: 'port_controller_slot', name: 'Controller_Slot', description: 'Slot para placa controladora.', isDefault: false },
     { id: 'port_switchfabric_slot', name: 'SwitchFabric_Slot', description: 'Slot para malha de comutação.', isDefault: false },
-    { id: 'port_psu_slot', name: 'PSU_Slot', description: 'Slot para fonte de alimentação.', isDefault: false },
-    { id: 'port_fan_slot', name: 'FAN_Slot', description: 'Slot para módulo de ventilação.', isDefault: false },
+    { id: 'port_psu_slot', name: 'PSU_Slot', description: 'Slot para fonte de alimentação.', isDefault: false }, { id: 'port_fan_slot', name: 'FAN_Slot', description: 'Slot para módulo de ventilação.', isDefault: false },
     { id: 'port_blade_slot', name: 'Blade_Slot', description: 'Slot para servidor blade.', isDefault: false },
     { id: 'port_routingengine_slot', name: 'RoutingEngine_Slot', description: 'Slot para motor de roteamento Juniper.', isDefault: false },
     { id: 'port_sfb_slot', name: 'SFB_Slot', description: 'Slot para Switch Fabric Board Juniper.', isDefault: false },
@@ -137,7 +136,7 @@ export async function populateEssentialData() {
         await transaction.begin();
         console.log("Iniciando a população de dados essenciais...");
 
-        // 1. Entidades sem dependências
+        // 1. Entidades sem dependências diretas (ou cujas dependências são controladas internamente)
         for (const man of essentialManufacturers) {
             await new sql.Request(transaction).input('id', man.id).input('name', man.name)
                 .query(`MERGE INTO Manufacturers AS T USING (SELECT @id AS id, @name AS name) AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET T.name = S.name WHEN NOT MATCHED THEN INSERT (id, name, isTestData) VALUES (S.id, S.name, 0);`);
@@ -181,11 +180,11 @@ export async function populateEssentialData() {
 export async function cleanTestData() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
-
     try {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
+        // A ordem de exclusão é a inversa da criação para evitar erros de chave estrangeira
         await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
         await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
         await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
@@ -203,53 +202,38 @@ export async function cleanTestData() {
     }
 }
 
-async function runIdempotentInsert(transaction: sql.Transaction, tableName: string, data: any[], isTestData: boolean = true) {
-    for (const record of data) {
-        const columns = Object.keys(record);
-        const sourceColumns = columns.join(', ');
-        const sourceParams = columns.map(c => `@${c}`).join(', ');
-        const updateClauses = columns.map(c => `T.${c} = S.${c}`).join(', ');
-        
-        const request = new sql.Request(transaction);
-        for (const col of columns) {
-            request.input(col, record[col]);
-        }
-        
-        // Adiciona isTestData se for o caso
-        const allColumns = isTestData ? [...columns, 'isTestData'] : columns;
-        const allSourceParams = isTestData ? [...columns.map(c => `@${c}`), '1'] : columns.map(c => `@${c}`);
-
-        await request.query(`
-            MERGE INTO ${tableName} AS T
-            USING (SELECT ${sourceParams}) AS S (${sourceColumns})
-            ON T.id = S.id
-            WHEN MATCHED THEN
-                UPDATE SET ${updateClauses}
-            WHEN NOT MATCHED THEN
-                INSERT (${allColumns.join(', ')})
-                VALUES (${allSourceParams.join(', ')});
-        `);
-    }
-}
-
 export async function populateBaseEntities() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        // Limpeza explícita antes de popular
-        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
-
         for (const user of testUsers) {
-            await new sql.Request(transaction)
+             await new sql.Request(transaction)
                 .input('id', user.id).input('email', user.email).input('displayName', user.displayName).input('photoURL', user.photoURL).input('role', user.role).input('permissions', JSON.stringify(user.permissions)).input('accessibleBuildingIds', JSON.stringify(user.accessibleBuildingIds)).input('lastLoginAt', new Date(user.lastLoginAt)).input('preferences', JSON.stringify(user.preferences))
-                .query(`INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData) VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, 1)`);
+                .query(`
+                    MERGE INTO Users AS T
+                    USING (SELECT @id as id) AS S
+                    ON T.id = S.id
+                    WHEN MATCHED THEN
+                        UPDATE SET email = @email, displayName = @displayName, photoURL = @photoURL, role = @role, permissions = @permissions, accessibleBuildingIds = @accessibleBuildingIds, lastLoginAt = @lastLoginAt, preferences = @preferences
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData)
+                        VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, 1);
+                `);
         }
         for (const building of testBuildings) {
             await new sql.Request(transaction)
                 .input('id', building.id).input('name', building.name).input('address', building.address)
-                .query(`INSERT INTO Buildings (id, name, address, isTestData) VALUES (@id, @name, @address, 1)`);
+                .query(`
+                    MERGE INTO Buildings AS T
+                    USING (SELECT @id as id) AS S
+                    ON T.id = S.id
+                    WHEN MATCHED THEN
+                        UPDATE SET name = @name, address = @address
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, address, isTestData)
+                        VALUES (@id, @name, @address, 1);
+                `);
         }
         await transaction.commit();
     } catch (error) {
@@ -264,11 +248,21 @@ export async function populateRooms() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
         for (const room of testRooms) {
             await new sql.Request(transaction)
-                .input('id', room.id).input('name', room.name).input('buildingId', room.buildingId).input('largura', room.largura).input('widthM', room.widthM).input('tileWidthCm', room.tileWidthCm).input('tileHeightCm', room.tileHeightCm).input('xAxisNaming', room.xAxisNaming).input('yAxisNaming', room.yAxisNaming)
-                .query(`INSERT INTO Rooms (id, name, buildingId, largura, widthM, tileWidthCm, tileHeightCm, xAxisNaming, yAxisNaming, isTestData) VALUES (@id, @name, @buildingId, @largura, @widthM, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming, 1)`);
+                .input('id', room.id).input('name', room.name).input('buildingId', room.buildingId)
+                .input('largura', room.largura).input('widthM', room.widthM).input('tileWidthCm', room.tileWidthCm)
+                .input('tileHeightCm', room.tileHeightCm).input('xAxisNaming', room.xAxisNaming).input('yAxisNaming', room.yAxisNaming)
+                .query(`
+                    MERGE INTO Rooms AS T
+                    USING (SELECT @id as id) AS S
+                    ON T.id = S.id
+                    WHEN MATCHED THEN
+                        UPDATE SET name = @name, buildingId = @buildingId, largura = @largura, widthM = @widthM, tileWidthCm = @tileWidthCm, tileHeightCm = @tileHeightCm, xAxisNaming = @xAxisNaming, yAxisNaming = @yAxisNaming
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, buildingId, largura, widthM, tileWidthCm, tileHeightCm, xAxisNaming, yAxisNaming, isTestData)
+                        VALUES (@id, @name, @buildingId, @largura, @widthM, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming, 1);
+                `);
         }
         await transaction.commit();
     } catch (error) {
@@ -283,11 +277,21 @@ export async function populateParentItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
         for (const item of testParentItems) {
             await new sql.Request(transaction)
-                .input('id', item.id).input('label', item.label).input('x', item.x).input('y', item.y).input('width', item.width).input('height', item.height).input('type', item.type).input('status', item.status).input('roomId', item.roomId).input('tamanhoU', item.tamanhoU)
-                .query(`INSERT INTO ParentItems (id, label, x, y, width, height, type, status, roomId, tamanhoU, isTestData) VALUES (@id, @label, @x, @y, @width, @height, @type, @status, @roomId, @tamanhoU, 1)`);
+                .input('id', item.id).input('label', item.label).input('x', item.x).input('y', item.y)
+                .input('width', item.width).input('height', item.height).input('type', item.type)
+                .input('status', item.status).input('roomId', item.roomId).input('tamanhoU', item.tamanhoU)
+                .query(`
+                    MERGE INTO ParentItems AS T
+                    USING (SELECT @id as id) AS S
+                    ON T.id = S.id
+                    WHEN MATCHED THEN
+                        UPDATE SET label = @label, x = @x, y = @y, width = @width, height = @height, type = @type, status = @status, roomId = @roomId, tamanhoU = @tamanhoU
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, label, x, y, width, height, type, status, roomId, tamanhoU, isTestData)
+                        VALUES (@id, @label, @x, @y, @width, @height, @type, @status, @roomId, @tamanhoU, 1);
+                `);
         }
         await transaction.commit();
     } catch (error) {
@@ -302,11 +306,21 @@ export async function populateChildItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
         for (const item of testChildItems) {
             await new sql.Request(transaction)
-                .input('id', item.id).input('label', item.label).input('parentId', item.parentId).input('type', item.type).input('status', item.status).input('modelo', item.modelo).input('tamanhoU', item.tamanhoU).input('posicaoU', item.posicaoU).input('brand', item.brand)
-                .query(`INSERT INTO ChildItems (id, label, parentId, type, status, modelo, tamanhoU, posicaoU, brand, isTestData) VALUES (@id, @label, @parentId, @type, @status, @modelo, @tamanhoU, @posicaoU, @brand, 1)`);
+                .input('id', item.id).input('label', item.label).input('parentId', item.parentId).input('type', item.type)
+                .input('status', item.status).input('modelo', item.modelo).input('tamanhoU', item.tamanhoU)
+                .input('posicaoU', item.posicaoU).input('brand', item.brand)
+                .query(`
+                    MERGE INTO ChildItems AS T
+                    USING (SELECT @id as id) AS S
+                    ON T.id = S.id
+                    WHEN MATCHED THEN
+                        UPDATE SET label = @label, parentId = @parentId, type = @type, status = @status, modelo = @modelo, tamanhoU = @tamanhoU, posicaoU = @posicaoU, brand = @brand
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, label, parentId, type, status, modelo, tamanhoU, posicaoU, brand, isTestData)
+                        VALUES (@id, @label, @parentId, @type, @status, @modelo, @tamanhoU, @posicaoU, @brand, 1);
+                `);
         }
         await transaction.commit();
     } catch (error) {
@@ -322,7 +336,7 @@ export async function populatePortsAndConnections() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
+        // Limpamos apenas as portas dos itens de teste para evitar duplicatas ao re-executar
         await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
 
         for (const child of testChildItems) {
@@ -347,7 +361,14 @@ export async function populatePortsAndConnections() {
                         const portLabel = `${typeName.replace(/[^A-Z0-9]/g, '')}-${i + 1}`;
                         await new sql.Request(transaction)
                             .input('id', portId).input('childItemId', child.id).input('portTypeId', portTypeId).input('label', portLabel)
-                            .query(`INSERT INTO EquipmentPorts (id, childItemId, portTypeId, label, status) VALUES (@id, @childItemId, @portTypeId, @label, 'down')`);
+                            .query(`
+                                MERGE INTO EquipmentPorts AS T
+                                USING (SELECT @id as id) as S
+                                ON T.id = S.id
+                                WHEN NOT MATCHED THEN
+                                    INSERT (id, childItemId, portTypeId, label, status)
+                                    VALUES (@id, @childItemId, @portTypeId, @label, 'down');
+                            `);
                         portCounter++;
                     }
                 }
@@ -361,5 +382,3 @@ export async function populatePortsAndConnections() {
         throw error;
     }
 }
-
-    
