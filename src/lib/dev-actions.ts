@@ -1,3 +1,4 @@
+
 'use server';
 
 import sql from 'mssql';
@@ -35,7 +36,7 @@ const testChildItems = [
     { id: 'citem_004', label: 'PDU-01-L', parentId: 'pitem_001', type: 'PDU', status: 'active', modelo: 'Liebert MPH2 Vertical PDU', tamanhoU: 0, posicaoU: 1, brand: 'Vertiv' }
 ];
 
-// --- DADOS ESSENCIAIS (JOIA RARA DO PROJETO) ---
+// --- DADOS ESSENCIAIS ---
 
 const essentialManufacturers = [
     { id: 'man_cisco', name: 'Cisco' }, { id: 'man_dell', name: 'Dell EMC' }, { id: 'man_hpe', name: 'HPE' },
@@ -73,7 +74,7 @@ const essentialModels = [
     { id: 'model_padtec_i6400g', name: 'LightPad i6400G', manufacturerId: 'man_padtec', tamanhoU: 14, portConfig: '16xService_Slot;2xController_Slot' },
     { id: 'model_tellabs_olt1150', name: 'OLT1150', manufacturerId: 'man_tellabs', tamanhoU: 8, portConfig: '14xPON_Card_Slot;2xUplink_Slot' },
     { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' },
-    { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
+    { id: 'model_apc_srt5000', name: 'APC Smart-UPS SRT 5000VA', manufacturerId: 'man_schneider', manufacturerIdd: 'man_schneider', tamanhoU: 3, portConfig: '8xTomada_20A' }
 ];
 
 const essentialItemTypes = [
@@ -125,8 +126,7 @@ const essentialConnectionTypes = [
 ];
 
 /**
- * Populates the database with essential configuration data.
- * Uses MERGE query to insert or update records, ensuring idempotency.
+ * Populates the database with essential configuration data using MERGE for idempotency.
  * The order of operations is crucial to respect foreign key constraints.
  */
 export async function populateEssentialData() {
@@ -137,7 +137,7 @@ export async function populateEssentialData() {
         await transaction.begin();
         console.log("Iniciando a população de dados essenciais...");
 
-        // 1. Entidades base (sem dependências)
+        // 1. Entidades sem dependências
         for (const man of essentialManufacturers) {
             await new sql.Request(transaction).input('id', man.id).input('name', man.name)
                 .query(`MERGE INTO Manufacturers AS T USING (SELECT @id AS id, @name AS name) AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET T.name = S.name WHEN NOT MATCHED THEN INSERT (id, name, isTestData) VALUES (S.id, S.name, 0);`);
@@ -174,7 +174,6 @@ export async function populateEssentialData() {
     }
 }
 
-
 /**
  * Cleans ALL data marked as 'isTestData' from the database.
  * The order is reversed from creation to respect foreign key constraints.
@@ -187,7 +186,6 @@ export async function cleanTestData() {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
-        // A ordem de exclusão é a inversa da criação para evitar violações de FK.
         await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
         await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
         await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
@@ -205,24 +203,51 @@ export async function cleanTestData() {
     }
 }
 
+async function runIdempotentInsert(transaction: sql.Transaction, tableName: string, data: any[], isTestData: boolean = true) {
+    for (const record of data) {
+        const columns = Object.keys(record);
+        const sourceColumns = columns.join(', ');
+        const sourceParams = columns.map(c => `@${c}`).join(', ');
+        const updateClauses = columns.map(c => `T.${c} = S.${c}`).join(', ');
+        
+        const request = new sql.Request(transaction);
+        for (const col of columns) {
+            request.input(col, record[col]);
+        }
+        
+        // Adiciona isTestData se for o caso
+        const allColumns = isTestData ? [...columns, 'isTestData'] : columns;
+        const allSourceParams = isTestData ? [...columns.map(c => `@${c}`), '1'] : columns.map(c => `@${c}`);
+
+        await request.query(`
+            MERGE INTO ${tableName} AS T
+            USING (SELECT ${sourceParams}) AS S (${sourceColumns})
+            ON T.id = S.id
+            WHEN MATCHED THEN
+                UPDATE SET ${updateClauses}
+            WHEN NOT MATCHED THEN
+                INSERT (${allColumns.join(', ')})
+                VALUES (${allSourceParams.join(', ')});
+        `);
+    }
+}
 
 export async function populateBaseEntities() {
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-
-        // Limpa dados de teste das tabelas afetadas antes de inserir
+        // Limpeza explícita antes de popular
         await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
         await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
-        
-        for(const user of testUsers) {
+
+        for (const user of testUsers) {
             await new sql.Request(transaction)
                 .input('id', user.id).input('email', user.email).input('displayName', user.displayName).input('photoURL', user.photoURL).input('role', user.role).input('permissions', JSON.stringify(user.permissions)).input('accessibleBuildingIds', JSON.stringify(user.accessibleBuildingIds)).input('lastLoginAt', new Date(user.lastLoginAt)).input('preferences', JSON.stringify(user.preferences))
                 .query(`INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData) VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, 1)`);
         }
-        for(const building of testBuildings) {
-             await new sql.Request(transaction)
+        for (const building of testBuildings) {
+            await new sql.Request(transaction)
                 .input('id', building.id).input('name', building.name).input('address', building.address)
                 .query(`INSERT INTO Buildings (id, name, address, isTestData) VALUES (@id, @name, @address, 1)`);
         }
@@ -240,7 +265,7 @@ export async function populateRooms() {
     try {
         await transaction.begin();
         await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
-        for(const room of testRooms) {
+        for (const room of testRooms) {
             await new sql.Request(transaction)
                 .input('id', room.id).input('name', room.name).input('buildingId', room.buildingId).input('largura', room.largura).input('widthM', room.widthM).input('tileWidthCm', room.tileWidthCm).input('tileHeightCm', room.tileHeightCm).input('xAxisNaming', room.xAxisNaming).input('yAxisNaming', room.yAxisNaming)
                 .query(`INSERT INTO Rooms (id, name, buildingId, largura, widthM, tileWidthCm, tileHeightCm, xAxisNaming, yAxisNaming, isTestData) VALUES (@id, @name, @buildingId, @largura, @widthM, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming, 1)`);
@@ -259,7 +284,7 @@ export async function populateParentItems() {
     try {
         await transaction.begin();
         await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
-        for(const item of testParentItems) {
+        for (const item of testParentItems) {
             await new sql.Request(transaction)
                 .input('id', item.id).input('label', item.label).input('x', item.x).input('y', item.y).input('width', item.width).input('height', item.height).input('type', item.type).input('status', item.status).input('roomId', item.roomId).input('tamanhoU', item.tamanhoU)
                 .query(`INSERT INTO ParentItems (id, label, x, y, width, height, type, status, roomId, tamanhoU, isTestData) VALUES (@id, @label, @x, @y, @width, @height, @type, @status, @roomId, @tamanhoU, 1)`);
@@ -278,7 +303,7 @@ export async function populateChildItems() {
     try {
         await transaction.begin();
         await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
-        for(const item of testChildItems) {
+        for (const item of testChildItems) {
             await new sql.Request(transaction)
                 .input('id', item.id).input('label', item.label).input('parentId', item.parentId).input('type', item.type).input('status', item.status).input('modelo', item.modelo).input('tamanhoU', item.tamanhoU).input('posicaoU', item.posicaoU).input('brand', item.brand)
                 .query(`INSERT INTO ChildItems (id, label, parentId, type, status, modelo, tamanhoU, posicaoU, brand, isTestData) VALUES (@id, @label, @parentId, @type, @status, @modelo, @tamanhoU, @posicaoU, @brand, 1)`);
@@ -290,7 +315,6 @@ export async function populateChildItems() {
         throw error;
     }
 }
-
 
 export async function populatePortsAndConnections() {
     await _ensureDatabaseSchema();
@@ -336,10 +360,6 @@ export async function populatePortsAndConnections() {
         console.error("Erro ao popular portas e conexões:", error);
         throw error;
     }
-}
-
-export async function ensureDatabaseSchema(): Promise<string> {
-    return _ensureDatabaseSchema();
 }
 
     
