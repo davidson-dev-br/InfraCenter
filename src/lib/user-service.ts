@@ -460,47 +460,67 @@ async function ensureIncidentSeveritiesTableExists(pool: sql.ConnectionPool) {
 
 
 async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Incidents', `
+    const wasCreated = await ensureTableExists(pool, 'Incidents', `
         CREATE TABLE Incidents (
             id NVARCHAR(50) PRIMARY KEY,
             description NVARCHAR(MAX) NOT NULL,
-            severityId NVARCHAR(50) NOT NULL,
-            statusId NVARCHAR(50) NOT NULL,
             detectedAt DATETIME2 NOT NULL,
             resolvedAt DATETIME2,
             entityType NVARCHAR(50),
-            entityId NVARCHAR(100),
-            FOREIGN KEY (severityId) REFERENCES IncidentSeverities(id),
-            FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)
+            entityId NVARCHAR(100)
         );
     `);
 
-    // Alterando as colunas antigas se elas existirem
-    const checkOldColumns = await pool.request().query(`
-        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severity', 'status')
-    `);
-    if(checkOldColumns.recordset.length > 0) {
-        console.log("Detectadas colunas antigas na tabela Incidents. Migrando dados...");
+    // Lógica de migração robusta
+    try {
         const transaction = new sql.Transaction(pool);
-        try {
-            await transaction.begin();
-            // Copia dados da coluna 'severity' para a nova 'severityId'
-            await new sql.Request(transaction).query(`UPDATE i SET i.severityId = s.id FROM Incidents i JOIN IncidentSeverities s ON i.severity = s.name`);
-             // Copia dados da coluna 'status' para a nova 'statusId'
-            await new sql.Request(transaction).query(`UPDATE i SET i.statusId = s.id FROM Incidents i JOIN IncidentStatuses s ON i.status = s.name`);
+        await transaction.begin();
+        
+        let needsMigration = false;
+        
+        // 1. Verificar e adicionar novas colunas se não existirem
+        const columnsResult = await new sql.Request(transaction).query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severityId', 'statusId', 'severity', 'status')
+        `);
+        const existingColumns = columnsResult.recordset.map(r => r.COLUMN_NAME);
+
+        if (!existingColumns.includes('severityId')) {
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD severityId NVARCHAR(50) NULL`);
+            needsMigration = true;
+        }
+        if (!existingColumns.includes('statusId')) {
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD statusId NVARCHAR(50) NULL`);
+            needsMigration = true;
+        }
+        
+        // 2. Migrar dados se as colunas antigas existirem
+        if (existingColumns.includes('severity') && existingColumns.includes('status')) {
+            console.log("Migrando dados das colunas 'severity' e 'status' para 'severityId' e 'statusId'...");
+            await new sql.Request(transaction).query(`UPDATE i SET i.severityId = s.id FROM Incidents i JOIN IncidentSeverities s ON i.severity = s.name WHERE i.severityId IS NULL`);
+            await new sql.Request(transaction).query(`UPDATE i SET i.statusId = s.id FROM Incidents i JOIN IncidentStatuses s ON i.status = s.name WHERE i.statusId IS NULL`);
             
-            // Remove as colunas antigas
+            // 3. Remover colunas antigas após a migração
             await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN severity`);
             await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN status`);
-            
-            await transaction.commit();
-            console.log("Migração de dados da tabela Incidents concluída.");
-        } catch (err) {
-            await transaction.rollback();
-            console.error("Erro ao migrar dados da tabela Incidents:", err);
-            throw err;
+            console.log("Colunas antigas 'severity' e 'status' removidas.");
+            needsMigration = true;
         }
+
+        // 4. Alterar colunas para NOT NULL e adicionar chaves estrangeiras
+        if (needsMigration) {
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN severityId NVARCHAR(50) NOT NULL`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN statusId NVARCHAR(50) NOT NULL`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD CONSTRAINT FK_Incidents_Severity FOREIGN KEY (severityId) REFERENCES IncidentSeverities(id)`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD CONSTRAINT FK_Incidents_Status FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)`);
+            console.log("Novas colunas e chaves estrangeiras da tabela Incidents configuradas.");
+        }
+
+        await transaction.commit();
+    } catch (err) {
+        console.error("Erro durante a migração da tabela Incidents:", err);
+        // Não relança o erro para não quebrar a inicialização, mas loga o problema.
     }
 }
 
