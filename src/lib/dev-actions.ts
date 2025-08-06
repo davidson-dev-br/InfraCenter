@@ -35,7 +35,7 @@ const testChildItems = [
     { id: 'citem_002', label: 'SRV-WEB-01', parentId: 'item_1722382897042', type: 'Servidor', status: 'active', modelo: 'PowerEdge R740', tamanhoU: 2, posicaoU: 20, isTestData: true, brand: 'Dell EMC' },
 ];
 
-// --- DADOS ESSENCIAIS ---
+// --- DADOS ESSENCIAIS (JOIA RARA DO PROJETO) ---
 
 const essentialManufacturers = [
     { id: 'man_cisco', name: 'Cisco' },
@@ -43,27 +43,56 @@ const essentialManufacturers = [
     { id: 'man_hpe', name: 'HPE' },
     { id: 'man_huawei', name: 'Huawei' },
     { id: 'man_vertiv', name: 'Vertiv' },
-    { id: 'man_schneider', name: 'Schneider Electric' },
+    { id: 'man_schneider', name: 'Schneider Electric (APC)' },
+    { id: 'man_juniper', name: 'Juniper Networks' },
+    { id: 'man_arista', name: 'Arista Networks' },
+    { id: 'man_legrand', name: 'Legrand' },
 ];
 
 const essentialModels = [
-    // Cisco
-    { id: 'model_c9300', name: 'Catalyst 9300', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;4xSFP+' },
-    { id: 'model_c2960', name: 'Catalyst 2960', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;2xSFP' },
-    // Dell
-    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB' },
-    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB' },
-    // HPE
-    { id: 'model_dl380', name: 'ProLiant DL380 G10', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: null },
+    // Cisco Switches
+    { id: 'model_c9300_48', name: 'Catalyst 9300 48-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xRJ45;8xSFP+' },
+    { id: 'model_c9500_32', name: 'Catalyst 9500 32-port 100G', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '32xQSFP28' },
+    { id: 'model_c3850_24', name: 'Catalyst 3850 24-port', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '24xRJ45;4xSFP' },
+    { id: 'model_n9k_c93', name: 'Nexus 93180YC-EX', manufacturerId: 'man_cisco', tamanhoU: 1, portConfig: '48xSFP+;6xQSFP+' },
+
+    // Dell Servers
+    { id: 'model_r740', name: 'PowerEdge R740', manufacturerId: 'man_dell', tamanhoU: 2, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xSerial;1xiDRAC' },
+    { id: 'model_r640', name: 'PowerEdge R640', manufacturerId: 'man_dell', tamanhoU: 1, portConfig: '4xRJ45;2xSFP+;1xVGA;2xUSB;1xSerial;1xiDRAC' },
+    { id: 'model_mx7000', name: 'PowerEdge MX7000', manufacturerId: 'man_dell', tamanhoU: 7, portConfig: '8xPSU;4xFAN' }, // Chassis de Blade
+    
+    // HPE Servers
+    { id: 'model_dl380g10', name: 'ProLiant DL380 Gen10', manufacturerId: 'man_hpe', tamanhoU: 2, portConfig: '4xRJ45;1xiLO' },
+    { id: 'model_c7000', name: 'BladeSystem c7000', manufacturerId: 'man_hpe', tamanhoU: 10, portConfig: '10xFAN;6xPSU' },
+    
+    // Juniper Switches
+    { id: 'model_ex4300', name: 'EX4300', manufacturerId: 'man_juniper', tamanhoU: 1, portConfig: '48xRJ45;4xQSFP+' },
+    
+    // Arista Switches
+    { id: 'model_a7050', name: '7050SX-64', manufacturerId: 'man_arista', tamanhoU: 1, portConfig: '48xSFP+;4xQSFP+' },
+
+    // Patch Panels (Legrand)
+    { id: 'model_l_pp24', name: 'Patch Panel 24 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 1, portConfig: '24xRJ45_Keystone' },
+    { id: 'model_l_pp48', name: 'Patch Panel 48 Portas Cat6', manufacturerId: 'man_legrand', tamanhoU: 2, portConfig: '48xRJ45_Keystone' },
+
+    // PDU (Vertiv)
+    { id: 'model_v_pdu_v', name: 'Liebert MPH2 Vertical PDU', manufacturerId: 'man_vertiv', tamanhoU: 0, portConfig: '24xC13;6xC19' }, // 0U para PDUs verticais
 ];
 
 const essentialItemTypes = [
+    // Tipos de Itens da Planta Baixa (Pais)
     { id: 'type_rack_default', name: 'Rack 42U', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#3b82f6' },
-    { id: 'type_ac_default', name: 'Ar Condicionado', category: 'Climatização', defaultWidthM: 0.8, defaultHeightM: 2, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#60a5fa' },
-    { id: 'type_qdf_default', name: 'QDF', category: 'Distribuição', defaultWidthM: 0.8, defaultHeightM: 2.2, iconName: 'Network', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#f59e0b' },
+    { id: 'type_rack_open', name: 'Rack Aberto', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 0.6, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#60a5fa' },
+    { id: 'type_ac_row', name: 'Ar Condicionado In-Row', category: 'Climatização', defaultWidthM: 0.3, defaultHeightM: 1, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#34d399' },
+    { id: 'type_qdf', name: 'QDF', category: 'Distribuição', defaultWidthM: 0.8, defaultHeightM: 2.2, iconName: 'Network', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#f59e0b' },
+    { id: 'type_ups', name: 'UPS/Nobreak', category: 'Energia', defaultWidthM: 0.6, defaultHeightM: 1.2, iconName: 'Power', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#ef4444' },
+
+    // Tipos de Equipamentos Aninhados (Filhos)
     { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
     { id: 'type_eqp_switch', name: 'Switch', category: 'Equipamentos', iconName: 'Network', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
     { id: 'type_eqp_patch', name: 'Patch Panel', category: 'Equipamentos', iconName: 'PanelTop', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_storage', name: 'Storage Array', category: 'Equipamentos', iconName: 'Database', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
+    { id: 'type_eqp_blade', name: 'Servidor Blade', category: 'Equipamentos', iconName: 'Server', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
 ];
 
 
@@ -89,9 +118,10 @@ async function upsertRecord(pool: sql.ConnectionPool, tableName: string, data: R
             else request.input(key, sql.NVarChar, null);
         } else if (typeof value === 'boolean') {
             request.input(key, sql.Bit, value);
-        } else if (typeof value === 'number') {
-            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, value);
-            else request.input(key, sql.Float, value);
+        } else if (typeof value === 'number' || (typeof value === 'string' && isFinite(value))) {
+            const numValue = Number(value);
+            if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, numValue);
+            else request.input(key, sql.Float, numValue);
         } else if (value instanceof Date) {
             request.input(key, sql.DateTime2, value);
         } else if (typeof value === 'object') {
