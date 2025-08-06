@@ -173,6 +173,7 @@ export async function populateTestData() {
     const operationsInOrder = [
         ...testUsers.map(item => () => upsertRecord(pool, 'Users', { ...item, isTestData: true })),
         ...testBuildings.map(item => () => upsertRecord(pool, 'Buildings', { ...item, isTestData: true })),
+        ...testRooms.map(item => () => upsertRecord(pool, 'Rooms', { ...item, isTestData: true })),
         ...testParentItems.map(item => () => upsertRecord(pool, 'ParentItems', { ...item, isTestData: true })),
         ...testChildItems.map(item => () => upsertRecord(pool, 'ChildItems', { ...item, isTestData: true })),
     ];
