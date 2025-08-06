@@ -1,5 +1,23 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-09]
+
+### O que foi feito?
+- **Finalizado e estabilizado o fluxo de criação de usuários**:
+  - Revertemos as tentativas de usar o Firebase Admin SDK no servidor para a criação de usuários, pois estavam causando problemas de ambiente e instabilidade.
+  - Retornamos ao fluxo original onde a criação ocorre no cliente (navegador).
+  - Aprimoramos a experiência adicionando um diálogo de confirmação (`AlertDialog`) que informa ao administrador que ele será logado como o novo usuário para fins de teste de permissão. Isso transforma o comportamento anterior (que era uma falha de UX) em uma funcionalidade clara e intencional.
+- **Revisão da Documentação**: Analisamos o `ARCHITECTURE.md` e o `CHANGELOG.md` para alinhar os próximos passos.
+
+### Foco do Dia
+- **Construir a interface da Central de Incidentes (`/incidents`):**
+  - **Objetivo**: O sistema já gera incidentes automaticamente para conexões não resolvidas. O objetivo de hoje é criar a tabela e os componentes visuais na página `/incidents` para que os usuários possam ver, filtrar e entender os incidentes de integridade de dados que foram abertos.
+
+### Impedimentos
+- Nenhum. O fluxo de desenvolvimento está estável.
+
+---
+
 ## [2024-08-08]
 
 ### Foco do Dia
