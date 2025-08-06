@@ -153,34 +153,153 @@ const essentialConnectionTypes = [
     { id: 'conn_dac', name: 'Direct Attach Copper (DAC)', description: 'Cabo de cobre de alta velocidade para conexões curtas.', isDefault: false },
 ];
 
-// --- LÓGICA DE MANIPULAÇÃO DE DADOS ---
-async function upsertRecord(transaction: sql.Transaction, tableName: string, data: Record<string, any>) {
-    const updateColumns = Object.keys(data).filter(key => key !== 'id');
-    const setClauses = updateColumns.map(col => `${col} = @${col}`);
+/**
+ * Popula o banco de dados com dados essenciais de configuração.
+ * Utiliza a query MERGE para inserir ou atualizar registros, garantindo a idempotência.
+ */
+export async function populateEssentialData() {
+    const pool = await getDbPool();
+    const transaction = new sql.Transaction(pool);
 
-    const request = new sql.Request(transaction);
+    try {
+        await transaction.begin();
+        console.log("Iniciando a população de dados essenciais...");
 
-    for (const col of Object.keys(data)) {
-        const value = data[col];
-        if (value === null || value === undefined) {
-            request.input(col, null);
-        } else if (typeof value === 'boolean') {
-            request.input(col, sql.Bit, value);
-        } else if (typeof value === 'number') {
-            request.input(col, sql.Float, value);
-        } else {
-            request.input(col, sql.NVarChar, String(value));
+        // Fabricantes
+        for (const man of essentialManufacturers) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, man.id)
+                .input('name', sql.NVarChar, man.name)
+                .query(`
+                    MERGE INTO Manufacturers AS Target
+                    USING (SELECT @id AS id, @name AS name) AS Source
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, isTestData) VALUES (Source.id, Source.name, 0);
+                `);
         }
-    }
-    
-    const updateQuery = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = @id`;
-    const result = await request.query(updateQuery);
 
-    if (result.rowsAffected[0] === 0) {
-        const insertColumns = Object.keys(data);
-        const insertValues = insertColumns.map(col => `@${col}`);
-        const insertQuery = `INSERT INTO ${tableName} (${insertColumns.join(', ')}) VALUES (${insertValues.join(', ')})`;
-        await request.query(insertQuery);
+        // Modelos
+        for (const model of essentialModels) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, model.id)
+                .input('name', sql.NVarChar, model.name)
+                .input('manufacturerId', sql.NVarChar, model.manufacturerId)
+                .input('portConfig', sql.NVarChar, model.portConfig)
+                .input('tamanhoU', sql.Int, model.tamanhoU)
+                .query(`
+                    MERGE INTO Models AS Target
+                    USING (SELECT @id, @name, @manufacturerId, @portConfig, @tamanhoU) AS Source (id, name, manufacturerId, portConfig, tamanhoU)
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name, Target.manufacturerId = Source.manufacturerId, Target.portConfig = Source.portConfig, Target.tamanhoU = Source.tamanhoU
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, manufacturerId, portConfig, tamanhoU, isTestData) VALUES (Source.id, Source.name, Source.manufacturerId, Source.portConfig, Source.tamanhoU, 0);
+                `);
+        }
+
+        // Tipos de Item (Pais)
+        const parentItemTypes = essentialItemTypes.filter(it => it.isParent);
+        for (const itype of parentItemTypes) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, itype.id)
+                .input('name', sql.NVarChar, itype.name)
+                .input('category', sql.NVarChar, itype.category)
+                .input('defaultWidthM', sql.Float, itype.defaultWidthM)
+                .input('defaultHeightM', sql.Float, itype.defaultHeightM)
+                .input('iconName', sql.NVarChar, itype.iconName)
+                .input('canHaveChildren', sql.Bit, itype.canHaveChildren)
+                .input('isResizable', sql.Bit, itype.isResizable)
+                .input('status', sql.NVarChar, itype.status)
+                .input('defaultColor', sql.NVarChar, itype.defaultColor)
+                .query(`
+                    MERGE INTO ItemTypes AS Target
+                    USING (SELECT @id, @name, @category, @defaultWidthM, @defaultHeightM, @iconName, @canHaveChildren, @isResizable, @status, @defaultColor) 
+                           AS Source (id, name, category, defaultWidthM, defaultHeightM, iconName, canHaveChildren, isResizable, status, defaultColor)
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name, Target.category = Source.category, Target.defaultWidthM = Source.defaultWidthM, Target.defaultHeightM = Source.defaultHeightM, Target.iconName = Source.iconName, Target.canHaveChildren = Source.canHaveChildren, Target.isResizable = Source.isResizable, Target.status = Source.status, Target.defaultColor = Source.defaultColor
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, category, defaultWidthM, defaultHeightM, iconName, canHaveChildren, isResizable, status, isTestData, defaultColor) 
+                        VALUES (Source.id, Source.name, Source.category, Source.defaultWidthM, Source.defaultHeightM, Source.iconName, Source.canHaveChildren, Source.isResizable, Source.status, 0, Source.defaultColor);
+                `);
+        }
+
+        // Tipos de Item (Filhos)
+        const childItemTypes = essentialItemTypes.filter(it => !it.isParent);
+         for (const itype of childItemTypes) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, itype.id)
+                .input('name', sql.NVarChar, itype.name)
+                .input('category', sql.NVarChar, itype.category)
+                .input('defaultWidthM', sql.Float, itype.defaultWidthM)
+                .input('defaultHeightM', sql.Float, itype.defaultHeightM)
+                .input('iconName', sql.NVarChar, itype.iconName)
+                .input('status', sql.NVarChar, itype.status)
+                .input('defaultColor', sql.NVarChar, itype.defaultColor)
+                .query(`
+                    MERGE INTO ItemTypesEqp AS Target
+                    USING (SELECT @id, @name, @category, @defaultWidthM, @defaultHeightM, @iconName, @status, @defaultColor) 
+                           AS Source (id, name, category, defaultWidthM, defaultHeightM, iconName, status, defaultColor)
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name, Target.category = Source.category, Target.defaultWidthM = Source.defaultWidthM, Target.defaultHeightM = Source.defaultHeightM, Target.iconName = Source.iconName, Target.status = Source.status, Target.defaultColor = Source.defaultColor
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, category, defaultWidthM, defaultHeightM, iconName, status, isTestData, defaultColor) 
+                        VALUES (Source.id, Source.name, Source.category, Source.defaultWidthM, Source.defaultHeightM, Source.iconName, Source.status, 0, Source.defaultColor);
+                `);
+        }
+
+        // Tipos de Porta
+        for (const ptype of essentialPortTypes) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, ptype.id)
+                .input('name', sql.NVarChar, ptype.name)
+                .input('description', sql.NVarChar, ptype.description)
+                .input('isDefault', sql.Bit, ptype.isDefault)
+                .query(`
+                    MERGE INTO PortTypes AS Target
+                    USING (SELECT @id, @name, @description, @isDefault) AS Source(id, name, description, isDefault)
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name, Target.description = Source.description, Target.isDefault = Source.isDefault
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, description, isDefault) VALUES (Source.id, Source.name, Source.description, Source.isDefault);
+                `);
+        }
+        
+        // Tipos de Conexão
+        for (const ctype of essentialConnectionTypes) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, ctype.id)
+                .input('name', sql.NVarChar, ctype.name)
+                .input('description', sql.NVarChar, ctype.description)
+                .input('isDefault', sql.Bit, ctype.isDefault)
+                .query(`
+                    MERGE INTO ConnectionTypes AS Target
+                    USING (SELECT @id, @name, @description, @isDefault) AS Source(id, name, description, isDefault)
+                    ON (Target.id = Source.id)
+                    WHEN MATCHED THEN
+                        UPDATE SET Target.name = Source.name, Target.description = Source.description, Target.isDefault = Source.isDefault
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, name, description, isDefault) VALUES (Source.id, Source.name, Source.description, Source.isDefault);
+                `);
+        }
+        
+        await transaction.commit();
+        console.log("Banco de dados populado com dados essenciais com sucesso.");
+    } catch (error) {
+        await transaction.rollback();
+        console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
+        throw new Error("Falha ao popular dados essenciais. Verifique os logs do servidor.");
     }
 }
 
@@ -197,25 +316,89 @@ export async function populateTestData() {
     try {
         await transaction.begin();
 
-        const devUser = {
-            id: 'dev_user_placeholder_id', 
-            email: 'dev@dev.com',
-            displayName: 'Desenvolvedor Padrão',
-            photoURL: null,
-            role: 'developer',
-            permissions: JSON.stringify(['*']),
-            accessibleBuildingIds: JSON.stringify([]),
-            lastLoginAt: new Date(),
-            preferences: JSON.stringify({}),
-            isTestData: true
-        };
-        await upsertRecord(transaction, 'Users', devUser);
+        for(const user of testUsers) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, user.id)
+                .input('email', sql.NVarChar, user.email)
+                .input('displayName', sql.NVarChar, user.displayName)
+                .input('photoURL', sql.NVarChar, user.photoURL)
+                .input('role', sql.NVarChar, user.role)
+                .input('permissions', sql.NVarChar, JSON.stringify(user.permissions))
+                .input('accessibleBuildingIds', sql.NVarChar, JSON.stringify(user.accessibleBuildingIds))
+                .input('lastLoginAt', sql.DateTime2, new Date(user.lastLoginAt))
+                .input('preferences', sql.NVarChar, JSON.stringify(user.preferences))
+                .query(`
+                    INSERT INTO Users (id, email, displayName, photoURL, role, permissions, accessibleBuildingIds, lastLoginAt, preferences, isTestData)
+                    VALUES (@id, @email, @displayName, @photoURL, @role, @permissions, @accessibleBuildingIds, @lastLoginAt, @preferences, 1)
+                `);
+        }
 
-        for(const user of testUsers) await upsertRecord(transaction, 'Users', { ...user, isTestData: true });
-        for(const building of testBuildings) await upsertRecord(transaction, 'Buildings', { ...building, isTestData: true });
-        for(const room of testRooms) await upsertRecord(transaction, 'Rooms', { ...room, isTestData: true });
-        for(const item of testParentItems) await upsertRecord(transaction, 'ParentItems', { ...item, isTestData: true });
-        for(const item of testChildItems) await upsertRecord(transaction, 'ChildItems', { ...item, isTestData: true });
+        for(const building of testBuildings) {
+            const request = new sql.Request(transaction);
+             await request
+                .input('id', sql.NVarChar, building.id)
+                .input('name', sql.NVarChar, building.name)
+                .input('address', sql.NVarChar, building.address)
+                .query(`
+                    INSERT INTO Buildings (id, name, address, isTestData)
+                    VALUES (@id, @name, @address, 1)
+                `);
+        }
+        for(const room of testRooms) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, room.id)
+                .input('name', sql.NVarChar, room.name)
+                .input('buildingId', sql.NVarChar, room.buildingId)
+                .input('largura', sql.Float, room.largura)
+                .input('widthM', sql.Float, room.widthM)
+                .input('tileWidthCm', sql.Float, room.tileWidthCm)
+                .input('tileHeightCm', sql.Float, room.tileHeightCm)
+                .input('xAxisNaming', sql.NVarChar, room.xAxisNaming)
+                .input('yAxisNaming', sql.NVarChar, room.yAxisNaming)
+                .query(`
+                    INSERT INTO Rooms (id, name, buildingId, largura, widthM, tileWidthCm, tileHeightCm, xAxisNaming, yAxisNaming, isTestData)
+                    VALUES (@id, @name, @buildingId, @largura, @widthM, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming, 1)
+                `);
+        }
+
+        for(const item of testParentItems) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, item.id)
+                .input('label', sql.NVarChar, item.label)
+                .input('x', sql.Int, item.x)
+                .input('y', sql.Int, item.y)
+                .input('width', sql.Float, item.width)
+                .input('height', sql.Float, item.height)
+                .input('type', sql.NVarChar, item.type)
+                .input('status', sql.NVarChar, item.status)
+                .input('roomId', sql.NVarChar, item.roomId)
+                .input('tamanhoU', sql.Int, item.tamanhoU)
+                .query(`
+                    INSERT INTO ParentItems (id, label, x, y, width, height, type, status, roomId, tamanhoU, isTestData)
+                    VALUES (@id, @label, @x, @y, @width, @height, @type, @status, @roomId, @tamanhoU, 1)
+                `);
+        }
+
+        for(const item of testChildItems) {
+            const request = new sql.Request(transaction);
+            await request
+                .input('id', sql.NVarChar, item.id)
+                .input('label', sql.NVarChar, item.label)
+                .input('parentId', sql.NVarChar, item.parentId)
+                .input('type', sql.NVarChar, item.type)
+                .input('status', sql.NVarChar, item.status)
+                .input('modelo', sql.NVarChar, item.modelo)
+                .input('tamanhoU', sql.Int, item.tamanhoU)
+                .input('posicaoU', sql.Int, item.posicaoU)
+                .input('brand', sql.NVarChar, item.brand)
+                 .query(`
+                    INSERT INTO ChildItems (id, label, parentId, type, status, modelo, tamanhoU, posicaoU, brand, isTestData)
+                    VALUES (@id, @label, @parentId, @type, @status, @modelo, @tamanhoU, @posicaoU, @brand, 1)
+                `);
+        }
 
         await transaction.commit();
         console.log("Banco de dados populado com dados de teste com sucesso.");
@@ -224,33 +407,6 @@ export async function populateTestData() {
         await transaction.rollback();
         console.error("Erro detalhado ao popular banco de dados com dados de teste:", error);
         throw new Error("Falha ao popular o banco de dados. Verifique os logs do servidor para detalhes.");
-    }
-}
-
-/**
- * Popula o banco de dados com dados essenciais de configuração.
- */
-export async function populateEssentialData() {
-    const pool = await getDbPool();
-    const transaction = new sql.Transaction(pool);
-
-    try {
-        await transaction.begin();
-        console.log("Iniciando a população de dados essenciais...");
-
-        for (const manufacturer of essentialManufacturers) await upsertRecord(transaction, 'Manufacturers', manufacturer);
-        for (const model of essentialModels) await upsertRecord(transaction, 'Models', model);
-        for (const itemType of essentialItemTypes.filter(it => it.isParent)) await upsertRecord(transaction, 'ItemTypes', itemType);
-        for (const itemType of essentialItemTypes.filter(it => !it.isParent)) await upsertRecord(transaction, 'ItemTypesEqp', itemType);
-        for (const portType of essentialPortTypes) await upsertRecord(transaction, 'PortTypes', portType);
-        for (const connType of essentialConnectionTypes) await upsertRecord(transaction, 'ConnectionTypes', connType);
-        
-        await transaction.commit();
-        console.log("Banco de dados populado com dados essenciais com sucesso.");
-    } catch (error) {
-        await transaction.rollback();
-        console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
-        throw new Error("Falha ao popular dados essenciais. Verifique os logs do servidor.");
     }
 }
 
@@ -277,16 +433,18 @@ export async function cleanTestData() {
             const checkResult = await new sql.Request(transaction).query(`
                 SELECT 1 
                 FROM INFORMATION_SCHEMA.TABLES t
-                JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
-                WHERE t.TABLE_NAME = '${table}' AND c.COLUMN_NAME = 'isTestData'
+                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME AND c.COLUMN_NAME = 'isTestData'
+                WHERE t.TABLE_NAME = '${table}'
             `);
             
             if (checkResult.recordset.length > 0) {
                  const request = new sql.Request(transaction);
+                
                 // O usuário 'dev' não deve ser removido na limpeza
                 if (table === 'Users') {
                     await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
-                } else {
+                } else if (table === 'Connections' || table === 'EquipmentPorts' || table === 'ChildItems' || table === 'ParentItems' || table === 'Models' || table === 'Manufacturers' || table === 'Rooms' || table === 'Buildings' || table === 'ItemTypes' || table === 'ItemTypesEqp') {
+                    // Estas tabelas têm 'isTestData'
                     await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
                 }
                 console.log(`Dados de teste limpos da tabela: ${table}`);
