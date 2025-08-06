@@ -2,16 +2,16 @@
 
 ## [2024-08-09]
 
-### O que foi feito?
-- **Finalizado e estabilizado o fluxo de criação de usuários**:
-  - Revertemos as tentativas de usar o Firebase Admin SDK no servidor para a criação de usuários, pois estavam causando problemas de ambiente e instabilidade.
-  - Retornamos ao fluxo original onde a criação ocorre no cliente (navegador).
-  - Aprimoramos a experiência adicionando um diálogo de confirmação (`AlertDialog`) que informa ao administrador que ele será logado como o novo usuário para fins de teste de permissão. Isso transforma o comportamento anterior (que era uma falha de UX) em uma funcionalidade clara e intencional.
-- **Revisão da Documentação**: Analisamos o `ARCHITECTURE.md` e o `CHANGELOG.md` para alinhar os próximos passos.
+### Foco do Dia: Construir a Interface da Central de Incidentes (`/incidents`)
 
-### Foco do Dia
-- **Construir a interface da Central de Incidentes (`/incidents`):**
-  - **Objetivo**: O sistema já gera incidentes automaticamente para conexões não resolvidas. O objetivo de hoje é criar a tabela e os componentes visuais na página `/incidents` para que os usuários possam ver, filtrar e entender os incidentes de integridade de dados que foram abertos.
+O sistema já gera incidentes automaticamente para conexões não resolvidas. O objetivo de hoje é criar a tabela e os componentes visuais na página `/incidents` para que os usuários possam ver, filtrar e entender os incidentes de integridade de dados que foram abertos.
+
+### Plano Específico (Step-by-Step)
+1.  **Estrutura da Página:** Criar o layout principal da página usando um `Card` como container.
+2.  **Busca de Dados:** Implementar a busca de dados no servidor (Server-Side Rendering) chamando a `server action` `getIncidents()` para obter a lista de incidentes.
+3.  **Tabela de Exibição:** Usar o componente `Table` para listar os incidentes com colunas claras: Descrição, Status, Severidade, Data de Detecção e Data de Resolução.
+4.  **Indicadores Visuais:** Criar `Badges` e ícones coloridos para os campos de "Status" e "Severidade" para facilitar a identificação rápida de problemas críticos.
+5.  **Estado Vazio:** Garantir que a página exiba uma mensagem informativa caso nenhum incidente seja encontrado.
 
 ### Impedimentos
 - Nenhum. O fluxo de desenvolvimento está estável.
