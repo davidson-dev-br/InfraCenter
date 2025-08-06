@@ -371,8 +371,7 @@ async function ensureEquipmentPortsTableExists(pool: sql.ConnectionPool) {
             notes NVARCHAR(MAX),
             FOREIGN KEY (childItemId) REFERENCES ChildItems(id) ON DELETE CASCADE,
             FOREIGN KEY (portTypeId) REFERENCES PortTypes(id),
-            FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id),
-            UNIQUE(connectedToPortId)
+            FOREIGN KEY (connectedToPortId) REFERENCES EquipmentPorts(id)
         );
     `);
 }
@@ -512,8 +511,7 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
             FOREIGN KEY (portA_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (portB_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id),
-            UNIQUE (portA_id),
-            UNIQUE (portB_id)
+            UNIQUE (portA_id)
         );
     `);
 }
