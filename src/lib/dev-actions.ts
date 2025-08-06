@@ -309,16 +309,17 @@ export async function populateEssentialData() {
  */
 export async function populateTestData() {
     
-    const pool = await getDbPool();
     await cleanTestData(); // Limpa dados de teste anteriores
+    const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     
     try {
         await transaction.begin();
+        console.log("Iniciando a inserção de dados de teste...");
 
+        // Inserção explícita para cada tabela
         for(const user of testUsers) {
-            const request = new sql.Request(transaction);
-            await request
+            await new sql.Request(transaction)
                 .input('id', sql.NVarChar, user.id)
                 .input('email', sql.NVarChar, user.email)
                 .input('displayName', sql.NVarChar, user.displayName)
@@ -335,8 +336,7 @@ export async function populateTestData() {
         }
 
         for(const building of testBuildings) {
-            const request = new sql.Request(transaction);
-             await request
+             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, building.id)
                 .input('name', sql.NVarChar, building.name)
                 .input('address', sql.NVarChar, building.address)
@@ -346,8 +346,7 @@ export async function populateTestData() {
                 `);
         }
         for(const room of testRooms) {
-            const request = new sql.Request(transaction);
-            await request
+            await new sql.Request(transaction)
                 .input('id', sql.NVarChar, room.id)
                 .input('name', sql.NVarChar, room.name)
                 .input('buildingId', sql.NVarChar, room.buildingId)
@@ -364,8 +363,7 @@ export async function populateTestData() {
         }
 
         for(const item of testParentItems) {
-            const request = new sql.Request(transaction);
-            await request
+            await new sql.Request(transaction)
                 .input('id', sql.NVarChar, item.id)
                 .input('label', sql.NVarChar, item.label)
                 .input('x', sql.Int, item.x)
@@ -383,8 +381,7 @@ export async function populateTestData() {
         }
 
         for(const item of testChildItems) {
-            const request = new sql.Request(transaction);
-            await request
+            await new sql.Request(transaction)
                 .input('id', sql.NVarChar, item.id)
                 .input('label', sql.NVarChar, item.label)
                 .input('parentId', sql.NVarChar, item.parentId)
@@ -419,8 +416,7 @@ export async function cleanTestData() {
     const transaction = new sql.Transaction(pool);
 
     const tablesToDeleteFrom = [
-        'Connections', 'EquipmentPorts', 'ChildItems', 'ParentItems', 'Models', 'Manufacturers', 'Rooms', 'Buildings', 
-        'ItemTypes', 'ItemTypesEqp', 'Users'
+        'Connections', 'EquipmentPorts', 'ChildItems', 'ParentItems', 'Users', 'Rooms', 'Buildings'
     ];
 
     try {
@@ -429,26 +425,14 @@ export async function cleanTestData() {
 
         // A ordem aqui é invertida para respeitar as chaves estrangeiras
         for (const table of tablesToDeleteFrom) {
-            // Verifica se a tabela existe e tem a coluna 'isTestData' antes de tentar deletar
-            const checkResult = await new sql.Request(transaction).query(`
-                SELECT 1 
-                FROM INFORMATION_SCHEMA.TABLES t
-                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME AND c.COLUMN_NAME = 'isTestData'
-                WHERE t.TABLE_NAME = '${table}'
-            `);
-            
-            if (checkResult.recordset.length > 0) {
-                 const request = new sql.Request(transaction);
-                
-                // O usuário 'dev' não deve ser removido na limpeza
-                if (table === 'Users') {
-                    await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
-                } else if (table === 'Connections' || table === 'EquipmentPorts' || table === 'ChildItems' || table === 'ParentItems' || table === 'Models' || table === 'Manufacturers' || table === 'Rooms' || table === 'Buildings' || table === 'ItemTypes' || table === 'ItemTypesEqp') {
-                    // Estas tabelas têm 'isTestData'
-                    await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
-                }
-                console.log(`Dados de teste limpos da tabela: ${table}`);
+            const request = new sql.Request(transaction);
+            // O usuário 'dev' não deve ser removido na limpeza
+            if (table === 'Users') {
+                await request.query(`DELETE FROM ${table} WHERE isTestData = 1 AND email != 'dev@dev.com'`);
+            } else {
+                await request.query(`DELETE FROM ${table} WHERE isTestData = 1`);
             }
+            console.log(`Dados de teste limpos da tabela: ${table}`);
         }
 
         await transaction.commit();

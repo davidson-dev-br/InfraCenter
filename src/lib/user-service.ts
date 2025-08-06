@@ -81,8 +81,6 @@ async function createAllTables(pool: sql.ConnectionPool) {
     
     await ensureIncidentsTableExists(pool); // Agora depende das tabelas acima
     await ensureApprovalsTableExists(pool);
-    await ensureEvidenceTableExists(pool);
-    await ensureSensorsTableExists(pool);
 }
 
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
@@ -498,40 +496,12 @@ async function ensureApprovalsTableExists(pool: sql.ConnectionPool) {
     `);
 }
 
-
-async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
-    await ensureTableExists(pool, 'Evidence', `
-        CREATE TABLE Evidence (
-            id NVARCHAR(50) PRIMARY KEY,
-            incidentId NVARCHAR(50) NOT NULL,
-            timestamp DATETIME2 NOT NULL,
-            type NVARCHAR(50) NOT NULL, -- e.g., 'log', 'image', 'metric'
-            data NVARCHAR(MAX) NOT NULL,
-            FOREIGN KEY (incidentId) REFERENCES Incidents(id) ON DELETE CASCADE
-        );
-    `);
-}
-
-async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
-     await ensureTableExists(pool, 'Sensors', `
-        CREATE TABLE Sensors (
-            id NVARCHAR(50) PRIMARY KEY,
-            itemId NVARCHAR(50) NOT NULL,
-            type NVARCHAR(100) NOT NULL, -- e.g., 'temperature', 'humidity', 'power'
-            value FLOAT,
-            unit NVARCHAR(20),
-            lastReading DATETIME2,
-            FOREIGN KEY (itemId) REFERENCES ParentItems(id) ON DELETE CASCADE
-        );
-    `);
-}
-
 async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Connections', `
         CREATE TABLE Connections (
             id NVARCHAR(50) PRIMARY KEY,
             portA_id NVARCHAR(50) NOT NULL,
-            portB_id NVARCHAR(50) NULL, -- Corrected to allow NULL
+            portB_id NVARCHAR(50) NULL,
             connectionTypeId NVARCHAR(50) NOT NULL,
             status NVARCHAR(50) NOT NULL DEFAULT 'active',
             isTestData BIT NOT NULL DEFAULT 0,
@@ -732,5 +702,3 @@ export async function _deleteUser(userId: string): Promise<void> {
         throw new Error("Falha ao excluir o registro do usuário do banco de dados.");
     }
 }
-
-    
