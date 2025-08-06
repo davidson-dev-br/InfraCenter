@@ -280,13 +280,26 @@ export async function populateEssentialData() {
         ...essentialItemTypes.filter(item => item.isParent).map(item => () => upsertRecord(pool, 'ItemTypes', { ...item, isTestData: false })),
         ...essentialItemTypes.filter(item => !item.isParent).map(item => () => upsertRecord(pool, 'ItemTypesEqp', { ...item, isTestData: false })),
         ...essentialPortTypes.map(item => () => upsertRecord(pool, 'PortTypes', item)),
-        ...essentialConnectionTypes.map(item => () => upsertRecord(pool, 'ConnectionTypes', item)),
     ];
 
     try {
         for (const operation of operationsInOrder) {
             await operation();
         }
+
+        // Correção: Inserção de ConnectionTypes tratada separadamente para garantir a inserção correta.
+        for (const ctype of essentialConnectionTypes) {
+            const checkResult = await pool.request().input('id', sql.NVarChar, ctype.id).query('SELECT 1 FROM ConnectionTypes WHERE id = @id');
+            if (checkResult.recordset.length === 0) {
+                await pool.request()
+                    .input('id', sql.NVarChar, ctype.id)
+                    .input('name', sql.NVarChar, ctype.name)
+                    .input('description', sql.NVarChar, ctype.description || null)
+                    .input('isDefault', sql.Bit, ctype.isDefault)
+                    .query('INSERT INTO ConnectionTypes (id, name, description, isDefault) VALUES (@id, @name, @description, @isDefault)');
+            }
+        }
+        
         console.log("Banco de dados populado com dados essenciais com sucesso.");
     } catch (error) {
         console.error("Erro detalhado ao popular banco de dados com dados essenciais:", error);
