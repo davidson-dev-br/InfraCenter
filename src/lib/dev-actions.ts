@@ -113,12 +113,12 @@ const essentialModels = [
 
 const essentialItemTypes = [
     // Tipos de Itens da Planta Baixa (Pais)
-    { id: 'type_rack_default', name: 'Rack 42U', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#3b82f6' },
+    { id: 'type_rack_default', name: 'Rack 42U', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 1.2, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#3b82f6' },
     { id: 'type_rack_open', name: 'Rack Aberto', category: 'Gabinetes', defaultWidthM: 0.6, defaultHeightM: 0.6, iconName: 'Server', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#60a5fa' },
-    { id: 'type_ac_row', name: 'Ar Condicionado In-Row', category: 'Climatização', defaultWidthM: 0.3, defaultHeightM: 1, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#34d399' },
+    { id: 'type_ac_row', name: 'Ar Condicionado In-Row', category: 'Climatização', defaultWidthM: 0.3, defaultHeightM: 1.2, iconName: 'Snowflake', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#34d399' },
     { id: 'type_qdf', name: 'QDF', category: 'Distribuição', defaultWidthM: 0.8, defaultHeightM: 2.2, iconName: 'Network', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#f59e0b' },
     { id: 'type_ups', name: 'UPS/Nobreak', category: 'Energia', defaultWidthM: 0.6, defaultHeightM: 1.2, iconName: 'Power', canHaveChildren: false, isResizable: true, status: 'active', isParent: true, defaultColor: '#ef4444' },
-    { id: 'type_roteador_borda', name: 'Roteador de Borda', category: 'Rede Core', defaultWidthM: 0.6, defaultHeightM: 1, iconName: 'Router', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#8b5cf6' },
+    { id: 'type_roteador_borda', name: 'Roteador de Borda', category: 'Rede Core', defaultWidthM: 0.6, defaultHeightM: 1.2, iconName: 'Router', canHaveChildren: true, isResizable: false, status: 'active', isParent: true, defaultColor: '#8b5cf6' },
 
     // Tipos de Equipamentos Aninhados (Filhos)
     { id: 'type_eqp_server', name: 'Servidor', category: 'Equipamentos', iconName: 'HardDrive', status: 'active', isParent: false, defaultWidthM: 0, defaultHeightM: 0, defaultColor: null },
@@ -130,16 +130,53 @@ const essentialItemTypes = [
 ];
 
 const essentialPortTypes = [
-    { id: 'ptype_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP (par trançado).', isDefault: true },
-    { id: 'ptype_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre de pequena dimensão.', isDefault: true },
-    { id: 'ptype_lc', name: 'Fibra LC', description: 'Conector padrão para fibra óptica (Lucent Connector).', isDefault: false },
-    { id: 'ptype_sc', name: 'Fibra SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
-    { id: 'ptype_tomada_20a', name: 'Tomada 20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
-    { id: 'ptype_rj45_keystone', name: 'RJ45 Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
-    { id: 'ptype_lc_duplex', name: 'LC Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
-    { id: 'ptype_qsfp28', name: 'QSFP28', description: 'Porta de alta velocidade (100Gbps).', isDefault: false },
-    { id: 'ptype_idrac', name: 'iDRAC', description: 'Porta de gerenciamento Dell.', isDefault: false },
-    { id: 'ptype_ilo', name: 'iLO', description: 'Porta de gerenciamento HPE.', isDefault: false },
+    // Tipos padrão
+    { id: 'port_rj45', name: 'RJ45', description: 'Conector de rede padrão para cabos UTP.', isDefault: true },
+    { id: 'port_sfp', name: 'SFP/SFP+', description: 'Conector para transceptores ópticos ou de cobre.', isDefault: true },
+    
+    // Tipos de Fibra
+    { id: 'port_lc', name: 'Fibra LC', description: 'Conector padrão para fibra óptica (Lucent Connector).', isDefault: false },
+    { id: 'port_lc_duplex', name: 'LC Duplex', description: 'Conector duplo de fibra óptica LC.', isDefault: false },
+    { id: 'port_sc', name: 'Fibra SC', description: 'Conector de fibra óptica (Subscriber Connector).', isDefault: false },
+
+    // Tipos de Rede de Alta Velocidade
+    { id: 'port_sfp+', name: 'SFP+', description: 'Porta 10Gbps SFP.', isDefault: false },
+    { id: 'port_qsfp+', name: 'QSFP+', description: 'Porta 40Gbps QSFP.', isDefault: false },
+    { id: 'port_sfp28', name: 'SFP28', description: 'Porta 25Gbps SFP.', isDefault: false },
+    { id: 'port_qsfp28', name: 'QSFP28', description: 'Porta 100Gbps QSFP.', isDefault: false },
+
+    // Tipos de Gerenciamento e Estruturais
+    { id: 'port_idrac', name: 'iDRAC', description: 'Porta de gerenciamento Dell.', isDefault: false },
+    { id: 'port_ilo', name: 'iLO', description: 'Porta de gerenciamento HPE.', isDefault: false },
+    { id: 'port_rj45_keystone', name: 'RJ45 Keystone', description: 'Conector fêmea para patch panels.', isDefault: false },
+    
+    // Tipos de Energia
+    { id: 'port_tomada_20a', name: 'Tomada 20A', description: 'Tomada de energia padrão NBR 14136 de 20A.', isDefault: false },
+    { id: 'port_c13', name: 'IEC C13', description: 'Conector de energia padrão para PDUs.', isDefault: false },
+    { id: 'port_c19', name: 'IEC C19', description: 'Conector de energia de alta corrente para PDUs.', isDefault: false },
+
+    // Tipos genéricos de slots
+    { id: 'port_linecard_slot', name: 'LineCard_Slot', description: 'Slot para placa de linha.', isDefault: false },
+    { id: 'port_rsp_slot', name: 'RSP_Slot', description: 'Slot para processador de roteamento.', isDefault: false },
+    { id: 'port_controller_slot', name: 'Controller_Slot', description: 'Slot para placa controladora.', isDefault: false },
+    { id: 'port_switchfabric_slot', name: 'SwitchFabric_Slot', description: 'Slot para malha de comutação.', isDefault: false },
+    { id: 'port_psu_slot', name: 'PSU_Slot', description: 'Slot para fonte de alimentação.', isDefault: false },
+    { id: 'port_fan_slot', name: 'FAN_Slot', description: 'Slot para módulo de ventilação.', isDefault: false },
+    { id: 'port_blade_slot', name: 'Blade_Slot', description: 'Slot para servidor blade.', isDefault: false },
+    { id: 'port_routingengine_slot', name: 'RoutingEngine_Slot', description: 'Slot para motor de roteamento Juniper.', isDefault: false },
+    { id: 'port_sfb_slot', name: 'SFB_Slot', description: 'Slot para Switch Fabric Board Juniper.', isDefault: false },
+    { id: 'port_card_slot', name: 'Card_Slot', description: 'Slot genérico para placa de serviço.', isDefault: false },
+    { id: 'port_interface_module', name: 'Interface_Module', description: 'Módulo de interface genérico.', isDefault: false },
+    { id: 'port_multiple_rf_ports', name: 'Multiple_RF_Ports', description: 'Múltiplas portas de rádio frequência.', isDefault: false },
+    { id: 'port_rack_space', name: 'Rack_Space', description: 'Espaço utilizável dentro de um rack.', isDefault: false },
+    { id: 'port_service_slot', name: 'Service_Slot', description: 'Slot para placa de serviço óptico.', isDefault: false },
+    { id: 'port_pon_card_slot', name: 'PON_Card_Slot', description: 'Slot para placa de rede óptica passiva.', isDefault: false },
+    { id: 'port_uplink_slot', name: 'Uplink_Slot', description: 'Slot para placa de uplink.', isDefault: false },
+    
+    // Conectores diversos
+    { id: 'port_vga', name: 'VGA', description: 'Conector de vídeo analógico.', isDefault: false },
+    { id: 'port_usb', name: 'USB', description: 'Porta USB para periféricos.', isDefault: false },
+    { id: 'port_console', name: 'Console', description: 'Porta serial de console para gerenciamento.', isDefault: false },
 ];
 
 
