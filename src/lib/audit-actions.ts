@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import sql from 'mssql';
@@ -31,6 +32,7 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
                 VALUES (@userId, @userDisplayName, @action, @entityType, @entityId, @details)
             `;
     } catch (err) {
+        // Não lançar erro para não quebrar a aplicação principal se o log falhar.
         console.error('Falha ao gravar evento de auditoria:', err);
     }
 }

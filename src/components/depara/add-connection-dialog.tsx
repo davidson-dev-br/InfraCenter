@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -32,6 +33,7 @@ import { createConnection } from '@/lib/connection-actions';
 import { uploadImage } from '@/lib/storage-actions';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { usePermissions } from '../permissions-provider';
 
 const formSchema = z.object({
   labelText: z.string().optional().nullable(),
@@ -61,6 +63,7 @@ export function AddConnectionDialog({
 }: AddConnectionDialogProps) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = usePermissions();
     const [isUploading, setIsUploading] = useState(false);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -156,6 +159,10 @@ export function AddConnectionDialog({
     };
 
     const onSubmit = async (data: FormData) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.'});
+            return;
+        }
         try {
             await createConnection({
                 portA_id: sideA.port.id,
@@ -163,6 +170,7 @@ export function AddConnectionDialog({
                 connectionTypeId,
                 labelText: data.labelText,
                 imageUrl: data.imageUrl,
+                userId: user.id
             });
             toast({
                 title: 'Conexão Criada!',
@@ -185,7 +193,7 @@ export function AddConnectionDialog({
             closeCamera();
             form.reset();
         }
-    }, [isOpen, form, onOpenChange]);
+    }, [isOpen, form]);
 
 
   return (

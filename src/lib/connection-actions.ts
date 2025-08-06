@@ -6,6 +6,7 @@ import { getDbPool } from './db';
 import type { GridItem } from '@/types/datacenter';
 import { logAuditEvent } from './audit-actions';
 import sql from 'mssql';
+import { _getUserById } from './user-service';
 
 export interface ConnectableItem {
     id: string;
@@ -187,8 +188,9 @@ export async function createConnection(data: {
     connectionTypeId: string; 
     labelText?: string | null;
     imageUrl?: string | null;
+    userId: string; // Adicionado para auditoria
 }) {
-    const { portA_id, portB_id, connectionTypeId, labelText, imageUrl } = data;
+    const { portA_id, portB_id, connectionTypeId, labelText, imageUrl, userId } = data;
 
     if (portA_id === portB_id) {
         throw new Error("Não é possível conectar uma porta a ela mesma.");
@@ -196,6 +198,11 @@ export async function createConnection(data: {
     
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
+    const user = await _getUserById(userId);
+
+    if (!user) {
+        throw new Error("Usuário de auditoria não encontrado.");
+    }
 
     try {
         await transaction.begin();
@@ -269,13 +276,13 @@ export async function createConnection(data: {
 
         await transaction.commit();
         
-        // Log de auditoria
-        // await logAuditEvent({
-        //     action: 'CONNECTION_CREATED',
-        //     entityType: 'Connections',
-        //     entityId: connectionId,
-        //     details: { from: portA_id, to: portB_id, type: connectionTypeId, status }
-        // });
+        await logAuditEvent({
+            user,
+            action: 'CONNECTION_CREATED',
+            entityType: 'Connections',
+            entityId: connectionId,
+            details: { from: portA_id, to: portB_id, type: connectionTypeId, status }
+        });
 
     } catch (error: any) {
         await transaction.rollback();

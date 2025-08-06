@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -25,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddConnectionDialog } from '@/components/depara/add-connection-dialog';
+import { usePermissions } from '../permissions-provider';
 
 
 interface DeParaClientProps {
@@ -84,6 +86,7 @@ const PortList = ({
 export function DeParaClient({ items, connections: initialConnections }: DeParaClientProps) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = usePermissions();
     const [sideA, setSideA] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
     const [sideB, setSideB] = useState<{ itemId: string | null; portId: string | null; ports: EquipmentPort[]; isLoading: boolean; }>({ itemId: null, portId: null, ports: [], isLoading: false });
     const [connectionTypeId, setConnectionTypeId] = useState<string | null>(null);
@@ -116,13 +119,18 @@ export function DeParaClient({ items, connections: initialConnections }: DeParaC
 
 
     const handleQuickConnect = async () => {
-        if (!sideA.portId || !sideB.portId || !connectionTypeId) return;
+        if (!sideA.portId || !sideB.portId || !connectionTypeId || !user) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Dados incompletos ou usuário não autenticado.' });
+            return;
+        }
+
         setIsCreating(true);
         try {
             await createConnection({
                 portA_id: sideA.portId,
                 portB_id: sideB.portId,
                 connectionTypeId,
+                userId: user.id
             });
             toast({
                 title: 'Sucesso!',
