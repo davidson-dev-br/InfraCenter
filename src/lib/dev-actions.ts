@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -309,7 +308,10 @@ export async function populateEssentialData() {
  */
 export async function populateTestData() {
     
-    await cleanTestData(); // Limpa dados de teste anteriores
+    // CORREÇÃO CRÍTICA: Garante que o schema e os dados padrão existam ANTES de inserir os dados de teste.
+    await _ensureDatabaseSchema();
+    await cleanTestData();
+
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import sql from 'mssql';
@@ -81,6 +80,8 @@ async function createAllTables(pool: sql.ConnectionPool) {
     
     await ensureIncidentsTableExists(pool); // Agora depende das tabelas acima
     await ensureApprovalsTableExists(pool);
+    await ensureSensorsTableExists(pool);
+    await ensureEvidenceTableExists(pool);
 }
 
 async function ensureUsersTableExists(pool: sql.ConnectionPool) {
@@ -460,7 +461,7 @@ async function ensureIncidentSeveritiesTableExists(pool: sql.ConnectionPool) {
 
 
 async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
-    const wasCreated = await ensureTableExists(pool, 'Incidents', `
+    await ensureTableExists(pool, 'Incidents', `
         CREATE TABLE Incidents (
             id NVARCHAR(50) PRIMARY KEY,
             description NVARCHAR(MAX) NOT NULL,
@@ -515,6 +516,33 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
         );
     `);
 }
+
+async function ensureSensorsTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Sensors', `
+        CREATE TABLE Sensors (
+            id NVARCHAR(50) PRIMARY KEY,
+            itemId NVARCHAR(50) NOT NULL,
+            type NVARCHAR(100) NOT NULL,
+            value FLOAT,
+            unit NVARCHAR(20),
+            lastReading DATETIME2
+        );
+    `);
+}
+
+async function ensureEvidenceTableExists(pool: sql.ConnectionPool) {
+    await ensureTableExists(pool, 'Evidence', `
+        CREATE TABLE Evidence (
+            id NVARCHAR(50) PRIMARY KEY,
+            incidentId NVARCHAR(50) NOT NULL,
+            timestamp DATETIME2 NOT NULL,
+            type NVARCHAR(50) NOT NULL,
+            data NVARCHAR(MAX) NOT NULL,
+            FOREIGN KEY (incidentId) REFERENCES Incidents(id) ON DELETE CASCADE
+        );
+    `);
+}
+
 
 
 /**
