@@ -730,3 +730,5 @@ export async function _deleteUser(userId: string): Promise<void> {
         throw new Error("Falha ao excluir o registro do usuário do banco de dados.");
     }
 }
+
+    
