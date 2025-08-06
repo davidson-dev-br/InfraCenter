@@ -465,7 +465,7 @@ async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
             id NVARCHAR(50) PRIMARY KEY,
             description NVARCHAR(MAX) NOT NULL,
             detectedAt DATETIME2 NOT NULL,
-            resolvedAt DATETIME2,
+            resolvedAt DATETIME2 NULL,
             entityType NVARCHAR(50),
             entityId NVARCHAR(100)
         );
@@ -476,45 +476,61 @@ async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
         const transaction = new sql.Transaction(pool);
         await transaction.begin();
         
-        let needsMigration = false;
-        
-        // 1. Verificar e adicionar novas colunas se não existirem
+        // Verificar e adicionar as colunas, se necessário.
         const columnsResult = await new sql.Request(transaction).query(`
             SELECT COLUMN_NAME 
             FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severityId', 'statusId', 'severity', 'status')
+            WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severityId', 'statusId', 'resolvedAt')
         `);
         const existingColumns = columnsResult.recordset.map(r => r.COLUMN_NAME);
 
         if (!existingColumns.includes('severityId')) {
             await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD severityId NVARCHAR(50) NULL`);
-            needsMigration = true;
         }
         if (!existingColumns.includes('statusId')) {
             await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD statusId NVARCHAR(50) NULL`);
-            needsMigration = true;
+        }
+        if (!existingColumns.includes('resolvedAt')) {
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD resolvedAt DATETIME2 NULL`);
         }
         
-        // 2. Migrar dados se as colunas antigas existirem
-        if (existingColumns.includes('severity') && existingColumns.includes('status')) {
-            console.log("Migrando dados das colunas 'severity' e 'status' para 'severityId' e 'statusId'...");
-            await new sql.Request(transaction).query(`UPDATE i SET i.severityId = s.id FROM Incidents i JOIN IncidentSeverities s ON i.severity = s.name WHERE i.severityId IS NULL`);
-            await new sql.Request(transaction).query(`UPDATE i SET i.statusId = s.id FROM Incidents i JOIN IncidentStatuses s ON i.status = s.name WHERE i.statusId IS NULL`);
-            
-            // 3. Remover colunas antigas após a migração
-            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN severity`);
-            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN status`);
-            console.log("Colunas antigas 'severity' e 'status' removidas.");
-            needsMigration = true;
-        }
+        // Se as colunas antigas (severity/status) existirem, migrar e remover.
+        const oldColumnsResult = await new sql.Request(transaction).query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'Incidents' AND COLUMN_NAME IN ('severity', 'status')
+        `);
+        const oldExistingColumns = oldColumnsResult.recordset.map(r => r.COLUMN_NAME);
 
-        // 4. Alterar colunas para NOT NULL e adicionar chaves estrangeiras
-        if (needsMigration) {
-            await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN severityId NVARCHAR(50) NOT NULL`);
-            await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN statusId NVARCHAR(50) NOT NULL`);
+        if (oldExistingColumns.includes('severity')) {
+            console.log("Migrando dados da coluna 'severity' para 'severityId'...");
+            await new sql.Request(transaction).query(`UPDATE i SET i.severityId = s.id FROM Incidents i JOIN IncidentSeverities s ON i.severity = s.name WHERE i.severityId IS NULL`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN severity`);
+            console.log("Coluna antiga 'severity' removida.");
+        }
+        if (oldExistingColumns.includes('status')) {
+             console.log("Migrando dados da coluna 'status' para 'statusId'...");
+            await new sql.Request(transaction).query(`UPDATE i SET i.statusId = s.id FROM Incidents i JOIN IncidentStatuses s ON i.status = s.name WHERE i.statusId IS NULL`);
+            await new sql.Request(transaction).query(`ALTER TABLE Incidents DROP COLUMN status`);
+            console.log("Coluna antiga 'status' removida.");
+        }
+        
+        // Popular valores padrão se as colunas eram novas
+        await new sql.Request(transaction).query(`UPDATE Incidents SET severityId = 'medium' WHERE severityId IS NULL`);
+        await new sql.Request(transaction).query(`UPDATE Incidents SET statusId = 'open' WHERE statusId IS NULL`);
+        
+        // Adicionar constraints NOT NULL e FK
+        await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN severityId NVARCHAR(50) NOT NULL`);
+        await new sql.Request(transaction).query(`ALTER TABLE Incidents ALTER COLUMN statusId NVARCHAR(50) NOT NULL`);
+        
+        const fkSeverityCheck = await new sql.Request(transaction).query(`SELECT * FROM sys.foreign_keys WHERE name = 'FK_Incidents_Severity'`);
+        if(fkSeverityCheck.recordset.length === 0) {
             await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD CONSTRAINT FK_Incidents_Severity FOREIGN KEY (severityId) REFERENCES IncidentSeverities(id)`);
+        }
+        
+        const fkStatusCheck = await new sql.Request(transaction).query(`SELECT * FROM sys.foreign_keys WHERE name = 'FK_Incidents_Status'`);
+        if(fkStatusCheck.recordset.length === 0) {
             await new sql.Request(transaction).query(`ALTER TABLE Incidents ADD CONSTRAINT FK_Incidents_Status FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)`);
-            console.log("Novas colunas e chaves estrangeiras da tabela Incidents configuradas.");
         }
 
         await transaction.commit();
