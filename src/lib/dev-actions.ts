@@ -14,16 +14,14 @@ async function upsertRecord(transaction: sql.Transaction, tableName: string, dat
     const { id } = data;
     if (!id) throw new Error(`Dados para a tabela ${tableName} devem conter um 'id'.`);
 
-    const request = transaction.request(); // Usa a requisição da transação
+    const request = transaction.request(); 
 
     // 1. Verifica se o registro existe
-    request.input('id_check', sql.NVarChar, id);
-    const result = await request.query(`SELECT COUNT(*) as count FROM ${tableName} WHERE id = @id_check`);
+    const checkRequest = transaction.request(); // Nova requisição para o select
+    checkRequest.input('id_check', sql.NVarChar, id);
+    const result = await checkRequest.query(`SELECT COUNT(*) as count FROM ${tableName} WHERE id = @id_check`);
     const exists = result.recordset[0].count > 0;
-
-    // Limpa os parâmetros para a próxima query
-    request.parameters = {}; 
-
+    
     // 2. Prepara e executa a query de INSERT ou UPDATE
     const columns = Object.keys(data);
     columns.forEach(key => {
@@ -165,27 +163,17 @@ export async function cleanTestData() {
     }
 }
 
-async function populateTestData(title: string, table: string, data: any[]) {
+
+export async function populateBaseEntities() {
     await _ensureDatabaseSchema();
     const pool = await getDbPool();
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await runPopulation(title, transaction, table, data);
-        await transaction.commit();
-    } catch (error) {
-        await transaction.rollback();
-        console.error(`Erro ao popular ${title}:`, error);
-        throw error;
-    }
-}
+        // Limpa antes de inserir para ser re-executável
+        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
+        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
 
-
-export async function populateBaseEntities() {
-    const pool = await getDbPool();
-    const transaction = new sql.Transaction(pool);
-    try {
-        await transaction.begin();
         await runPopulation("Usuários de Teste", transaction, 'Users', testUsers);
         await runPopulation("Prédios de Teste", transaction, 'Buildings', testBuildings);
         await transaction.commit();
@@ -197,15 +185,51 @@ export async function populateBaseEntities() {
 }
 
 export async function populateRooms() {
-    await populateTestData("Salas de Teste", 'Rooms', testRooms);
+    await _ensureDatabaseSchema();
+    const pool = await getDbPool();
+    const transaction = new sql.Transaction(pool);
+    try {
+        await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
+        await runPopulation("Salas de Teste", transaction, 'Rooms', testRooms);
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        console.error(`Erro ao popular Salas:`, error);
+        throw error;
+    }
 }
 
 export async function populateParentItems() {
-    await populateTestData("Itens Pais de Teste", 'ParentItems', testParentItems);
+    await _ensureDatabaseSchema();
+    const pool = await getDbPool();
+    const transaction = new sql.Transaction(pool);
+    try {
+        await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
+        await runPopulation("Itens Pais de Teste", transaction, 'ParentItems', testParentItems);
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        console.error(`Erro ao popular Itens Pais:`, error);
+        throw error;
+    }
 }
 
 export async function populateChildItems() {
-    await populateTestData("Itens Filhos de Teste", 'ChildItems', testChildItems);
+    await _ensureDatabaseSchema();
+    const pool = await getDbPool();
+    const transaction = new sql.Transaction(pool);
+    try {
+        await transaction.begin();
+        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
+        await runPopulation("Itens Filhos de Teste", transaction, 'ChildItems', testChildItems);
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        console.error(`Erro ao popular Itens Filhos:`, error);
+        throw error;
+    }
 }
 
 export async function populatePortsAndConnections() {
@@ -259,5 +283,3 @@ export async function populatePortsAndConnections() {
         throw error;
     }
 }
-
-    

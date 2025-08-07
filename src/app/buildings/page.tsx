@@ -42,7 +42,7 @@ async function getBuildings(): Promise<BuildingWithRooms[]> {
                         r.name, 
                         r.buildingId,
                         r.largura,
-                        r.widthM AS comprimento,
+                        r.widthM AS comprimento, -- Mapeando widthM para comprimento
                         ISNULL(r.tileWidthCm, 60) as tileWidthCm,
                         ISNULL(r.tileHeightCm, 60) as tileHeightCm
                     FROM Rooms r
