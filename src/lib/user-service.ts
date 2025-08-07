@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import sql from 'mssql';
@@ -66,6 +67,7 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureAuditLogTableExists(pool);
     await ensureIncidentStatusesTableExists(pool);
     await ensureIncidentSeveritiesTableExists(pool);
+    await ensureIncidentTypesTableExists(pool);
     await ensureIncidentsTableExists(pool);
     await ensureApprovalsTableExists(pool);
     await ensureSensorsTableExists(pool);
@@ -446,18 +448,51 @@ async function ensureIncidentSeveritiesTableExists(pool: sql.ConnectionPool) {
     }
 }
 
+async function ensureIncidentTypesTableExists(pool: sql.ConnectionPool) {
+    const wasCreated = await ensureTableExists(pool, 'IncidentTypes', `
+        CREATE TABLE IncidentTypes (
+            id NVARCHAR(50) PRIMARY KEY,
+            name NVARCHAR(100) NOT NULL UNIQUE,
+            description NVARCHAR(255),
+            defaultSeverityId NVARCHAR(50),
+            isDefault BIT NOT NULL DEFAULT 0,
+            FOREIGN KEY (defaultSeverityId) REFERENCES IncidentSeverities(id)
+        );
+    `);
+     if(wasCreated) {
+        const defaultTypes = [
+            { id: 'data_integrity', name: 'Integridade de Dados', description: 'Inconsistências encontradas na documentação ou cadastro.', defaultSeverityId: 'medium', isDefault: 1 },
+            { id: 'operational_alert', name: 'Alerta Operacional', description: 'Alerta gerado por um sensor ou monitoramento físico.', defaultSeverityId: 'high', isDefault: 1 },
+        ];
+        const transaction = new sql.Transaction(pool);
+        try {
+            await transaction.begin();
+            for (const type of defaultTypes) {
+                 await new sql.Request(transaction).query`
+                    INSERT INTO IncidentTypes (id, name, description, defaultSeverityId, isDefault)
+                    VALUES (${type.id}, ${type.name}, ${type.description}, ${type.defaultSeverityId}, ${type.isDefault})
+                `;
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback(); throw err;
+        }
+    }
+}
 
 async function ensureIncidentsTableExists(pool: sql.ConnectionPool) {
     await ensureTableExists(pool, 'Incidents', `
         CREATE TABLE Incidents (
             id NVARCHAR(50) PRIMARY KEY,
             description NVARCHAR(MAX) NOT NULL,
+            typeId NVARCHAR(50),
             severityId NVARCHAR(50) NOT NULL,
             statusId NVARCHAR(50) NOT NULL,
             detectedAt DATETIME2 NOT NULL,
             resolvedAt DATETIME2 NULL,
             entityType NVARCHAR(50),
             entityId NVARCHAR(100),
+            FOREIGN KEY (typeId) REFERENCES IncidentTypes(id),
             FOREIGN KEY (severityId) REFERENCES IncidentSeverities(id),
             FOREIGN KEY (statusId) REFERENCES IncidentStatuses(id)
         );

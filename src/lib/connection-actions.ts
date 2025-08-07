@@ -263,21 +263,21 @@ export async function createConnection(data: {
             await new sql.Request(transaction)
                 .input('id', sql.NVarChar, incidentId)
                 .input('description', sql.NVarChar, `Conexão da porta '${portLabel}' no equipamento '${equipmentLabel}' precisa ser resolvida.`)
+                .input('typeId', sql.NVarChar, 'data_integrity') // Usando o novo tipo
                 .input('severityId', sql.NVarChar, 'medium')
                 .input('statusId', sql.NVarChar, 'open')
                 .input('detectedAt', sql.DateTime2, new Date())
                 .input('entityType', sql.NVarChar, 'Connection')
                 .input('entityId', sql.NVarChar, connectionId)
                 .query`
-                    INSERT INTO Incidents (id, description, severityId, statusId, detectedAt, entityType, entityId)
-                    VALUES (@id, @description, @severityId, @statusId, @detectedAt, @entityType, @entityId)
+                    INSERT INTO Incidents (id, description, typeId, severityId, statusId, detectedAt, entityType, entityId)
+                    VALUES (@id, @description, @typeId, @severityId, @statusId, @detectedAt, @entityType, @entityId)
                 `;
         }
 
         await transaction.commit();
         
         await logAuditEvent({
-            user,
             action: 'CONNECTION_CREATED',
             entityType: 'Connections',
             entityId: connectionId,

@@ -156,6 +156,24 @@ async function SystemPage() {
              </Tabs>
         </CardContent>
       </Card>
+      
+      <Card>
+        <CardHeader>
+            <div className="flex items-center gap-3">
+                <RefreshCcwDot className="h-6 w-6" />
+                <CardTitle>Gerenciamento de Ciclo de Vida</CardTitle>
+            </div>
+            <CardDescription className="mt-1.5">
+                Crie, edite e gerencie os status do ciclo de vida de um item no inventário.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center justify-end mb-4">
+                <AddStatusButton />
+            </div>
+            <StatusesTable />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -164,47 +182,32 @@ async function SystemPage() {
                 <CardTitle>Gerenciamento de Incidentes</CardTitle>
             </div>
             <CardDescription className="mt-1.5">
-                Configure os status e severidades que podem ser atribuídos a um incidente de integridade.
+                Configure os status, severidades e tipos que podem ser atribuídos a um incidente de integridade ou operacional.
             </CardDescription>
         </CardHeader>
         <CardContent>
              <Tabs defaultValue="incident_statuses">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="incident_statuses"><BadgeAlert className="mr-2 h-4 w-4"/>Status de Incidente</TabsTrigger>
                     <TabsTrigger value="incident_severities"><ShieldCheck className="mr-2 h-4 w-4"/>Severidades</TabsTrigger>
+                    <TabsTrigger value="incident_types"><Puzzle className="mr-2 h-4 w-4"/>Tipos de Incidente</TabsTrigger>
                 </TabsList>
                  <TabsContent value="incident_statuses" className="mt-6 space-y-6">
                     <p className="text-muted-foreground text-sm">Gerencie os status do ciclo de vida de um incidente (Aberto, Investigando, Fechado).</p>
                     {/* Placeholder para tabela de status de incidente */}
                  </TabsContent>
                  <TabsContent value="incident_severities" className="mt-6 space-y-6">
-                    <p className="text-muted-foreground text-sm">Gerencie os níveis de criticidade de um incidente.</p>
+                    <p className="text-muted-foreground text-sm">Gerencie os níveis de criticidade de um incidente (Crítica, Alta, Média, Baixa).</p>
                     {/* Placeholder para tabela de severidades */}
+                 </TabsContent>
+                  <TabsContent value="incident_types" className="mt-6 space-y-6">
+                    <p className="text-muted-foreground text-sm">Gerencie os tipos de incidentes para categorização automática (ex: Integridade de Dados, Alerta Físico).</p>
+                    {/* Placeholder para tabela de tipos de incidente */}
                  </TabsContent>
              </Tabs>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <RefreshCcwDot className="h-6 w-6" />
-                        <CardTitle>Gerenciamento de Ciclo de Vida</CardTitle>
-                    </div>
-                    <CardDescription className="mt-1.5">
-                        Crie, edite e gerencie os status do ciclo de vida de um item no inventário.
-                    </CardDescription>
-                </div>
-                 <AddStatusButton />
-            </div>
-        </CardHeader>
-        <CardContent>
-            <StatusesTable />
-        </CardContent>
-      </Card>
-
+      
     </div>
   );
 }
