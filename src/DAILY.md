@@ -1,5 +1,28 @@
 # Registro de Daily Stand-ups
 
+## [2024-08-10]
+
+### O que foi feito?
+- **Diagnóstico e Correção Crítica:** Após uma intensa investigação colaborativa, identificamos e corrigimos a causa raiz de todas as falhas na população de dados. O problema era um erro de digitação (`withM` em vez de `widthM`) no script de criação da tabela `Rooms`, que causava falhas em cascata.
+- **Estabilização do Ambiente de DEV:** Refatoramos completamente as `server actions` de população de dados (`dev-actions.ts`) para serem 100% idempotentes (re-executáveis sem erro) e dividimos o processo em botões fracionados no menu de desenvolvedor, garantindo um ambiente de teste confiável.
+- **Harmonização de Nomenclatura:** Realizamos uma varredura completa no projeto para padronizar o uso de `widthM` (no banco de dados) e `comprimento` (no frontend), eliminando a inconsistência que causava bugs recorrentes.
+
+### Foco do Dia: Construir a Interface da Central de Incidentes (`/incidents`)
+
+O sistema já gera incidentes automaticamente para conexões não resolvidas. O objetivo de hoje é criar a tabela e os componentes visuais na página `/incidents` para que os usuários possam ver, filtrar e entender os incidentes de integridade de dados que foram abertos.
+
+### Plano Específico (Step-by-Step)
+1.  **Estrutura da Página:** Criar o layout principal da página usando um `Card` como container.
+2.  **Busca de Dados:** Implementar a busca de dados no servidor (Server-Side Rendering) chamando a `server action` `getIncidents()` para obter a lista de incidentes.
+3.  **Tabela de Exibição:** Usar o componente `Table` para listar os incidentes com colunas claras: Descrição, Status, Severidade, Data de Detecção e Data de Resolução.
+4.  **Indicadores Visuais:** Criar `Badges` e ícones coloridos para os campos de "Status" e "Severidade" para facilitar a identificação rápida de problemas críticos.
+5.  **Estado Vazio:** Garantir que a página exiba uma mensagem informativa caso nenhum incidente seja encontrado.
+
+### Impedimentos
+- Nenhum. O fluxo de desenvolvimento está estável.
+
+---
+
 ## [2024-08-09]
 
 ### Foco do Dia: Construir a Interface da Central de Incidentes (`/incidents`)
