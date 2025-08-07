@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "./ui/separator";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
