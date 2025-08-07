@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddConnectionDialog } from '@/components/depara/add-connection-dialog';
-import { usePermissions } from '../permissions-provider';
+import { usePermissions } from '@/components/permissions-provider';
 
 
 interface DeParaClientProps {

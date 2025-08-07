@@ -299,7 +299,7 @@ interface ItemDetailDialogProps {
 
 export const ItemDetailDialog = ({ item, open, onOpenChange, onItemUpdate, onItemDelete, fullItemContext }: ItemDetailDialogProps) => {
   const { toast } = useToast();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, user } = usePermissions();
   const [isSaving, setIsSaving] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [editFormData, setEditFormData] = React.useState<Partial<GridItem>>({});
@@ -333,7 +333,10 @@ export const ItemDetailDialog = ({ item, open, onOpenChange, onItemUpdate, onIte
     const { id, itemTypeColor, roomName, buildingName, parentName, ...updateData } = editFormData;
 
     try {
-      await updateItem({ id: item.id, ...updateData });
+      if (!user) {
+        throw new Error("Usuário não autenticado.");
+      }
+      await updateItem({ id: item.id, ...updateData }, user.id);
       onItemUpdate({ ...item, ...updateData } as GridItem);
       onOpenChange(false);
       toast({ title: "Item Atualizado", description: `O item ${editFormData.label} foi salvo.` });
