@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "./ui/separator";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   name: z.string().min(3, "O nome da sala deve ter pelo menos 3 caracteres."),
@@ -201,6 +201,3 @@ export function AddRoomDialog({ buildingId, buildingName, open, onOpenChange }: 
     </Dialog>
   );
 }
-
-    
-
