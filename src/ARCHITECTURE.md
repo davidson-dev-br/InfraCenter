@@ -83,8 +83,8 @@ Módulo central para mapear conexões e garantir a integridade dos dados de form
     *   **Status:** `Concluído`.
 
 4.  **8.4. Central de Incidentes de Integridade:**
-    *   **Descrição:** Desenvolver a página `/incidents`. O sistema irá gerar "incidentes" automaticamente para inconsistências de dados, como conexões não resolvidas.
-    *   **Status:** Próximo Passo (geração automática de incidentes implementada; visualização a fazer).
+    *   **Descrição:** Desenvolver a página `/incidents` para visualizar e gerenciar as inconsistências de dados, como conexões não resolvidas, que são detectadas automaticamente pelo sistema.
+    *   **Status:** **Próximo Passo**.
 
 ### Fase 9: Logs, Aprovações e Visualizações Avançadas
 **Status:** `A Fazer`
