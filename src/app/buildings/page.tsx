@@ -31,32 +31,25 @@ export interface BuildingWithRooms {
 async function getBuildings(): Promise<BuildingWithRooms[]> {
     try {
         const pool = await getDbPool();
-        const result = await pool.request().query`
-            SELECT 
-                b.id,
-                b.name,
-                b.address,
-                rooms = (
-                    SELECT 
-                        r.id, 
-                        r.name, 
-                        r.buildingId,
-                        r.largura,
-                        r.widthM AS comprimento, -- Mapeando widthM para comprimento
-                        ISNULL(r.tileWidthCm, 60) as tileWidthCm,
-                        ISNULL(r.tileHeightCm, 60) as tileHeightCm
-                    FROM Rooms r
-                    WHERE r.buildingId = b.id
-                    FOR JSON PATH
-                )
-            FROM Buildings b
-            ORDER BY b.name;
-        `;
+        
+        // 1. Buscar prédios e salas em duas queries separadas para melhor performance.
+        const buildingsResult = await pool.request().query('SELECT id, name, address FROM Buildings ORDER BY name');
+        const roomsResult = await pool.request().query('SELECT id, name, buildingId, largura, widthM AS comprimento, ISNULL(tileWidthCm, 60) as tileWidthCm, ISNULL(tileHeightCm, 60) as tileHeightCm FROM Rooms');
 
-        const buildings = result.recordset.map(building => ({
-            ...building,
-            rooms: building.rooms ? JSON.parse(building.rooms) : [] 
-        }));
+        // 2. Mapear os prédios e criar um mapa para acesso rápido.
+        const buildingsMap = new Map<string, BuildingWithRooms>();
+        const buildings: BuildingWithRooms[] = buildingsResult.recordset.map(b => {
+            const building = { ...b, rooms: [] };
+            buildingsMap.set(building.id, building);
+            return building;
+        });
+
+        // 3. Associar as salas aos seus respectivos prédios.
+        for (const room of roomsResult.recordset) {
+            if (buildingsMap.has(room.buildingId)) {
+                buildingsMap.get(room.buildingId)?.rooms.push(room);
+            }
+        }
 
         return buildings;
 
