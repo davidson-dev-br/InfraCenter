@@ -166,5 +166,3 @@ export default async function BuildingsPage() {
     </div>
   );
 }
-
-    

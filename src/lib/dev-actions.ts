@@ -25,7 +25,20 @@ async function upsertRecord(transaction: sql.Transaction, tableName: string, dat
     // 2. Prepara e executa a query de INSERT ou UPDATE
     const columns = Object.keys(data);
     columns.forEach(key => {
-        request.input(key, data[key]);
+        const value = data[key];
+        if (typeof value === 'boolean') {
+            request.input(key, sql.Bit, value);
+        } else if (typeof value === 'number') {
+            // Distingue entre INT e FLOAT
+            if (Number.isInteger(value)) {
+                request.input(key, sql.Int, value);
+            } else {
+                request.input(key, sql.Float, value);
+            }
+        }
+        else {
+            request.input(key, sql.NVarChar, value);
+        }
     });
     
     if (exists) {
@@ -78,15 +91,15 @@ const essentialConnectionTypes = [
 ];
 
 
-// --- DADOS DE TESTE ---
+// --- DADOS DE TESTE CONSISTENTES ---
+const testBuildings = [
+  { id: 'B1722382574515', name: 'Datacenter SP-01', address: 'Rua Principal, 123, São Paulo', isTestData: 1 },
+  { id: 'B1722382604646', name: 'Datacenter RJ-01', address: 'Avenida Atlântica, 456, Rio de Janeiro', isTestData: 1 }
+];
 const testUsers = [
     { id: 'user_1722384661021', email: 'manager@example.com', displayName: 'Maria Gerente', photoURL: 'https://placehold.co/100x100.png', role: 'manager', permissions: JSON.stringify([]), accessibleBuildingIds: JSON.stringify(['B1722382574515','B1722382604646']), lastLoginAt: new Date().toISOString(), preferences: JSON.stringify({}), isTestData: 1 },
     { id: 'user_1722384725331', email: 'supervisor@example.com', displayName: 'Carlos Supervisor', photoURL: 'https://placehold.co/100x100.png', role: 'supervisor_1', permissions: JSON.stringify([]), accessibleBuildingIds: JSON.stringify(['B1722382574515']), lastLoginAt: new Date().toISOString(), preferences: JSON.stringify({}), isTestData: 1 },
     { id: 'user_1722384762955', email: 'technician@example.com', displayName: 'Ana Técnica', photoURL: 'https://placehold.co/100x100.png', role: 'technician_1', permissions: JSON.stringify([]), accessibleBuildingIds: JSON.stringify(['B1722382574515']), lastLoginAt: new Date().toISOString(), preferences: JSON.stringify({}), isTestData: 1 },
-];
-const testBuildings = [
-  { id: 'B1722382574515', name: 'Datacenter SP-01', address: 'Rua Principal, 123, São Paulo', isTestData: 1 },
-  { id: 'B1722382604646', name: 'Datacenter RJ-01', address: 'Avenida Atlântica, 456, Rio de Janeiro', isTestData: 1 }
 ];
 const testRooms = [
     { id: 'R1722382686121', name: 'Sala de Servidores 1A', buildingId: 'B1722382574515', largura: 15, widthM: 20, tileWidthCm: 60, tileHeightCm: 60, xAxisNaming: 'alpha', yAxisNaming: 'numeric', isTestData: 1 },
@@ -146,13 +159,14 @@ export async function cleanTestData() {
         console.log("Iniciando limpeza dos dados de teste...");
 
         // A ordem de exclusão é a inversa da criação para evitar erros de chave estrangeira
-        await new sql.Request(transaction).query(`DELETE FROM Connections WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
-        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
+        const request = transaction.request();
+        await request.query(`DELETE FROM Connections WHERE isTestData = 1`);
+        await request.query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
+        await request.query(`DELETE FROM ChildItems WHERE isTestData = 1`);
+        await request.query(`DELETE FROM ParentItems WHERE isTestData = 1`);
+        await request.query(`DELETE FROM Rooms WHERE isTestData = 1`);
+        await request.query(`DELETE FROM Buildings WHERE isTestData = 1`);
+        await request.query(`DELETE FROM Users WHERE isTestData = 1`);
 
         await transaction.commit();
         console.log("Limpeza dos dados de teste concluída com sucesso.");
@@ -171,11 +185,11 @@ export async function populateBaseEntities() {
     try {
         await transaction.begin();
         // Limpa antes de inserir para ser re-executável
-        await new sql.Request(transaction).query(`DELETE FROM Users WHERE isTestData = 1`);
-        await new sql.Request(transaction).query(`DELETE FROM Buildings WHERE isTestData = 1`);
+        await transaction.request().query(`DELETE FROM Buildings WHERE isTestData = 1`);
+        await transaction.request().query(`DELETE FROM Users WHERE isTestData = 1`);
 
-        await runPopulation("Usuários de Teste", transaction, 'Users', testUsers);
         await runPopulation("Prédios de Teste", transaction, 'Buildings', testBuildings);
+        await runPopulation("Usuários de Teste", transaction, 'Users', testUsers);
         await transaction.commit();
     } catch (error) {
         await transaction.rollback();
@@ -190,7 +204,7 @@ export async function populateRooms() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM Rooms WHERE isTestData = 1`);
+        await transaction.request().query(`DELETE FROM Rooms WHERE isTestData = 1`);
         await runPopulation("Salas de Teste", transaction, 'Rooms', testRooms);
         await transaction.commit();
     } catch (error) {
@@ -206,7 +220,7 @@ export async function populateParentItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM ParentItems WHERE isTestData = 1`);
+        await transaction.request().query(`DELETE FROM ParentItems WHERE isTestData = 1`);
         await runPopulation("Itens Pais de Teste", transaction, 'ParentItems', testParentItems);
         await transaction.commit();
     } catch (error) {
@@ -222,7 +236,7 @@ export async function populateChildItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await new sql.Request(transaction).query(`DELETE FROM ChildItems WHERE isTestData = 1`);
+        await transaction.request().query(`DELETE FROM ChildItems WHERE isTestData = 1`);
         await runPopulation("Itens Filhos de Teste", transaction, 'ChildItems', testChildItems);
         await transaction.commit();
     } catch (error) {
@@ -239,14 +253,14 @@ export async function populatePortsAndConnections() {
     try {
         await transaction.begin();
         console.log("Limpando portas antigas de itens de teste...");
-        await new sql.Request(transaction).query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
+        await transaction.request().query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
 
         console.log("Populando portas para itens filhos de teste...");
         for (const child of testChildItems) {
-            const modelResult = await new sql.Request(transaction).input('modelName', sql.NVarChar, child.modelo).query`SELECT portConfig FROM Models WHERE name = @modelName`;
+            const modelResult = await transaction.request().input('modelName', sql.NVarChar, child.modelo).query`SELECT portConfig FROM Models WHERE name = @modelName`;
             if (modelResult.recordset.length > 0 && modelResult.recordset[0].portConfig) {
                 const portConfig = modelResult.recordset[0].portConfig;
-                const portTypesResult = await new sql.Request(transaction).query`SELECT id, name FROM PortTypes`;
+                const portTypesResult = await transaction.request().query`SELECT id, name FROM PortTypes`;
                 const portTypesMap = new Map(portTypesResult.recordset.map(pt => [pt.name.toUpperCase(), pt.id]));
                 let portCounter = 1;
 
