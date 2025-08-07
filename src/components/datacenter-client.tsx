@@ -25,15 +25,15 @@ import { useBuilding } from '@/components/building-provider';
 import { usePermissions } from '@/components/permissions-provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Building, Room, GridItem } from '@/types/datacenter';
-import { RenameRoomDialog } from './rename-room-dialog';
+import { RenameRoomDialog } from '@/components/rename-room-dialog';
 import { updateItem } from '@/lib/item-update-actions';
-import { ItemDetailDialog } from './item-detail-dialog'; 
-import { AddItemDialog } from './add-item-dialog';
+import { ItemDetailDialog } from '@/components/item-detail-dialog'; 
+import { AddItemDialog } from '@/components/add-item-dialog';
 import { cn } from '@/lib/utils';
 import { statusColors } from '@/lib/status-config';
 import { getItemStatuses, ItemStatus } from '@/lib/status-actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent } from './ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 // NOTA DE ARQUITETURA: DATA CENTER CLIENT
 // Este é o componente mais complexo da aplicação, agindo como o "cérebro" da planta baixa.
