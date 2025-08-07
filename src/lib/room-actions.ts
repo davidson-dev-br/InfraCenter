@@ -36,7 +36,7 @@ export async function addRoom({ buildingId, name, largura, comprimento, tileWidt
       .input('name', sql.NVarChar, name.trim())
       .input('buildingId', sql.NVarChar, buildingId)
       .input('largura', sql.Float, largura || null)
-      .input('comprimento', sql.Float, comprimento || null)
+      .input('widthM', sql.Float, comprimento || null) // Corrigido para widthM
       .input('tileWidthCm', sql.Float, tileWidthCm || 60)
       .input('tileHeightCm', sql.Float, tileHeightCm || 60)
       .input('xAxisNaming', sql.NVarChar, xAxisNaming || 'alpha')
@@ -44,7 +44,7 @@ export async function addRoom({ buildingId, name, largura, comprimento, tileWidt
       
     await request.query`
         INSERT INTO Rooms (id, name, buildingId, largura, widthM, tileWidthCm, tileHeightCm, xAxisNaming, yAxisNaming) 
-        VALUES (@id, @name, @buildingId, @largura, @comprimento, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming)
+        VALUES (@id, @name, @buildingId, @largura, @widthM, @tileWidthCm, @tileHeightCm, @xAxisNaming, @yAxisNaming)
     `;
 
     revalidatePath('/buildings');
@@ -85,7 +85,7 @@ export async function updateRoom({ id, name, largura, comprimento, tileWidthCm, 
       .input('id', sql.NVarChar, id)
       .input('name', sql.NVarChar, name.trim())
       .input('largura', sql.Float, largura || null)
-      .input('comprimento', sql.Float, comprimento || null)
+      .input('widthM', sql.Float, comprimento || null) // Corrigido para widthM
       .input('tileWidthCm', sql.Float, tileWidthCm || 60)
       .input('tileHeightCm', sql.Float, tileHeightCm || 60)
       .input('xAxisNaming', sql.NVarChar, xAxisNaming || 'alpha')
@@ -95,7 +95,7 @@ export async function updateRoom({ id, name, largura, comprimento, tileWidthCm, 
         SET 
           name = @name, 
           largura = @largura, 
-          widthM = @comprimento,
+          widthM = @widthM,
           tileWidthCm = @tileWidthCm,
           tileHeightCm = @tileHeightCm,
           xAxisNaming = @xAxisNaming,
@@ -149,7 +149,3 @@ export async function deleteRoom(roomId: string): Promise<void> {
     throw new Error('Falha ao excluir a sala no banco de dados.');
   }
 }
-
-    
-
-    

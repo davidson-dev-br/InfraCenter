@@ -85,16 +85,19 @@ async function createPortsForModel(transaction: sql.Transaction, childItemId: st
     console.log(`${portCounter - 1} portas criadas com sucesso para ${childItemId}.`);
 }
 
-
 /**
  * Server Action para atualizar um item existente ou criar um novo no banco de dados.
  * @param itemData Um objeto contendo o ID do item e os campos a serem atualizados/criados.
+ * @param userId O ID do usuário executando a ação (necessário para auditoria).
  */
-export async function updateItem(itemData: UpdateItemData, userId: string): Promise<void> {
+export async function updateItem(itemData: UpdateItemData, userId?: string): Promise<void> {
   const { id, ...fieldsToUpdate } = itemData;
 
   if (!id) throw new Error('O ID do item é obrigatório para a operação.');
   
+  // Se userId não for passado, lança erro para garantir a auditoria
+  if (!userId) throw new Error("A identificação do usuário é obrigatória para a auditoria.");
+
   const pool = await getDbPool();
   const tableName = getTableName(itemData);
   
@@ -102,17 +105,18 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
   const existingItem = existingItemResult.recordset[0];
   const user = await _getUserById(userId);
 
-  if (!user) throw new Error("Usuário não autenticado.");
+  if (!user) throw new Error("Usuário da auditoria não autenticado.");
 
   const addInput = (request: sql.Request, key: string, value: any) => {
+    // Trata valores nulos ou indefinidos de forma explícita
+    if (value === null || value === undefined) {
+        request.input(key, null);
+        return;
+    }
+    
     const isNumeric = !isNaN(parseFloat(value)) && isFinite(value);
     
-    if (value === null || value === undefined) {
-        if (['x', 'y', 'tamanhoU', 'potenciaW', 'posicaoU'].includes(key)) request.input(key, sql.Int, null);
-        else if (['width', 'height', 'preco'].includes(key)) request.input(key, sql.Float, null);
-        else if (['isTagEligible'].includes(key)) request.input(key, sql.Bit, null);
-        else request.input(key, sql.NVarChar, null);
-    } else if (typeof value === 'boolean') {
+    if (typeof value === 'boolean') {
         request.input(key, sql.Bit, value);
     } else if (typeof value === 'number' || (typeof value === 'string' && isNumeric)) {
         const numValue = Number(value);
@@ -125,13 +129,19 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
 
 
   if (existingItem) {
-    // --- Lógica de Aprovação ---
     if (fieldsToUpdate.status && fieldsToUpdate.status !== existingItem.status && fieldsToUpdate.status === 'active' && existingItem.status === 'draft') {
         await createApprovalRequest(pool, id, tableName, 'draft', 'active', user);
-        fieldsToUpdate.status = 'pending_approval'; // Muda o status para pendente
+        fieldsToUpdate.status = 'pending_approval';
     }
 
-    const validFields = Object.keys(fieldsToUpdate).filter(key => (fieldsToUpdate as any)[key] !== undefined && (fieldsToUpdate as any)[key] !== existingItem[key]);
+    const validFields = Object.keys(fieldsToUpdate).filter(key => {
+        const keyTyped = key as keyof typeof fieldsToUpdate;
+        // Compara os valores, tratando `null` e `undefined` de forma similar
+        const newValue = fieldsToUpdate[keyTyped] ?? null;
+        const oldValue = existingItem[key] ?? null;
+        return newValue !== oldValue;
+    });
+    
     if (validFields.length === 0) return;
 
     try {
@@ -161,7 +171,6 @@ export async function updateItem(itemData: UpdateItemData, userId: string): Prom
         throw new Error(`Falha ao atualizar o item ${itemData.label || id} no banco de dados. Detalhe: ${error.message}`);
     }
   } else {
-    // INSERT - Lógica de criação de item
      try {
         const allDataForInsert = { id, ...fieldsToUpdate };
         const columns = Object.keys(allDataForInsert).filter(key => (allDataForInsert as any)[key] !== undefined);

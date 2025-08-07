@@ -29,14 +29,6 @@ export interface User {
 // ====================================================================
 // FUNÇÕES DE VERIFICAÇÃO E CRIAÇÃO DE SCHEMA (Lógica Segura)
 // ====================================================================
-
-// Esta seção contém a lógica para garantir que o banco de dados tenha a estrutura correta.
-// A função `ensureTableExists` é um pilar central: ela verifica se uma tabela existe
-// e, se não existir, a cria usando a query fornecida. Isso torna a aplicação
-// resiliente e capaz de se autoconfigurar em um banco de dados vazio.
-// A ordem em `createAllTables` é CRUCIAL devido às dependências de chave estrangeira.
-// - Davidson
-
 async function ensureTableExists(pool: sql.ConnectionPool, tableName: string, createQuery: string) {
     try {
         const result = await pool.request().query(`SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '${tableName}'`);
@@ -57,7 +49,6 @@ async function ensureTableExists(pool: sql.ConnectionPool, tableName: string, cr
 // DEFINIÇÃO E CRIAÇÃO DE CADA TABELA DO SISTEMA
 // ====================================================================
 async function createAllTables(pool: sql.ConnectionPool) {
-    // A ordem é importante por causa das chaves estrangeiras (FK)
     await ensureUsersTableExists(pool);
     await ensureBuildingsTableExists(pool);
     await ensureRoomsTableExists(pool);
@@ -73,12 +64,9 @@ async function createAllTables(pool: sql.ConnectionPool) {
     await ensureEquipmentPortsTableExists(pool); 
     await ensureConnectionsTableExists(pool); 
     await ensureAuditLogTableExists(pool);
-    
-    // Novas tabelas de configuração de incidentes
     await ensureIncidentStatusesTableExists(pool);
     await ensureIncidentSeveritiesTableExists(pool);
-    
-    await ensureIncidentsTableExists(pool); // Agora depende das tabelas acima
+    await ensureIncidentsTableExists(pool);
     await ensureApprovalsTableExists(pool);
     await ensureSensorsTableExists(pool);
     await ensureEvidenceTableExists(pool);
@@ -510,7 +498,7 @@ async function ensureConnectionsTableExists(pool: sql.ConnectionPool) {
             FOREIGN KEY (portA_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (portB_id) REFERENCES EquipmentPorts(id),
             FOREIGN KEY (connectionTypeId) REFERENCES ConnectionTypes(id),
-            UNIQUE (portA_id)
+            UNIQUE (portA_id, portB_id)
         );
     `);
 }
@@ -562,10 +550,6 @@ export async function _ensureDatabaseSchema(): Promise<string> {
 // ====================================================================
 // FUNÇÕES DE SERVIÇO DE USUÁRIO
 // ====================================================================
-
-// A função `parseUser` é um helper interno para converter o registro bruto do banco de dados
-// em um objeto User tipado, garantindo que os campos JSON (como permissões e preferências)
-// sejam corretamente convertidos de string para objeto, tratando possíveis erros de parse.
 const parseUser = (dbRecord: any): User => {
     let permissions: string[] = [];
     if (dbRecord.permissions) {
@@ -653,27 +637,21 @@ export async function _getUsers(): Promise<User[]> {
   }
 }
 
-// Esta função implementa a lógica "UPSERT" (Update or Insert) para nosso DB.
-// Ela verifica se um usuário já existe pelo e-mail. Se sim, atualiza seus dados (incluindo o ID, se necessário).
-// Se não, cria um novo registro.
 export async function _updateUserInDb(userData: Partial<User> & { id: string, email: string }): Promise<User> {
     const pool = await getDbPool();
     const rolePermissions = await getRolePermissions();
     
-    // Busca pelo e-mail para encontrar o registro correto, independente do ID.
     const existingUser = await _getUserByEmail(userData.email);
 
     if (existingUser) {
-        // Se existe, mescla os dados para atualizar, garantindo que o ID do Firebase seja a fonte da verdade.
         const mergedData = { ...existingUser, ...userData };
 
-        // Se o cargo mudou e nenhuma permissão customizada foi enviada, aplica as permissões padrão do novo cargo.
         if (userData.role && userData.role !== existingUser.role && !userData.permissions) {
              mergedData.permissions = rolePermissions[userData.role] || [];
         }
 
         await pool.request()
-            .input('newId', sql.NVarChar, mergedData.id) // O ID atual do Firebase
+            .input('newId', sql.NVarChar, mergedData.id)
             .input('email', sql.NVarChar, mergedData.email)
             .input('displayName', sql.NVarChar, mergedData.displayName)
             .input('photoURL', sql.NVarChar, mergedData.photoURL)
@@ -685,9 +663,8 @@ export async function _updateUserInDb(userData: Partial<User> & { id: string, em
             .query`UPDATE Users 
                     SET id = @newId, displayName = @displayName, photoURL = @photoURL, role = @role, lastLoginAt = @lastLoginAt, 
                         permissions = @permissions, accessibleBuildingIds = @accessibleBuildingIds, preferences = @preferences
-                    WHERE email = @email`; // A atualização é feita usando o e-mail como chave segura.
+                    WHERE email = @email`;
     } else {
-        // Se não existe, cria um novo registro usando o ID (UID) e e-mail fornecidos.
         const role = userData.role || 'guest';
         
         await pool.request()
@@ -713,10 +690,6 @@ export async function _updateUserInDb(userData: Partial<User> & { id: string, em
     return updatedUser;
 }
 
-/**
- * Exclui um usuário do banco de dados local.
- * @param userId O ID do usuário a ser excluído.
- */
 export async function _deleteUser(userId: string): Promise<void> {
     try {
         const pool = await getDbPool();

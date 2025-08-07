@@ -8,42 +8,38 @@ import { _ensureDatabaseSchema } from './user-service';
 // ====================================================================
 // FUNÇÃO UPSERT ROBUSTA (BASEADA EM IF/ELSE)
 // ====================================================================
-// Esta é a implementação correta da lógica "se existe, atualize; senão, insira".
-// Usa um único objeto de requisição para evitar conflitos de parâmetros.
 async function upsertRecord(transaction: sql.Transaction, tableName: string, data: Record<string, any>) {
     const { id } = data;
     if (!id) throw new Error(`Dados para a tabela ${tableName} devem conter um 'id'.`);
 
-    const request = transaction.request(); 
+    const request = transaction.request();
+    const checkRequest = transaction.request();
 
-    // 1. Verifica se o registro existe
-    const checkRequest = transaction.request(); // Nova requisição para o select
     checkRequest.input('id_check', sql.NVarChar, id);
     const result = await checkRequest.query(`SELECT COUNT(*) as count FROM ${tableName} WHERE id = @id_check`);
     const exists = result.recordset[0].count > 0;
-    
-    // 2. Prepara e executa a query de INSERT ou UPDATE
+
     const columns = Object.keys(data);
     columns.forEach(key => {
         const value = data[key];
+        if (value === undefined) return;
+
         if (typeof value === 'boolean') {
             request.input(key, sql.Bit, value);
         } else if (typeof value === 'number') {
-            // Distingue entre INT e FLOAT
             if (Number.isInteger(value)) {
                 request.input(key, sql.Int, value);
             } else {
                 request.input(key, sql.Float, value);
             }
-        }
-        else {
+        } else {
             request.input(key, sql.NVarChar, value);
         }
     });
     
     if (exists) {
         const updateClauses = columns
-            .filter(key => key !== 'id')
+            .filter(key => key !== 'id' && data[key] !== undefined)
             .map(key => `${key} = @${key}`);
         if (updateClauses.length > 0) {
             await request.query(`UPDATE ${tableName} SET ${updateClauses.join(', ')} WHERE id = @id`);
@@ -158,7 +154,6 @@ export async function cleanTestData() {
         await transaction.begin();
         console.log("Iniciando limpeza dos dados de teste...");
 
-        // A ordem de exclusão é a inversa da criação para evitar erros de chave estrangeira
         const request = transaction.request();
         await request.query(`DELETE FROM Connections WHERE isTestData = 1`);
         await request.query(`DELETE FROM EquipmentPorts WHERE childItemId IN (SELECT id FROM ChildItems WHERE isTestData = 1)`);
@@ -184,12 +179,8 @@ export async function populateBaseEntities() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        // Limpa antes de inserir para ser re-executável
-        await transaction.request().query(`DELETE FROM Buildings WHERE isTestData = 1`);
-        await transaction.request().query(`DELETE FROM Users WHERE isTestData = 1`);
-
-        await runPopulation("Prédios de Teste", transaction, 'Buildings', testBuildings);
         await runPopulation("Usuários de Teste", transaction, 'Users', testUsers);
+        await runPopulation("Prédios de Teste", transaction, 'Buildings', testBuildings);
         await transaction.commit();
     } catch (error) {
         await transaction.rollback();
@@ -204,7 +195,6 @@ export async function populateRooms() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await transaction.request().query(`DELETE FROM Rooms WHERE isTestData = 1`);
         await runPopulation("Salas de Teste", transaction, 'Rooms', testRooms);
         await transaction.commit();
     } catch (error) {
@@ -220,7 +210,6 @@ export async function populateParentItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await transaction.request().query(`DELETE FROM ParentItems WHERE isTestData = 1`);
         await runPopulation("Itens Pais de Teste", transaction, 'ParentItems', testParentItems);
         await transaction.commit();
     } catch (error) {
@@ -236,7 +225,6 @@ export async function populateChildItems() {
     const transaction = new sql.Transaction(pool);
     try {
         await transaction.begin();
-        await transaction.request().query(`DELETE FROM ChildItems WHERE isTestData = 1`);
         await runPopulation("Itens Filhos de Teste", transaction, 'ChildItems', testChildItems);
         await transaction.commit();
     } catch (error) {
@@ -257,10 +245,10 @@ export async function populatePortsAndConnections() {
 
         console.log("Populando portas para itens filhos de teste...");
         for (const child of testChildItems) {
-            const modelResult = await transaction.request().input('modelName', sql.NVarChar, child.modelo).query`SELECT portConfig FROM Models WHERE name = @modelName`;
+            const modelResult = await new sql.Request(transaction).input('modelName', sql.NVarChar, child.modelo).query`SELECT portConfig FROM Models WHERE name = @modelName`;
             if (modelResult.recordset.length > 0 && modelResult.recordset[0].portConfig) {
                 const portConfig = modelResult.recordset[0].portConfig;
-                const portTypesResult = await transaction.request().query`SELECT id, name FROM PortTypes`;
+                const portTypesResult = await new sql.Request(transaction).query`SELECT id, name FROM PortTypes`;
                 const portTypesMap = new Map(portTypesResult.recordset.map(pt => [pt.name.toUpperCase(), pt.id]));
                 let portCounter = 1;
 
