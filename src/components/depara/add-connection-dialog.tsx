@@ -32,7 +32,7 @@ import { createConnection } from '@/lib/connection-actions';
 import { uploadImage } from '@/lib/storage-actions';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { usePermissions } from '../permissions-provider';
+import { usePermissions } from '@/components/permissions-provider';
 
 const formSchema = z.object({
   labelText: z.string().optional().nullable(),
