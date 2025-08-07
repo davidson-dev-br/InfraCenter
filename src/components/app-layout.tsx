@@ -90,7 +90,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       }
       
       const visibleItems = section.items.filter(item => 
-        hasPermission(item.permission) && !hiddenMenuItems.includes(item.href) && item.href !== '/settings'
+        hasPermission(item.permission) && !hiddenMenuItems.includes(item.href)
       );
       
       if (visibleItems.length === 0) {
@@ -233,12 +233,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </>
                 )}
                  <DropdownMenuSeparator />
-                {hasPermission('page:settings:view') && (
-                    <DropdownMenuItem onSelect={() => router.push('/settings')}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Preferências</span>
-                    </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onSelect={() => router.push('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Preferências</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

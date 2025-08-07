@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getIncidents, Incident } from "@/lib/incident-service";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, Info, ShieldQuestion } from "lucide-react";
 import * as React from "react";
 
 // Este código passou no teste do "confia na call".
@@ -93,8 +93,14 @@ export default async function IncidentsPage() {
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                            Nenhum incidente encontrado. A integridade dos dados está ótima!
+                        <TableCell colSpan={5} className="h-48 text-center">
+                           <div className="flex flex-col items-center gap-4">
+                                <ShieldQuestion className="h-12 w-12 text-muted-foreground/50" />
+                                <p className="font-semibold text-muted-foreground">Nenhum incidente encontrado.</p>
+                                <p className="text-sm text-muted-foreground/80">
+                                    A integridade dos dados está ótima!
+                                </p>
+                           </div>
                         </TableCell>
                     </TableRow>
                 )}

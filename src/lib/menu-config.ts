@@ -67,6 +67,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/permissions', label: 'Permissões', icon: ShieldCheck, permission: 'page:permissions:view' },
         { href: '/buildings', label: 'Prédios', icon: Building, permission: 'page:buildings:view' },
         { href: '/system', label: 'Sistema', icon: Settings, permission: 'page:system:view' },
+        { href: '/settings', label: 'Configurações', icon: Settings, permission: 'page:settings:view' },
       ]
     },
     {
@@ -78,6 +79,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/teste-upload', label: 'Teste de Upload', icon: FileUp, permission: '*' },
         { href: '/teste-conexoes', label: 'Teste de Conexões', icon: Network, permission: '*' },
         { href: '/teste-db', label: 'Teste de Banco de Dados', icon: DatabaseZap, permission: '*' },
+        { href: '/teste-auth', label: 'Teste de Auth', icon: BrickWall, permission: '*' },
       ]
     }
 ];

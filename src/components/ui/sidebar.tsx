@@ -1,3 +1,4 @@
+
 // This file is no longer used by the new static layout.
 // It can be safely removed or kept for future reference.
 // The layout logic has been moved directly into AppLayout for simplicity.
