@@ -64,8 +64,8 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: room.name,
-      largura: room.largura || '',
-      comprimento: room.comprimento || '',
+      largura: room.largura || undefined,
+      comprimento: room.comprimento || undefined,
       tileWidthCm: room.tileWidthCm || 60,
       tileHeightCm: room.tileHeightCm || 60,
       xAxisNaming: room.xAxisNaming || 'alpha',
@@ -77,8 +77,8 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
     if (open) {
       form.reset({
         name: room.name,
-        largura: room.largura || '',
-        comprimento: room.comprimento || '',
+        largura: room.largura || undefined,
+        comprimento: room.comprimento || undefined,
         tileWidthCm: room.tileWidthCm || 60,
         tileHeightCm: room.tileHeightCm || 60,
         xAxisNaming: room.xAxisNaming || 'alpha',
@@ -145,7 +145,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                   <FormItem>
                     <FormLabel>Largura (m)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="Ex: 10.5" {...field} />
+                      <Input type="number" step="0.1" placeholder="Ex: 10.5" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -158,7 +158,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                   <FormItem>
                     <FormLabel>Comprimento (m)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="Ex: 12" {...field} />
+                      <Input type="number" step="0.1" placeholder="Ex: 12" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -175,7 +175,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                   <FormItem>
                     <FormLabel>Largura do Piso (cm)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 60" {...field} />
+                      <Input type="number" placeholder="Ex: 60" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -188,7 +188,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                   <FormItem>
                     <FormLabel>Comp. do Piso (cm)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 60" {...field} />
+                      <Input type="number" placeholder="Ex: 60" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -204,7 +204,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="alpha">Alfabético (A, B...)</SelectItem>
@@ -225,7 +225,7 @@ export function RenameRoomDialog({ room, open, onOpenChange }: RenameRoomDialogP
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="numeric">Numérico (1, 2...)</SelectItem>
