@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Funções Auxiliares ---
+    function isDeveloper() {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) && 'role' in get(userDocPath).data && get(userDocPath).data.role == 'developer';
+    }
+    
+    function hasOneOfRoles(roles) {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) && 'role' in get(userDocPath).data && get(userDocPath).data.role in roles;
+    }
+
+    function isAssignedTechnician(datacenterId) {
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDocPath) &&
+             'role' in get(userDocPath).data && get(userDocPath).data.role == 'technician' &&
+             'datacenterId' in get(userDocPath).data && get(userDocPath).data.datacenterId == datacenterId;
+    }
+
+    // --- REGRA MESTRA PARA DESENVOLVEDOR ---
+    // Se o usuário é um desenvolvedor, permite acesso total a tudo.
+    // As regras abaixo não serão aplicadas para desenvolvedores.
+    match /{document=**} {
+      allow read, write: if isDeveloper();
+    }
+
+    // --- Regras de Perfil de Usuário (para não-desenvolvedores) ---
+    match /users/{userId} {
+      allow get, list: if request.auth.uid != null;
+      allow create: if request.auth.uid == userId || hasOneOfRoles(['manager']);
+      allow update: if request.auth.uid == userId || hasOneOfRoles(['manager']);
+      allow delete: if hasOneOfRoles(['manager']);
+    }
+
+    // --- Regras de Datacenter e Subcoleções (para não-desenvolvedores) ---
+    match /datacenters/{datacenterId} {
+      allow get, list: if request.auth.uid != null;
+      allow write: if hasOneOfRoles(['manager']);
+
+      match /items/{itemId} {
+        allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
+      }
+      match /equipment/{equipmentId} {
+        allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
+      }
+      match /connections/{connectionId} {
+        allow read, write: if hasOneOfRoles(['manager', 'supervisor']) || isAssignedTechnician(datacenterId);
+      }
+      
+      match /deletion_log/{logId} {
+        allow read: if hasOneOfRoles(['manager', 'supervisor']);
+        allow write: if false; 
+      }
+
+      match /activity_log/{logId} {
+        allow read: if hasOneOfRoles(['manager', 'supervisor']);
+        // Permite que qualquer usuário autenticado crie entradas de log (registre suas próprias ações)
+        allow create: if request.auth.uid != null;
+        // Ninguém pode alterar ou excluir logs para manter a integridade
+        allow update, delete: if false;
+      }
+    }
+
+    // --- Regras de Configurações do Sistema (para não-desenvolvedores) ---
+    match /system/{docId} {
+       allow read: if request.auth.uid != null;
+       allow write: if hasOneOfRoles(['manager']);
+    }
+  }
+}

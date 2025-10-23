@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,4 +23,14 @@ export default function Home() {
         </div>
     </div>
   )
+=======
+import { LoginForm } from "@/components/login-form";
+
+export default function LoginPage() {
+  return (
+    <main className="flex items-center justify-center min-h-screen bg-background p-4">
+      <LoginForm />
+    </main>
+  );
+>>>>>>> d3ee8b12c20e0454b2def011137783add0a5af09
 }

@@ -1,3 +1,8 @@
 {
+<<<<<<< HEAD
     "IDX.agenticWorkspace": true
+=======
+    "IDX.aI.enableInlineCompletion": true,
+    "IDX.aI.enableCodebaseIndexing": true
+>>>>>>> d3ee8b12c20e0454b2def011137783add0a5af09
 }
